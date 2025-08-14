@@ -116,19 +116,9 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).send(); // 返回 204 No Content
 });
 
-// 安全性中間件
+// 安全性中間件 - 暫時禁用 CSP 來修復 502 錯誤
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com"],
-      scriptSrcAttr: ["'unsafe-inline'"], // 允許內聯事件處理器
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https:"],
-      frameSrc: ["'none'"],
-    },
-  },
+  contentSecurityPolicy: false // 暫時禁用 CSP
 }));
 
 // 壓縮回應
