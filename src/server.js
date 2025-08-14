@@ -183,6 +183,11 @@ async function geocodeAddress(address) {
 
 // 儲存或更新使用者（依手機為主鍵）
 async function upsertUser(phone, name, lineUserId, lineDisplayName) {
+  if (demoMode) {
+    console.log('📝 示範模式：模擬用戶資料儲存', { phone, name, lineUserId });
+    return;
+  }
+  
   try {
     await pool.query(
       'INSERT INTO users (phone, name, line_user_id, line_display_name) VALUES ($1,$2,$3,$4) ON CONFLICT (phone) DO UPDATE SET line_user_id=EXCLUDED.line_user_id, line_display_name=EXCLUDED.line_display_name, name=EXCLUDED.name',
@@ -385,12 +390,26 @@ app.get('/api/products', asyncWrapper(async (req, res) => {
 app.get('/order-success', async (req, res) => {
   const id = parseInt(req.query.id, 10);
   if (!id) return res.status(400).send('訂單不存在');
+  
+  if (demoMode) {
+    // 示範模式：顯示模擬訂單成功頁
+    const mockOrder = {
+      id: id,
+      contact_name: '示範用戶',
+      total: 200,
+      status: 'placed',
+      created_at: new Date()
+    };
+    return res.render('order_success', { order: mockOrder });
+  }
+  
   try {
     const { rows: orders } = await pool.query('SELECT * FROM orders WHERE id=$1', [id]);
     if (orders.length === 0) return res.status(404).send('訂單不存在');
     const order = orders[0];
     res.render('order_success', { order });
   } catch (err) {
+    console.error('Order success error:', err);
     res.status(500).send('錯誤');
   }
 });
@@ -519,6 +538,11 @@ app.get('/admin/map', ensureAdmin, (req, res) => {
 
 // 返回含座標的訂單清單
 app.get('/api/admin/orders-geo', ensureAdmin, async (req, res) => {
+  if (demoMode) {
+    res.json({ orders: [] });
+    return;
+  }
+  
   try {
     const { rows: orders } = await pool.query('SELECT id, contact_name, contact_phone, address, status, total, lat, lng FROM orders WHERE lat IS NOT NULL AND lng IS NOT NULL');
     res.json({ orders });
@@ -530,6 +554,21 @@ app.get('/api/admin/orders-geo', ensureAdmin, async (req, res) => {
 
 // 後台：訂單列表
 app.get('/admin/orders', ensureAdmin, async (req, res, next) => {
+  if (demoMode) {
+    const mockOrders = [
+      {
+        id: 1001,
+        contact_name: '示範客戶',
+        contact_phone: '0912345678',
+        address: '台北市大安區示範路123號',
+        total: 280,
+        status: 'placed',
+        created_at: new Date()
+      }
+    ];
+    return res.render('admin_orders', { orders: mockOrders });
+  }
+  
   try {
     const { rows: orders } = await pool.query('SELECT * FROM orders ORDER BY id DESC');
     res.render('admin_orders', { orders });
@@ -604,6 +643,10 @@ app.post('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
 
 // 後台：產品管理列表
 app.get('/admin/products', ensureAdmin, async (req, res, next) => {
+  if (demoMode) {
+    return res.render('admin_products', { products: demoProducts });
+  }
+  
   try {
     const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
     res.render('admin_products', { products });
