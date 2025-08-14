@@ -19,9 +19,13 @@ const port = process.env.PORT || 3000;
 // PostgreSQL 連線
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase.co')
+  ssl: process.env.NODE_ENV === 'production' 
     ? { rejectUnauthorized: false }
-    : false
+    : false,
+  // 增加連線超時設定
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 600000,
+  max: 10
 });
 
 // 設定 view engine 與靜態檔案
