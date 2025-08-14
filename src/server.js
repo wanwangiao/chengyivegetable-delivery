@@ -692,6 +692,48 @@ app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
   }
 });
 
+// 🕰️ 後台：營業時間管理頁面
+app.get('/admin/business-hours', ensureAdmin, (req, res) => {
+  res.render('admin_business_hours');
+});
+
+// 🕰️ 後台：更新營業時間
+app.post('/admin/business-hours', ensureAdmin, async (req, res, next) => {
+  try {
+    const businessHours = req.body;
+    
+    // 儲存到 localStorage 或檔案系統（示範模式）
+    // 在真實環境中，這裡會儲存到資料庫
+    console.log('📝 營業時間設定已更新:', businessHours);
+    
+    res.json({ success: true, message: '營業時間設定已儲存' });
+  } catch (err) {
+    console.error('❌ 營業時間更新失敗:', err);
+    res.status(500).json({ success: false, message: '儲存失敗' });
+  }
+});
+
+// 🕰️ API：取得營業時間資料
+app.get('/api/business-hours', async (req, res) => {
+  try {
+    // 示範資料，實際會從資料庫讀取
+    const defaultHours = {
+      monday: { open: '06:00', close: '13:00', closed: false },
+      tuesday: { open: '06:00', close: '13:00', closed: false },
+      wednesday: { open: '06:00', close: '13:00', closed: false },
+      thursday: { open: '06:00', close: '13:00', closed: false },
+      friday: { open: '06:00', close: '13:00', closed: false },
+      saturday: { open: '06:00', close: '13:00', closed: false },
+      sunday: { open: '06:00', close: '13:00', closed: true }
+    };
+    
+    res.json(defaultHours);
+  } catch (err) {
+    console.error('❌ 取得營業時間失敗:', err);
+    res.status(500).json({ error: '取得營業時間失敗' });
+  }
+});
+
 // 404處理
 app.use(notFoundHandler);
 

@@ -84,7 +84,10 @@
                   <h3 class="product-title"><%= product.name %></h3>
                   <div class="product-price">
                     <% if (product.is_priced_item) { %>
-                      <span class="price-label">價格：待確認</span>
+                      <div class="priced-item-badge">
+                        <span class="price-label">⚖️ 計價商品</span>
+                        <span class="price-subtitle">市場當日價格</span>
+                      </div>
                     <% } else { %>
                       <span class="price-amount">$<%= product.price %></span>
                     <% } %>
@@ -94,7 +97,11 @@
                   </div>
                   <% if (product.is_priced_item) { %>
                     <div class="product-note">
-                      <span class="note-text">幫您秤重好後寫在明細上喔！</span>
+                      <span class="note-text">🎯 秤重後確認價格 · 無運費設計</span>
+                    </div>
+                  <% } else { %>
+                    <div class="product-note">
+                      <span class="note-text fixed-price">💰 固定價格 · 滿200免運</span>
                     </div>
                   <% } %>
                 </div>
@@ -136,6 +143,48 @@
       <ul id="cart-list" class="cart-items"></ul>
       <div class="cart-footer">
         <p class="cart-note-text">（計價商品將於秤重後更新金額）</p>
+      </div>
+    </div>
+
+    <!-- 🕰️ 營業時間彈出視窗 -->
+    <div class="business-hours-modal" id="business-hours-modal">
+      <div class="business-hours-content">
+        <div class="hours-title">
+          🕰️ 營業時間
+        </div>
+        <div class="hours-list" id="hours-list">
+          <div class="hours-item">
+            <span class="day-name">星期一</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期二</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期三</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期四</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期五</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期六</span>
+            <span class="day-hours">06:00 - 13:00</span>
+          </div>
+          <div class="hours-item">
+            <span class="day-name">星期日</span>
+            <span class="day-hours closed">公休</span>
+          </div>
+        </div>
+        <button class="hours-close-btn" onclick="closeBusinessHours()">
+          知道了
+        </button>
       </div>
     </div>
     <script>
@@ -304,11 +353,79 @@
           cartBottom.style.display = cart.length > 0 ? 'block' : 'none';
         }
       }
+      // 🕰️ 營業時間相關函數
+      async function loadBusinessHours() {
+        try {
+          const response = await fetch('/api/business-hours');
+          if (response.ok) {
+            const hours = await response.json();
+            updateBusinessHoursDisplay(hours);
+          }
+        } catch (error) {
+          console.error('載入營業時間失敗:', error);
+        }
+      }
+      
+      function updateBusinessHoursDisplay(hours) {
+        const hoursList = document.getElementById('hours-list');
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+        
+        let html = '';
+        days.forEach((day, index) => {
+          const dayData = hours[day];
+          html += `
+            <div class="hours-item">
+              <span class="day-name">${dayNames[index]}</span>
+              <span class="day-hours${dayData.closed ? ' closed' : ''}">${
+                dayData.closed ? '公休' : `${dayData.open} - ${dayData.close}`
+              }</span>
+            </div>
+          `;
+        });
+        
+        if (hoursList) {
+          hoursList.innerHTML = html;
+        }
+      }
+      
+      function showBusinessHours() {
+        const modal = document.getElementById('business-hours-modal');
+        if (modal) {
+          modal.style.display = 'flex';
+        }
+      }
+      
+      function closeBusinessHours() {
+        const modal = document.getElementById('business-hours-modal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+        
+        // 記錄用戶已看過營業時間
+        localStorage.setItem('hasSeenBusinessHours', 'true');
+      }
+      
+      // 檢查是否需要顯示營業時間
+      function checkBusinessHoursDisplay() {
+        const hasSeenBefore = localStorage.getItem('hasSeenBusinessHours');
+        if (!hasSeenBefore) {
+          // 等待 1 秒後顯示，讓頁面載入完成
+          setTimeout(showBusinessHours, 1000);
+        }
+      }
+      
       window.onload = function() {
         console.log('🌐 頁面已載入');
         console.log('📦 產品資料:', products);
         console.log('🛒 購物車函數可用:', typeof addToCart);
         updateCartSummary();
+        
+        // 載入營業時間資料
+        loadBusinessHours();
+        
+        // 檢查是否需要顯示營業時間
+        checkBusinessHoursDisplay();
       };
     </script>
   </body>
