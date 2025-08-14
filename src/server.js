@@ -16,9 +16,13 @@ const { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = req
 const app = express();
 const port = process.env.PORT || 3000;
 
-// PostgreSQL 連線
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+// PostgreSQL 連線配置
+const dbConfig = {
+  host: 'db.siwnqjavjljhicekloss.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: '@Chengyivegetable',
   ssl: process.env.NODE_ENV === 'production' 
     ? { rejectUnauthorized: false }
     : false,
@@ -27,12 +31,10 @@ const pool = new Pool({
   idleTimeoutMillis: 600000,
   max: 10,
   // 強制使用 IPv4
-  host: 'db.siwnqjavjljhicekloss.supabase.co',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: '@Chengyivegetable'
-});
+  family: 4
+};
+
+const pool = new Pool(dbConfig);
 
 // 設定 view engine 與靜態檔案
 app.set('view engine', 'ejs');

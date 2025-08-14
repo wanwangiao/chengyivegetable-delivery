@@ -10,10 +10,12 @@ services:
     envVars:
       - key: PORT
         value: 3000
-      - key: DATABASE_URL
-        value: "postgresql://postgres:%40Chengyivegetable@db.siwnqjavjljhicekloss.supabase.co:5432/postgres"
+      - key: NODE_ENV
+        value: "production"
       - key: ADMIN_PASSWORD
         value: "shnf830629"
+      - key: SESSION_SECRET
+        value: "chengyivegetable-session-secret-2025-secure-key"
       - key: GOOGLE_MAPS_API_KEY
         value: ""
       - key: LINE_CHANNEL_ID
