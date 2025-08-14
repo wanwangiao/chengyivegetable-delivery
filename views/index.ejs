@@ -60,11 +60,12 @@
             <p>目前沒有商品，請稍後再試。</p>
           </div>
         <% } else { %>
-          <div class="products-list">
+          <div class="products-list mobile-layout">
             <% products.forEach(function(product) { %>
-              <div class="product-item" data-category="<%= product.is_priced_item ? 'proxy' : 'vegetables' %>">
-                <div class="product-image">
-                  <div class="product-placeholder">
+              <div class="product-item mobile-item" data-category="<%= product.is_priced_item ? 'proxy' : 'vegetables' %>" onclick="openProductModal(<%= product.id %>)">
+                <!-- 左側圖片 -->
+                <div class="product-image-left">
+                  <div class="product-image-container">
                     <% if (product.name.includes('高麗菜')) { %>
                       🥬
                     <% } else if (product.name.includes('番茄')) { %>
@@ -79,41 +80,58 @@
                       🥬
                     <% } %>
                   </div>
-                </div>
-                <div class="product-info">
-                  <h3 class="product-title"><%= product.name %></h3>
-                  <div class="product-price">
-                    <% if (product.is_priced_item) { %>
-                      <div class="priced-item-badge">
-                        <span class="price-label">⚖️ 計價商品</span>
-                        <span class="price-subtitle">市場當日價格</span>
-                      </div>
-                    <% } else { %>
-                      <span class="price-amount">$<%= product.price %></span>
-                    <% } %>
-                    <% if (product.unit_hint) { %>
-                      <span class="price-unit"><%= product.unit_hint %></span>
-                    <% } %>
-                  </div>
-                  <% if (product.is_priced_item) { %>
-                    <div class="product-note">
-                      <span class="note-text">🎯 秤重後確認價格 · 無運費設計</span>
-                    </div>
-                  <% } else { %>
-                    <div class="product-note">
-                      <span class="note-text fixed-price">💰 固定價格 · 滿200免運</span>
-                    </div>
+                  <!-- 商品標籤 -->
+                  <% if (product.id % 4 === 1) { %>
+                    <div class="product-badge hot">熱銷</div>
+                  <% } else if (product.id % 4 === 2) { %>
+                    <div class="product-badge new">新品</div>
+                  <% } else if (product.id % 4 === 3) { %>
+                    <div class="product-badge limited">限量</div>
+                  <% } else if (product.id % 4 === 0) { %>
+                    <div class="product-badge recommend">推薦</div>
                   <% } %>
                 </div>
-                <div class="product-actions">
-                  <div class="quantity-selector">
-                    <button class="qty-btn minus" onclick="decreaseQty(<%= product.id %>)">-</button>
-                    <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="99" readonly>
-                    <button class="qty-btn plus" onclick="increaseQty(<%= product.id %>)">+</button>
+                
+                <!-- 右側內容 -->
+                <div class="product-content-right">
+                  <h3 class="product-title-mobile"><%= product.name %></h3>
+                  
+                  <!-- 價格區域 -->
+                  <div class="product-price-mobile">
+                    <% if (product.is_priced_item) { %>
+                      <!-- 計價商品 -->
+                      <div class="price-range">
+                        <span class="price-from">1斤約<%= Math.floor(Math.random() * 50) + 100 %>~</span>
+                      </div>
+                      <div class="price-note">幫您秤重好後告知您金額~</div>
+                    <% } else { %>
+                      <!-- 固定價格商品，模擬多規格 -->
+                      <% if (product.id % 3 === 1) { %>
+                        <div class="multi-price">
+                          <span class="price-option">1斤:<%= product.price %></span>
+                        </div>
+                      <% } else if (product.id % 3 === 2) { %>
+                        <div class="multi-price">
+                          <span class="price-option">5顆:<%= Math.floor(product.price * 0.8) %></span>
+                          <span class="price-option">10顆:<%= Math.floor(product.price * 1.5) %></span>
+                        </div>
+                      <% } else { %>
+                        <div class="multi-price">
+                          <span class="price-option">半斤:<%= Math.floor(product.price * 0.6) %></span>
+                          <span class="price-option">1斤:<%= product.price %></span>
+                        </div>
+                      <% } %>
+                    <% } %>
                   </div>
-                  <button class="add-to-cart" onclick="addToCart(<%= product.id %>)">
-                    加入購物車
-                  </button>
+                  
+                  <!-- 商品描述 -->
+                  <div class="product-description">
+                    <% if (product.is_priced_item) { %>
+                      新鮮計價商品，秤重後確認價格
+                    <% } else { %>
+                      新鮮優質，精選品質保證！
+                    <% } %>
+                  </div>
                 </div>
               </div>
             <% }); %>
@@ -187,9 +205,54 @@
         </button>
       </div>
     </div>
+    <!-- 📱 商品詳情彈出視窗 -->
+    <div class="product-modal" id="product-modal" style="display: none;">
+      <div class="product-modal-content">
+        <div class="modal-header">
+          <button class="modal-close" onclick="closeProductModal()">✕</button>
+        </div>
+        
+        <div class="modal-product-image">
+          <div class="modal-image-container" id="modal-image">
+            🥬
+          </div>
+          <div class="modal-badge" id="modal-badge">新品</div>
+        </div>
+        
+        <div class="modal-product-info">
+          <h3 class="modal-title" id="modal-title">商品名稱</h3>
+          <div class="modal-description" id="modal-description">
+            新鮮優質，精選品質保證！當季最新鮮的蔬果，為您的餐桌增添健康與美味。
+          </div>
+        </div>
+        
+        <div class="modal-price-section">
+          <div class="modal-price-options" id="modal-price-options">
+            <!-- 動態生成價格選項 -->
+          </div>
+        </div>
+        
+        <div class="modal-quantity-section">
+          <div class="modal-quantity-label">數量選擇</div>
+          <div class="modal-quantity-selector">
+            <button class="modal-qty-btn" onclick="modalDecreaseQty()">-</button>
+            <input type="number" id="modal-qty" value="1" min="1" max="99" readonly>
+            <button class="modal-qty-btn" onclick="modalIncreaseQty()">+</button>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="modal-add-cart" onclick="addToCartFromModal()">
+            🛒 加入購物車
+          </button>
+        </div>
+      </div>
+    </div>
+    
     <script>
       // 從伺服端複製 products 至前端使用
       const products = <%- JSON.stringify(products) %>;
+      let currentModalProduct = null;
       function getCart() {
         try {
           return JSON.parse(localStorage.getItem('cart') || '[]');
@@ -413,6 +476,135 @@
           // 等待 1 秒後顯示，讓頁面載入完成
           setTimeout(showBusinessHours, 1000);
         }
+      }
+      
+      // 📱 商品彈出視窗功能
+      function openProductModal(productId) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        
+        currentModalProduct = product;
+        
+        // 更新商品圖片
+        const modalImage = document.getElementById('modal-image');
+        if (product.name.includes('高麗菜')) {
+          modalImage.textContent = '🥬';
+        } else if (product.name.includes('番茄')) {
+          modalImage.textContent = '🍅';
+        } else if (product.name.includes('胡蘿蔔')) {
+          modalImage.textContent = '🥕';
+        } else if (product.name.includes('小黃瓜')) {
+          modalImage.textContent = '🥒';
+        } else if (product.name.includes('洋蔥')) {
+          modalImage.textContent = '🧅';
+        } else {
+          modalImage.textContent = '🥬';
+        }
+        
+        // 更新標籤
+        const modalBadge = document.getElementById('modal-badge');
+        const badgeClasses = ['hot', 'new', 'limited', 'recommend'];
+        const badgeTexts = ['熱銷', '新品', '限量', '推薦'];
+        const badgeIndex = product.id % 4;
+        modalBadge.className = `modal-badge ${badgeClasses[badgeIndex]}`;
+        modalBadge.textContent = badgeTexts[badgeIndex];
+        
+        // 更新標題和描述
+        document.getElementById('modal-title').textContent = product.name;
+        document.getElementById('modal-description').textContent = 
+          product.is_priced_item ? '新鮮計價商品，秤重後確認價格，無運費設計！' : '新鮮優質，精選品質保證！當季最新鮮的蔬果。';
+        
+        // 更新價格選項
+        const priceOptions = document.getElementById('modal-price-options');
+        if (product.is_priced_item) {
+          priceOptions.innerHTML = `
+            <div class="modal-price-item active" onclick="selectPriceOption(this)">
+              <div class="price-main">1斤約${Math.floor(Math.random() * 50) + 100}~</div>
+              <div class="price-desc">幫您秤重好後告知您金額</div>
+            </div>
+          `;
+        } else {
+          if (product.id % 3 === 1) {
+            priceOptions.innerHTML = `
+              <div class="modal-price-item active" onclick="selectPriceOption(this)">
+                <div class="price-main">1斤:${product.price}</div>
+              </div>
+            `;
+          } else if (product.id % 3 === 2) {
+            priceOptions.innerHTML = `
+              <div class="modal-price-item active" onclick="selectPriceOption(this)">
+                <div class="price-main">5顆:${Math.floor(product.price * 0.8)}</div>
+              </div>
+              <div class="modal-price-item" onclick="selectPriceOption(this)">
+                <div class="price-main">10顆:${Math.floor(product.price * 1.5)}</div>
+              </div>
+            `;
+          } else {
+            priceOptions.innerHTML = `
+              <div class="modal-price-item active" onclick="selectPriceOption(this)">
+                <div class="price-main">半斤:${Math.floor(product.price * 0.6)}</div>
+              </div>
+              <div class="modal-price-item" onclick="selectPriceOption(this)">
+                <div class="price-main">1斤:${product.price}</div>
+              </div>
+            `;
+          }
+        }
+        
+        // 重置數量
+        document.getElementById('modal-qty').value = 1;
+        
+        // 顯示彈出視窗
+        document.getElementById('product-modal').style.display = 'flex';
+      }
+      
+      function closeProductModal() {
+        document.getElementById('product-modal').style.display = 'none';
+        currentModalProduct = null;
+      }
+      
+      function selectPriceOption(element) {
+        // 移除所有active狀態
+        document.querySelectorAll('.modal-price-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        // 添加active到選中的選項
+        element.classList.add('active');
+      }
+      
+      function modalIncreaseQty() {
+        const qtyInput = document.getElementById('modal-qty');
+        const currentQty = parseInt(qtyInput.value) || 1;
+        if (currentQty < 99) {
+          qtyInput.value = currentQty + 1;
+        }
+      }
+      
+      function modalDecreaseQty() {
+        const qtyInput = document.getElementById('modal-qty');
+        const currentQty = parseInt(qtyInput.value) || 1;
+        if (currentQty > 1) {
+          qtyInput.value = currentQty - 1;
+        }
+      }
+      
+      function addToCartFromModal() {
+        if (!currentModalProduct) return;
+        
+        const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+        const cart = getCart();
+        
+        const existing = cart.find(item => item.productId === currentModalProduct.id);
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          cart.push({ productId: currentModalProduct.id, quantity: qty });
+        }
+        
+        saveCart(cart);
+        showNotification('✅ 已加入購物車！', 'success');
+        updateCartSummary();
+        closeProductModal();
       }
       
       window.onload = function() {
