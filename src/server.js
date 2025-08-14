@@ -25,7 +25,13 @@ const pool = new Pool({
   // 增加連線超時設定
   connectionTimeoutMillis: 30000,
   idleTimeoutMillis: 600000,
-  max: 10
+  max: 10,
+  // 強制使用 IPv4
+  host: 'db.siwnqjavjljhicekloss.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: '@Chengyivegetable'
 });
 
 // 設定 view engine 與靜態檔案
