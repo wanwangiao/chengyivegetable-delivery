@@ -111,13 +111,19 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 app.use(express.static(path.join(__dirname, '../public')));
 
+// 處理 favicon.ico 請求
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).send(); // 返回 204 No Content
+});
+
 // 安全性中間件
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://maps.googleapis.com"],
+      scriptSrcAttr: ["'unsafe-inline'"], // 允許內聯事件處理器
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https:"],
       frameSrc: ["'none'"],
