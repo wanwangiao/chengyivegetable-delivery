@@ -84,16 +84,32 @@
         localStorage.setItem('cart', JSON.stringify(cart));
       }
       function addToCart(id) {
+        console.log('🛒 加入購物車被點擊，商品ID:', id);
+        
         const qtyInput = document.getElementById('qty-' + id);
+        if (!qtyInput) {
+          console.error('❌ 找不到數量輸入框:', 'qty-' + id);
+          alert('錯誤：找不到數量輸入框');
+          return;
+        }
+        
         const qty = parseInt(qtyInput.value) || 1;
+        console.log('📦 選擇數量:', qty);
+        
         const cart = getCart();
+        console.log('🛍️ 當前購物車:', cart);
+        
         const existing = cart.find(item => item.productId === id);
         if (existing) {
           existing.quantity += qty;
+          console.log('✏️ 更新現有商品數量');
         } else {
           cart.push({ productId: id, quantity: qty });
+          console.log('➕ 添加新商品到購物車');
         }
+        
         saveCart(cart);
+        console.log('💾 購物車已儲存');
         
         // 更美觀的提示
         showNotification('✅ 已加入購物車！', 'success');
@@ -102,6 +118,7 @@
         qtyInput.value = 1;
         
         updateCartSummary();
+        console.log('🔄 購物車摘要已更新');
       }
       
       function showNotification(message, type = 'info') {
@@ -163,7 +180,12 @@
         document.getElementById('cart-subtotal').innerText = subtotal;
         document.getElementById('checkout-link').style.display = cart.length ? 'inline-block' : 'none';
       }
-      window.onload = updateCartSummary;
+      window.onload = function() {
+        console.log('🌐 頁面已載入');
+        console.log('📦 產品資料:', products);
+        console.log('🛒 購物車函數可用:', typeof addToCart);
+        updateCartSummary();
+      };
     </script>
   </body>
 </html>
