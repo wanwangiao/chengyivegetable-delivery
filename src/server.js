@@ -701,11 +701,7 @@ app.get('/admin/business-hours', ensureAdmin, (req, res) => {
 app.post('/admin/business-hours', ensureAdmin, async (req, res, next) => {
   try {
     const businessHours = req.body;
-    
-    // 儲存到 localStorage 或檔案系統（示範模式）
-    // 在真實環境中，這裡會儲存到資料庫
     console.log('📝 營業時間設定已更新:', businessHours);
-    
     res.json({ success: true, message: '營業時間設定已儲存' });
   } catch (err) {
     console.error('❌ 營業時間更新失敗:', err);
@@ -714,9 +710,8 @@ app.post('/admin/business-hours', ensureAdmin, async (req, res, next) => {
 });
 
 // 🕰️ API：取得營業時間資料
-app.get('/api/business-hours', async (req, res) => {
+app.get('/api/business-hours', (req, res) => {
   try {
-    // 示範資料，實際會從資料庫讀取
     const defaultHours = {
       monday: { open: '06:00', close: '13:00', closed: false },
       tuesday: { open: '06:00', close: '13:00', closed: false },
@@ -726,7 +721,6 @@ app.get('/api/business-hours', async (req, res) => {
       saturday: { open: '06:00', close: '13:00', closed: false },
       sunday: { open: '06:00', close: '13:00', closed: true }
     };
-    
     res.json(defaultHours);
   } catch (err) {
     console.error('❌ 取得營業時間失敗:', err);
