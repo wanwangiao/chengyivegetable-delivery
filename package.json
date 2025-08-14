@@ -1,0 +1,22 @@
+{
+  "name": "chengyivegetable-delivery-db",
+  "version": "1.0.0",
+  "description": "蔬果外送資料庫版本系統",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ejs": "^3.1.8",
+    "pg": "^8.11.1",
+    "dotenv": "^16.3.1",
+    "express-session": "^1.17.3",
+    "body-parser": "^1.20.2",
+    "express-rate-limit": "^7.1.5",
+    "validator": "^13.11.0",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5"
+  }
+}

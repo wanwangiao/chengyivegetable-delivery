@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <title>新增商品</title>
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    <h1>新增商品</h1>
+    <p><a href="/admin/products">返回商品管理</a></p>
+    <% if (typeof error !== 'undefined' && error) { %>
+      <p style="color:red"><%= error %></p>
+    <% } %>
+    <form method="post" action="/admin/products/new">
+      <label>品名：<input type="text" name="name" required></label><br>
+      <label>價格（固定價）：<input type="number" step="0.01" name="price"></label><br>
+      <label>計價商品：<input type="checkbox" name="isPricedItem"></label><br>
+      <label>單位/說明：<input type="text" name="unitHint"></label><br>
+      <button type="submit">新增商品</button>
+    </form>
+  </body>
+</html>

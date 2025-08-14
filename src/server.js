@@ -1,0 +1,504 @@
+const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const { Pool } = require('pg');
+const path = require('path');
+const helmet = require('helmet');
+const compression = require('compression');
+const cors = require('cors');
+require('dotenv').config();
+
+// 導入中間件
+const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter');
+const { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation');
+const { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// PostgreSQL 連線
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase.co')
+    ? { rejectUnauthorized: false }
+    : false
+});
+
+// 設定 view engine 與靜態檔案
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '../views'));
+app.use(express.static(path.join(__dirname, '../public')));
+
+// 安全性中間件
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      frameSrc: ["'none'"],
+    },
+  },
+}));
+
+// 壓縮回應
+app.use(compression());
+
+// CORS設定
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL] 
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
+
+// 一般API限制
+app.use('/api/', apiLimiter);
+
+// 解析請求體
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: false, limit: '10mb' }));
+
+// Session配置
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24小時
+  }
+}));
+
+// 將 LINE 綁定狀態傳遞至所有模板
+app.use((req, res, next) => {
+  res.locals.sessionLine = req.session ? req.session.line : null;
+  next();
+});
+
+// 地理編碼：將地址轉為座標
+async function geocodeAddress(address) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return { lat: null, lng: null, status: 'no_api_key' };
+  }
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'OK' && data.results && data.results[0]) {
+      const loc = data.results[0].geometry.location;
+      return { lat: loc.lat, lng: loc.lng, status: 'OK' };
+    }
+    return { lat: null, lng: null, status: data.status };
+  } catch (e) {
+    return { lat: null, lng: null, status: 'error' };
+  }
+}
+
+// 儲存或更新使用者（依手機為主鍵）
+async function upsertUser(phone, name, lineUserId, lineDisplayName) {
+  try {
+    await pool.query(
+      'INSERT INTO users (phone, name, line_user_id, line_display_name) VALUES ($1,$2,$3,$4) ON CONFLICT (phone) DO UPDATE SET line_user_id=EXCLUDED.line_user_id, line_display_name=EXCLUDED.line_display_name, name=EXCLUDED.name',
+      [phone, name || null, lineUserId || null, lineDisplayName || null]
+    );
+  } catch (e) {
+    console.error('Upsert user error:', e.message);
+  }
+}
+
+// 取得產品資料
+async function fetchProducts() {
+  const { rows } = await pool.query('SELECT * FROM products ORDER BY id');
+  return rows;
+}
+
+// 前台：首頁，列出商品
+app.get('/', async (req, res, next) => {
+  try {
+    const products = await fetchProducts();
+    res.render('index', { products });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 前台：結帳頁
+app.get('/checkout', (req, res) => {
+  res.render('checkout');
+});
+
+// API：提交訂單
+app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
+  const { name, phone, address, notes, invoice, items } = req.body;
+  try {
+    if (!name || !phone || !address || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: '參數不完整' });
+    }
+    let subtotal = 0;
+    const orderItems = [];
+    for (const it of items) {
+      const { productId, quantity } = it;
+      const { rows } = await pool.query('SELECT * FROM products WHERE id=$1', [productId]);
+      if (rows.length === 0) {
+        continue;
+      }
+      const p = rows[0];
+      let lineTotal = 0;
+      if (!p.is_priced_item) {
+        lineTotal = Number(p.price) * Number(quantity);
+        subtotal += lineTotal;
+      }
+      orderItems.push({
+        product_id: p.id,
+        name: p.name,
+        is_priced_item: p.is_priced_item,
+        quantity: Number(quantity),
+        unit_price: p.price,
+        line_total: lineTotal,
+        actual_weight: null
+      });
+    }
+    const deliveryFee = subtotal >= 200 ? 0 : 50;
+    const total = subtotal + deliveryFee;
+    // 進行地理編碼
+    const geo = await geocodeAddress(address);
+    // 建立訂單，儲存座標與地理狀態
+    const insertOrder = await pool.query(
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, invoice, subtotal, delivery_fee, total, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12) RETURNING id',
+      [name, phone, address, notes || '', invoice || '', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
+    );
+    const orderId = insertOrder.rows[0].id;
+    // 插入品項
+    for (const item of orderItems) {
+      await pool.query(
+        'INSERT INTO order_items (order_id, product_id, name, is_priced_item, quantity, unit_price, line_total, actual_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [orderId, item.product_id, item.name, item.is_priced_item, item.quantity, item.unit_price, item.line_total, item.actual_weight]
+      );
+    }
+    // 若已綁定 LINE，將用戶資料寫入 users 表
+    if (req.session.line && req.session.line.userId) {
+      await upsertUser(phone, name, req.session.line.userId, req.session.line.displayName);
+    } else {
+      await upsertUser(phone, name, null, null);
+    }
+    res.json({ 
+      success: true, 
+      orderId,
+      message: '訂單已成功建立',
+      data: {
+        orderId,
+        total,
+        estimatedDelivery: '2-3小時內'
+      }
+    });
+  } catch (err) {
+    console.error('Create order error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: '建立訂單時發生錯誤，請稍後再試' 
+    });
+  }
+}));
+
+// API：取得所有產品（供前端 checkout 重新計算小計）
+app.get('/api/products', asyncWrapper(async (req, res) => {
+  const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
+  res.json({ 
+    success: true,
+    products,
+    count: products.length
+  });
+}));
+// 前台：訂單成功頁（供外部連結使用）
+app.get('/order-success', async (req, res) => {
+  const id = parseInt(req.query.id, 10);
+  if (!id) return res.status(400).send('訂單不存在');
+  try {
+    const { rows: orders } = await pool.query('SELECT * FROM orders WHERE id=$1', [id]);
+    if (orders.length === 0) return res.status(404).send('訂單不存在');
+    const order = orders[0];
+    res.render('order_success', { order });
+  } catch (err) {
+    res.status(500).send('錯誤');
+  }
+});
+
+// 登入頁
+app.get('/admin/login', (req, res) => {
+  res.render('admin_login', { error: null });
+});
+
+// 處理登入
+app.post('/admin/login', loginLimiter, validateAdminPassword, (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.ADMIN_PASSWORD) {
+    req.session.isAdmin = true;
+    req.session.loginTime = new Date();
+    return res.redirect('/admin/orders');
+  }
+  res.render('admin_login', { error: '密碼錯誤' });
+});
+
+// 登出
+app.get('/admin/logout', (req, res) => {
+  req.session.isAdmin = false;
+  req.session.destroy(() => {
+    res.redirect('/admin/login');
+  });
+});
+
+// 管理員驗證中介
+function ensureAdmin(req, res, next) {
+  if (req.session && req.session.isAdmin) {
+    return next();
+  }
+  return res.redirect('/admin/login');
+}
+
+// ---------------- LINE 登入與綁定 ----------------
+// 產生登入 URL
+app.get('/auth/line/login', (req, res) => {
+  const clientId = process.env.LINE_CHANNEL_ID;
+  const redirectUri = process.env.LINE_REDIRECT_URI;
+  if (!clientId || !redirectUri) {
+    return res.status(500).send('LINE 設定尚未完成');
+  }
+  // 生成亂數 state 防止 CSRF
+  const state = Math.random().toString(36).substring(2);
+  req.session.lineState = state;
+  const scope = 'profile';
+  const authUrl =
+    'https://access.line.me/oauth2/v2.1/authorize' +
+    '?response_type=code' +
+    '&client_id=' + encodeURIComponent(clientId) +
+    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+    '&state=' + encodeURIComponent(state) +
+    '&scope=' + encodeURIComponent(scope);
+  res.redirect(authUrl);
+});
+
+// LINE 登入回呼
+app.get('/auth/line/callback', async (req, res) => {
+  const { code, state } = req.query;
+  const sessionState = req.session.lineState;
+  // 檢查 state
+  if (!state || !sessionState || state !== sessionState) {
+    return res.status(400).send('狀態驗證失敗');
+  }
+  // 移除狀態
+  delete req.session.lineState;
+  try {
+    const clientId = process.env.LINE_CHANNEL_ID;
+    const clientSecret = process.env.LINE_CHANNEL_SECRET;
+    const redirectUri = process.env.LINE_REDIRECT_URI;
+    // 交換 token
+    const tokenRes = await fetch('https://api.line.me/oauth2/v2.1/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        client_secret: clientSecret
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      console.error('LINE token error:', tokenData);
+      return res.status(400).send('LINE 登入失敗');
+    }
+    // 取得使用者資料
+    const profileRes = await fetch('https://api.line.me/v2/profile', {
+      headers: { Authorization: 'Bearer ' + tokenData.access_token }
+    });
+    const profile = await profileRes.json();
+    if (!profile.userId) {
+      console.error('LINE profile error:', profile);
+      return res.status(400).send('無法取得 LINE 使用者資料');
+    }
+    // 將資料存入 session
+    req.session.line = {
+      userId: profile.userId,
+      displayName: profile.displayName
+    };
+    res.redirect('/line-connected');
+  } catch (err) {
+    console.error('LINE login callback error:', err);
+    res.status(500).send('LINE 登入發生錯誤');
+  }
+});
+
+// 綁定成功頁面
+app.get('/line-connected', (req, res) => {
+  res.render('line_connected', {
+    line: req.session.line
+  });
+});
+
+// ---------------- Google Maps & 地圖 API ----------------
+// 管理員地圖頁
+app.get('/admin/map', ensureAdmin, (req, res) => {
+  // 讓前端取得 API 金鑰
+  res.render('admin_map', {
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+  });
+});
+
+// 返回含座標的訂單清單
+app.get('/api/admin/orders-geo', ensureAdmin, async (req, res) => {
+  try {
+    const { rows: orders } = await pool.query('SELECT id, contact_name, contact_phone, address, status, total, lat, lng FROM orders WHERE lat IS NOT NULL AND lng IS NOT NULL');
+    res.json({ orders });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ orders: [] });
+  }
+});
+
+// 後台：訂單列表
+app.get('/admin/orders', ensureAdmin, async (req, res, next) => {
+  try {
+    const { rows: orders } = await pool.query('SELECT * FROM orders ORDER BY id DESC');
+    res.render('admin_orders', { orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 後台：單一訂單編輯
+app.get('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  try {
+    const { rows: orders } = await pool.query('SELECT * FROM orders WHERE id=$1', [id]);
+    if (orders.length === 0) return res.status(404).send('訂單不存在');
+    const order = orders[0];
+    const { rows: items } = await pool.query('SELECT * FROM order_items WHERE order_id=$1 ORDER BY id', [id]);
+    order.items = items;
+    res.render('admin_order_edit', { order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 後台：更新訂單
+app.post('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  try {
+    const ordersData = await pool.query('SELECT * FROM orders WHERE id=$1', [id]);
+    if (ordersData.rows.length === 0) return res.status(404).send('訂單不存在');
+    const order = ordersData.rows[0];
+    // 抓取訂單項目
+    const { rows: items } = await pool.query('SELECT * FROM order_items WHERE order_id=$1 ORDER BY id', [id]);
+    let lineTotals = req.body.lineTotal;
+    let actualWeights = req.body.actualWeight;
+    if (!Array.isArray(lineTotals)) lineTotals = [lineTotals];
+    if (!Array.isArray(actualWeights)) actualWeights = [actualWeights];
+    // 更新每一項目
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      let lineTotal = parseFloat(lineTotals[i]);
+      if (isNaN(lineTotal)) lineTotal = 0;
+      let actualWeight = parseFloat(actualWeights[i]);
+      if (isNaN(actualWeight)) actualWeight = null;
+      if (item.is_priced_item) {
+        await pool.query(
+          'UPDATE order_items SET line_total=$1, actual_weight=$2 WHERE id=$3',
+          [lineTotal, actualWeight, item.id]
+        );
+      } else {
+        // 確保固定價維持原金額
+        const fixedTotal = Number(item.unit_price) * Number(item.quantity);
+        await pool.query(
+          'UPDATE order_items SET line_total=$1, actual_weight=NULL WHERE id=$2',
+          [fixedTotal, item.id]
+        );
+      }
+    }
+    // 重新計算 totals
+    const { rows: updatedItems } = await pool.query('SELECT * FROM order_items WHERE order_id=$1', [id]);
+    let newSubtotal = 0;
+    updatedItems.forEach(it => {
+      newSubtotal += Number(it.line_total || 0);
+    });
+    const newDelivery = newSubtotal >= 200 ? 0 : 50;
+    const newTotal = newSubtotal + newDelivery;
+    await pool.query('UPDATE orders SET subtotal=$1, delivery_fee=$2, total=$3, status=$4 WHERE id=$5', [newSubtotal, newDelivery, newTotal, 'quoted', id]);
+    res.redirect('/admin/orders/' + id);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 後台：產品管理列表
+app.get('/admin/products', ensureAdmin, async (req, res, next) => {
+  try {
+    const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
+    res.render('admin_products', { products });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 後台：更新某產品
+app.post('/admin/products/:id/update', ensureAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  const { price, isPricedItem, unitHint } = req.body;
+  try {
+    const priceVal = price === '' || price === null ? null : parseFloat(price);
+    const priced = isPricedItem === 'on' || isPricedItem === 'true';
+    await pool.query(
+      'UPDATE products SET price=$1, is_priced_item=$2, unit_hint=$3 WHERE id=$4',
+      [priceVal, priced, unitHint || null, id]
+    );
+    res.redirect('/admin/products');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 後台：新增產品表單
+app.get('/admin/products/new', ensureAdmin, (req, res) => {
+  res.render('admin_product_new');
+});
+
+// 後台：新增產品
+app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
+  const { name, price, isPricedItem, unitHint } = req.body;
+  try {
+    if (!name) {
+      return res.render('admin_product_new', { error: '品名必填' });
+    }
+    const priceVal = price === '' || price === null ? null : parseFloat(price);
+    const priced = isPricedItem === 'on' || isPricedItem === 'true';
+    await pool.query(
+      'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1,$2,$3,$4)',
+      [name, priceVal, priced, unitHint || null]
+    );
+    res.redirect('/admin/products');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 404處理
+app.use(notFoundHandler);
+
+// API錯誤處理
+app.use('/api/*', apiErrorHandler);
+
+// 頁面錯誤處理
+app.use(pageErrorHandler);
+
+// 啟動伺服器
+app.listen(port, () => {
+  console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
+  console.log(`📱 前台網址: http://localhost:${port}`);
+  console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
+  console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
+});

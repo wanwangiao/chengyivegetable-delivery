@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <title>後台｜訂單列表</title>
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    <h1>訂單列表</h1>
+    <p>
+      <a href="/admin/products">商品管理</a> |
+      <a href="/admin/map">地圖視圖</a> |
+      <a href="/admin/logout">登出</a>
+    </p>
+    <% if (!orders || orders.length === 0) { %>
+      <p>目前沒有訂單。</p>
+    <% } else { %>
+      <table class="admin-table" border="1" cellspacing="0" cellpadding="5">
+        <thead>
+          <tr>
+            <th>訂單編號</th>
+            <th>客戶</th>
+            <th>電話</th>
+            <th>狀態</th>
+            <th>總金額</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach(function(order) { %>
+            <tr>
+              <td><%= order.id %></td>
+              <td><%= order.contact_name %></td>
+              <td><%= order.contact_phone %></td>
+              <td><%= order.status %></td>
+              <td>$<%= order.total %></td>
+              <td><a href="/admin/orders/<%= order.id %>">編輯</a></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </body>
+</html>

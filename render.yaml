@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: chengyivegetable
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: "npm install"
+    startCommand: "node src/server.js"
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        value: "postgresql://postgres:%40Chengyivegetable@db.siwnqjavjljhicekloss.supabase.co:5432/postgres"
+      - key: ADMIN_PASSWORD
+        value: "shnf830629"
+      - key: GOOGLE_MAPS_API_KEY
+        value: ""
+      - key: LINE_CHANNEL_ID
+        value: ""
+      - key: LINE_CHANNEL_SECRET
+        value: ""
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        value: ""
+      - key: LINE_REDIRECT_URI
+        value: ""

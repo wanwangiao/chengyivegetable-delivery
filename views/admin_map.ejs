@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8">
+    <title>後台｜地圖視圖</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+      #map {
+        width: 100%;
+        height: 600px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>訂單地圖</h1>
+    <p>
+      <a href="/admin/orders">訂單列表</a> |
+      <a href="/admin/products">商品管理</a> |
+      <a href="/admin/logout">登出</a>
+    </p>
+    <div id="map"></div>
+    <script>
+      const statusColors = {
+        placed: '#888888',
+        quoted: '#2f54eb',
+        paid: '#52c41a',
+        out_for_delivery: '#fa8c16',
+        delivered: '#237804',
+        canceled: '#f5222d'
+      };
+      function initMap() {
+        const map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: 25.0330, lng: 121.5654 }, // 臺北市中心作為初始中心
+          zoom: 12
+        });
+        fetch('/api/admin/orders-geo')
+          .then(res => res.json())
+          .then(data => {
+            const orders = data.orders;
+            if (!orders || orders.length === 0) {
+              return;
+            }
+            const bounds = new google.maps.LatLngBounds();
+            orders.forEach(order => {
+              if (order.lat === null || order.lng === null) return;
+              const pos = { lat: parseFloat(order.lat), lng: parseFloat(order.lng) };
+              bounds.extend(pos);
+              const color = statusColors[order.status] || '#888888';
+              const marker = new google.maps.Marker({
+                position: pos,
+                map: map,
+                title: '訂單 #' + order.id,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 6,
+                  fillColor: color,
+                  fillOpacity: 1,
+                  strokeColor: color,
+                  strokeWeight: 1
+                }
+              });
+              const content =
+                '<div><strong>訂單 #' + order.id + '</strong><br>' +
+                '客戶：' + order.contact_name + '<br>' +
+                '電話：' + order.contact_phone + '<br>' +
+                '狀態：' + order.status + '<br>' +
+                '金額：$' + order.total + '<br>' +
+                '地址：' + order.address + '</div>';
+              const infoWindow = new google.maps.InfoWindow({ content });
+              marker.addListener('click', () => {
+                infoWindow.open(map, marker);
+              });
+            });
+            map.fitBounds(bounds);
+          });
+      }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initMap"></script>
+  </body>
+</html>
