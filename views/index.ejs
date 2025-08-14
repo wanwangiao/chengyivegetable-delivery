@@ -2,73 +2,141 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8">
-    <title>chengyivegetable｜商品列表</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>誠意鮮蔬｜新鮮蔬果外送</title>
     <link rel="stylesheet" href="/css/styles.css">
   </head>
   <body>
-    <header>
-      <div class="container">
-        <h1>🥬 chengyivegetable 蔬果外送</h1>
-        <p>
-          <% if (sessionLine) { %>
+    <!-- 頂部導航 -->
+    <header class="main-header">
+      <div class="header-content">
+        <div class="store-info">
+          <h1 class="store-name">誠意鮮蔬</h1>
+          <div class="store-stats">
+            <span class="views">👁 5489 views</span>
+            <span class="store-badge">店家資訊</span>
+          </div>
+        </div>
+        <% if (sessionLine) { %>
+          <div class="line-status connected">
             ✅ LINE 已綁定（<%= sessionLine.displayName %>）
-          <% } else { %>
-            <a href="/auth/line/login">📱 綁定 LINE 接收通知</a>
-          <% } %>
-        </p>
+          </div>
+        <% } else { %>
+          <div class="line-status">
+            <a href="/auth/line/login" class="line-connect">📱 綁定 LINE</a>
+          </div>
+        <% } %>
       </div>
     </header>
+
+    <!-- 商品分類導航 -->
+    <nav class="category-nav">
+      <div class="category-tabs">
+        <button class="category-tab active" data-category="all">推薦</button>
+        <button class="category-tab" data-category="vegetables">一般蔬菜</button>
+        <button class="category-tab" data-category="leafy">葉菜類</button>
+        <button class="category-tab" data-category="fruits">水果</button>
+        <button class="category-tab" data-category="proxy">代購</button>
+      </div>
+    </nav>
     
-    <div class="container">
-      <section>
-        <h2>🛒 商品列表</h2>
+    <!-- 主要內容區域 -->
+    <main class="main-content">
+      <!-- 服務公告區 -->
+      <div class="service-announcement">
+        <h3>📢 訊息公告</h3>
+        <div class="announcement-content">
+          <p><strong>服務範圍：</strong>三峽、北大特區、鶯歌、樹林、土城</p>
+          <p><strong>外送門檻：</strong>單筆訂單滿200元即可外送喔！！(免外送費)</p>
+          <p><strong>結帳方式：</strong>現金、LINEPAY、銀行轉帳</p>
+          <p><strong>預約服務：</strong>當天11點前下單當天送達！每日下午14點後開放隔日預約</p>
+        </div>
+      </div>
+
+      <!-- 商品區域 -->
+      <div class="products-section">
         <% if (!products || products.length === 0) { %>
-          <p>目前沒有商品。</p>
+          <div class="empty-products">
+            <p>目前沒有商品，請稍後再試。</p>
+          </div>
         <% } else { %>
-          <div class="products-grid">
+          <div class="products-list">
             <% products.forEach(function(product) { %>
-              <div class="product-card">
-                <% if (product.is_priced_item) { %>
-                  <span class="badge">計價商品</span>
-                <% } %>
-                <h3><%= product.name %></h3>
-                <% if (product.is_priced_item) { %>
-                  <div class="price">價格：待確認</div>
-                  <% if (product.unit_hint) { %>
-                    <p class="hint">💡 <%= product.unit_hint %></p>
-                  <% } %>
-                <% } else { %>
-                  <div class="price">$<%= product.price %></div>
-                  <% if (product.unit_hint) { %>
-                    <p class="hint">💡 <%= product.unit_hint %></p>
-                  <% } %>
-                <% } %>
-                <div class="quantity-controls">
-                  <label>數量：</label>
-                  <input type="number" id="qty-<%= product.id %>" value="1" min="1">
+              <div class="product-item" data-category="<%= product.is_priced_item ? 'proxy' : 'vegetables' %>">
+                <div class="product-image">
+                  <div class="product-placeholder">
+                    <% if (product.name.includes('高麗菜')) { %>
+                      🥬
+                    <% } else if (product.name.includes('番茄')) { %>
+                      🍅
+                    <% } else if (product.name.includes('胡蘿蔔')) { %>
+                      🥕
+                    <% } else if (product.name.includes('小黃瓜')) { %>
+                      🥒
+                    <% } else if (product.name.includes('洋蔥')) { %>
+                      🧅
+                    <% } else { %>
+                      🥬
+                    <% } %>
+                  </div>
                 </div>
-                <button class="add-to-cart-btn" onclick="addToCart(<%= product.id %>)">
-                  🛒 加入購物車
-                </button>
+                <div class="product-info">
+                  <h3 class="product-title"><%= product.name %></h3>
+                  <div class="product-price">
+                    <% if (product.is_priced_item) { %>
+                      <span class="price-label">價格：待確認</span>
+                    <% } else { %>
+                      <span class="price-amount">$<%= product.price %></span>
+                    <% } %>
+                    <% if (product.unit_hint) { %>
+                      <span class="price-unit"><%= product.unit_hint %></span>
+                    <% } %>
+                  </div>
+                  <% if (product.is_priced_item) { %>
+                    <div class="product-note">
+                      <span class="note-text">幫您秤重好後寫在明細上喔！</span>
+                    </div>
+                  <% } %>
+                </div>
+                <div class="product-actions">
+                  <div class="quantity-selector">
+                    <button class="qty-btn minus" onclick="decreaseQty(<%= product.id %>)">-</button>
+                    <input type="number" id="qty-<%= product.id %>" value="1" min="1" max="99" readonly>
+                    <button class="qty-btn plus" onclick="increaseQty(<%= product.id %>)">+</button>
+                  </div>
+                  <button class="add-to-cart" onclick="addToCart(<%= product.id %>)">
+                    加入購物車
+                  </button>
+                </div>
               </div>
             <% }); %>
           </div>
         <% } %>
-      </section>
-      
-      <section class="cart-section">
-        <h2>🛍️ 購物車</h2>
-        <ul id="cart-list" class="cart-list"></ul>
-        <div class="cart-subtotal">
-          小計：$<span id="cart-subtotal">0</span>
-          <br><small>（計價商品將於秤重後更新金額）</small>
+      </div>
+    </main>
+    <!-- 固定底部購物車 -->
+    <div class="cart-bottom" id="cart-bottom" style="display: none;">
+      <div class="cart-summary">
+        <div class="cart-info">
+          <span class="cart-total">合計: $<span id="cart-subtotal">0</span> 元</span>
+          <span class="cart-note">來去結帳</span>
         </div>
-        <div style="text-align: center;">
-          <a href="/checkout" id="checkout-link" class="btn" style="display:none;">
-            🚀 前往結帳
-          </a>
-        </div>
-      </section>
+        <button class="checkout-btn" id="checkout-btn" onclick="goToCheckout()">
+          <span class="checkout-arrow">▶</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 購物車詳情彈窗（隱藏） -->
+    <div class="cart-details" id="cart-details" style="display: none;">
+      <div class="cart-header">
+        <h3>購物車明細</h3>
+        <button class="close-cart" onclick="closeCartDetails()">✕</button>
+      </div>
+      <ul id="cart-list" class="cart-items"></ul>
+      <div class="cart-footer">
+        <p class="cart-note-text">（計價商品將於秤重後更新金額）</p>
+      </div>
     </div>
     <script>
       // 從伺服端複製 products 至前端使用
@@ -83,6 +151,23 @@
       function saveCart(cart) {
         localStorage.setItem('cart', JSON.stringify(cart));
       }
+      // 數量控制函數
+      function increaseQty(id) {
+        const qtyInput = document.getElementById('qty-' + id);
+        const currentQty = parseInt(qtyInput.value) || 1;
+        if (currentQty < 99) {
+          qtyInput.value = currentQty + 1;
+        }
+      }
+      
+      function decreaseQty(id) {
+        const qtyInput = document.getElementById('qty-' + id);
+        const currentQty = parseInt(qtyInput.value) || 1;
+        if (currentQty > 1) {
+          qtyInput.value = currentQty - 1;
+        }
+      }
+
       function addToCart(id) {
         console.log('🛒 加入購物車被點擊，商品ID:', id);
         
@@ -119,6 +204,21 @@
         
         updateCartSummary();
         console.log('🔄 購物車摘要已更新');
+      }
+      
+      // 前往結帳
+      function goToCheckout() {
+        window.location.href = '/checkout';
+      }
+      
+      // 顯示購物車詳情
+      function showCartDetails() {
+        document.getElementById('cart-details').style.display = 'block';
+      }
+      
+      // 關閉購物車詳情
+      function closeCartDetails() {
+        document.getElementById('cart-details').style.display = 'none';
       }
       
       function showNotification(message, type = 'info') {
@@ -163,22 +263,46 @@
         const cart = getCart();
         let html = '';
         let subtotal = 0;
+        
         cart.forEach(item => {
           const product = products.find(p => p.id === item.productId);
           if (!product) return;
-          let line = product.name + ' × ' + item.quantity;
+          
+          let line = `
+            <li class="cart-item">
+              <span class="item-name">${product.name}</span>
+              <span class="item-qty">× ${item.quantity}</span>
+              <span class="item-price">`;
+          
           if (product.is_priced_item) {
-            line += ' – 待確認';
+            line += '待確認';
           } else {
             const lineTotal = Number(product.price) * Number(item.quantity);
-            line += ' – $' + lineTotal;
+            line += `$${lineTotal}`;
             subtotal += lineTotal;
           }
-          html += '<li>' + line + '</li>';
+          
+          line += '</span></li>';
+          html += line;
         });
-        document.getElementById('cart-list').innerHTML = html;
-        document.getElementById('cart-subtotal').innerText = subtotal;
-        document.getElementById('checkout-link').style.display = cart.length ? 'inline-block' : 'none';
+        
+        // 更新購物車列表
+        const cartList = document.getElementById('cart-list');
+        if (cartList) {
+          cartList.innerHTML = html;
+        }
+        
+        // 更新小計
+        const cartSubtotal = document.getElementById('cart-subtotal');
+        if (cartSubtotal) {
+          cartSubtotal.innerText = subtotal;
+        }
+        
+        // 顯示/隱藏購物車底欄
+        const cartBottom = document.getElementById('cart-bottom');
+        if (cartBottom) {
+          cartBottom.style.display = cart.length > 0 ? 'block' : 'none';
+        }
       }
       window.onload = function() {
         console.log('🌐 頁面已載入');
