@@ -206,8 +206,8 @@
       </div>
     </div>
     <!-- 📱 商品詳情彈出視窗 -->
-    <div class="product-modal" id="product-modal" style="display: none;">
-      <div class="product-modal-content">
+    <div class="product-modal" id="product-modal" style="display: none;" onclick="closeProductModal()">
+      <div class="product-modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
           <button class="modal-close" onclick="closeProductModal()">✕</button>
         </div>
@@ -562,6 +562,16 @@
         document.getElementById('product-modal').style.display = 'none';
         currentModalProduct = null;
       }
+      
+      // 添加ESC鍵關閉功能
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          const modal = document.getElementById('product-modal');
+          if (modal && modal.style.display !== 'none') {
+            closeProductModal();
+          }
+        }
+      });
       
       function selectPriceOption(element) {
         // 移除所有active狀態
