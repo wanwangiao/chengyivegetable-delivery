@@ -247,7 +247,7 @@ app.get('/', async (req, res, next) => {
 });
 
 // 🚀 管理後台路由
-app.get('/admin/dashboard', async (req, res, next) => {
+app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
   console.log('📊 管理後台被訪問');
   
   try {
@@ -475,7 +475,7 @@ app.post('/admin/login', loginLimiter, validateAdminPassword, (req, res) => {
   if (password === process.env.ADMIN_PASSWORD) {
     req.session.isAdmin = true;
     req.session.loginTime = new Date();
-    return res.redirect('/admin/orders');
+    return res.redirect('/admin/dashboard');
   }
   res.render('admin_login', { error: '密碼錯誤' });
 });
