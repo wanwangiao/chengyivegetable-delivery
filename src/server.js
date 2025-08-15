@@ -246,6 +246,164 @@ app.get('/', async (req, res, next) => {
   }
 });
 
+// 🚛 外送員登入頁面
+app.get('/driver/login', (req, res) => {
+  res.render('driver_login', { error: null });
+});
+
+// 🚛 外送員登入處理
+app.post('/driver/login', async (req, res) => {
+  const { phone, password } = req.body;
+  
+  try {
+    // 這裡可以從資料庫驗證外送員
+    // 暫時使用預設帳號：手機 0912345678，密碼 driver123
+    if (phone === '0912345678' && password === 'driver123') {
+      req.session.driverId = 1;
+      req.session.driverName = '李大明';
+      return res.redirect('/driver/dashboard');
+    }
+    
+    res.render('driver_login', { error: '手機號碼或密碼錯誤' });
+  } catch (error) {
+    console.error('外送員登入錯誤:', error);
+    res.render('driver_login', { error: '登入失敗，請重試' });
+  }
+});
+
+// 🚛 外送員工作台
+app.get('/driver/dashboard', (req, res) => {
+  if (!req.session.driverId) {
+    return res.redirect('/driver/login');
+  }
+  
+  res.render('driver_dashboard', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
+});
+
+// 🚛 外送員登出
+app.get('/driver/logout', (req, res) => {
+  req.session.driverId = null;
+  req.session.driverName = null;
+  res.redirect('/driver/login');
+});
+
+// 🚛 外送員API - 可接訂單
+app.get('/api/driver/available-orders', (req, res) => {
+  // 模擬可接訂單數據
+  const orders = [
+    {
+      id: 1234,
+      customer_name: '王小明',
+      customer_phone: '0912-345-678',
+      address: '新北市三峽區中山路123號',
+      total: 185,
+      delivery_fee: 0,
+      packed_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      items: [
+        { product_name: '高麗菜', quantity: 2, price: 45 },
+        { product_name: '葡萄', quantity: 1, price: 95 }
+      ]
+    },
+    {
+      id: 1235,
+      customer_name: '李小華',
+      customer_phone: '0923-456-789',
+      address: '新北市北大特區學成路456號',
+      total: 230,
+      delivery_fee: 0,
+      packed_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      items: [
+        { product_name: '番茄', quantity: 3, price: 60 },
+        { product_name: '胡蘿蔔', quantity: 2, price: 35 }
+      ]
+    }
+  ];
+  
+  res.json({ success: true, orders });
+});
+
+// 🚛 外送員API - 我的配送
+app.get('/api/driver/my-orders', (req, res) => {
+  // 模擬配送中訂單
+  const orders = [];
+  res.json({ success: true, orders });
+});
+
+// 🚛 外送員API - 已完成訂單
+app.get('/api/driver/completed-orders', (req, res) => {
+  // 模擬已完成訂單
+  const orders = [];
+  res.json({ success: true, orders });
+});
+
+// 🚛 外送員API - 統計數據
+app.get('/api/driver/stats', (req, res) => {
+  res.json({
+    success: true,
+    todayEarnings: 0,
+    todayCompleted: 0
+  });
+});
+
+// 🚛 外送員API - 訂單詳情
+app.get('/api/driver/order/:id', (req, res) => {
+  const orderId = req.params.id;
+  
+  // 模擬訂單詳情
+  const order = {
+    id: orderId,
+    customer_name: '王小明',
+    customer_phone: '0912-345-678',
+    address: '新北市三峽區中山路123號',
+    total: 185,
+    subtotal: 185,
+    delivery_fee: 0,
+    payment_method: 'LINEPAY',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    items: [
+      { product_name: '高麗菜', quantity: 2, price: 45 },
+      { product_name: '葡萄', quantity: 1, price: 95 }
+    ]
+  };
+  
+  res.json(order);
+});
+
+// 🚛 外送員API - 接取訂單
+app.post('/api/driver/take-order/:id', (req, res) => {
+  const orderId = req.params.id;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  // 這裡應該更新資料庫，將訂單標記為已接取
+  console.log(`外送員 ${driverId} 接取了訂單 ${orderId}`);
+  
+  res.json({ success: true, message: '訂單接取成功' });
+});
+
+// 🚛 外送員API - 完成配送
+app.post('/api/driver/complete-order/:id', (req, res) => {
+  const orderId = req.params.id;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  // 這裡應該更新資料庫，將訂單標記為已完成
+  console.log(`外送員 ${driverId} 完成了訂單 ${orderId}`);
+  
+  res.json({ success: true, message: '配送完成' });
+});
+
 // 🚀 管理後台路由
 app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
   console.log('📊 管理後台被訪問');

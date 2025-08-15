@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外送員工作台 - 誠意鮮蔬</title>
+    <link rel="stylesheet" href="/css/driver-portal.css">
+</head>
+<body>
+    <!-- 頂部導航 -->
+    <header class="driver-header">
+        <div class="header-content">
+            <div class="driver-info">
+                <h1>🍃 誠意鮮蔬</h1>
+                <p>外送員：<%= driver.name %></p>
+            </div>
+            <div class="header-actions">
+                <span class="status online">🟢 上線中</span>
+                <a href="/driver/logout" class="logout-btn">登出</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="driver-main">
+        <!-- 快速統計 -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-content">
+                    <h3>今日完成</h3>
+                    <p class="stat-number" id="today-completed">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🚛</div>
+                <div class="stat-content">
+                    <h3>進行中</h3>
+                    <p class="stat-number" id="ongoing-deliveries">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <h3>今日收入</h3>
+                    <p class="stat-number" id="today-earnings">$0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 標籤切換 -->
+        <div class="tabs-section">
+            <div class="tabs">
+                <button class="tab active" data-tab="available">
+                    📦 可接訂單 <span class="badge" id="available-count">0</span>
+                </button>
+                <button class="tab" data-tab="my-orders">
+                    🚛 我的配送 <span class="badge" id="my-orders-count">0</span>
+                </button>
+                <button class="tab" data-tab="completed">
+                    ✅ 已完成 <span class="badge" id="completed-count">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 可接訂單列表 -->
+        <div class="tab-content active" id="available-tab">
+            <div class="section-header">
+                <h2>📦 可接訂單</h2>
+                <button class="refresh-btn" onclick="refreshAvailableOrders()">🔄 重新整理</button>
+            </div>
+            
+            <div class="orders-list" id="available-orders">
+                <!-- 動態載入訂單 -->
+            </div>
+        </div>
+
+        <!-- 我的配送列表 -->
+        <div class="tab-content" id="my-orders-tab">
+            <div class="section-header">
+                <h2>🚛 我的配送</h2>
+            </div>
+            
+            <div class="orders-list" id="my-orders">
+                <!-- 動態載入我的訂單 -->
+            </div>
+        </div>
+
+        <!-- 已完成列表 -->
+        <div class="tab-content" id="completed-tab">
+            <div class="section-header">
+                <h2>✅ 今日已完成</h2>
+            </div>
+            
+            <div class="orders-list" id="completed-orders">
+                <!-- 動態載入已完成訂單 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 訂單詳情彈窗 -->
+    <div class="modal" id="order-detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📦 訂單詳情</h3>
+                <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="order-detail-content">
+                <!-- 動態載入訂單詳情 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeOrderModal()">關閉</button>
+                <button class="btn-primary" id="modal-action-btn" onclick="handleOrderAction()">接取訂單</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局變量
+        const driverId = <%= driver.id %>;
+        let currentOrderId = null;
+        let currentAction = null;
+
+        // 頁面載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            initDriverDashboard();
+            loadAvailableOrders();
+            loadMyOrders();
+            loadCompletedOrders();
+            updateStats();
+            
+            // 每30秒自動更新
+            setInterval(function() {
+                loadAvailableOrders();
+                updateStats();
+            }, 30000);
+        });
+
+        // 初始化儀表板
+        function initDriverDashboard() {
+            // 標籤切換功能
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    switchTab(tabName);
+                });
+            });
+        }
+
+        // 切換標籤
+        function switchTab(tabName) {
+            // 移除所有active類
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            // 添加active到選中的標籤
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // 載入可接訂單
+        async function loadAvailableOrders() {
+            try {
+                const response = await fetch('/api/driver/available-orders');
+                const data = await response.json();
+                
+                const container = document.getElementById('available-orders');
+                const countBadge = document.getElementById('available-count');
+                
+                countBadge.textContent = data.orders.length;
+                
+                if (data.orders.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>目前沒有可接的訂單</p>
+                            <button onclick="refreshAvailableOrders()" class="refresh-btn">🔄 重新整理</button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.orders.map(order => `
+                        <div class="order-card available" onclick="showOrderDetail(${order.id}, 'take')">
+                            <div class="order-header">
+                                <span class="order-number">#${order.id}</span>
+                                <span class="order-area">${getAreaFromAddress(order.address)}</span>
+                                <span class="order-amount">$${order.total}</span>
+                            </div>
+                            <div class="order-customer">
+                                <span class="customer-name">👤 ${order.customer_name}</span>
+                                <span class="customer-phone">📞 ${order.customer_phone}</span>
+                            </div>
+                            <div class="order-address">
+                                📍 ${order.address}
+                            </div>
+                            <div class="order-items">
+                                ${order.items.map(item => `
+                                    <span class="item">${item.product_name} x${item.quantity}</span>
+                                `).join(', ')}
+                            </div>
+                            <div class="order-footer">
+                                <span class="delivery-fee">配送費: $${order.delivery_fee || 0}</span>
+                                <span class="packed-time">包裝完成: ${formatTime(order.packed_at)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('載入可接訂單失敗:', error);
+                showNotification('載入訂單失敗，請重新整理', 'error');
+            }
+        }
+
+        // 載入我的配送訂單
+        async function loadMyOrders() {
+            try {
+                const response = await fetch('/api/driver/my-orders');
+                const data = await response.json();
+                
+                const container = document.getElementById('my-orders');
+                const countBadge = document.getElementById('my-orders-count');
+                
+                countBadge.textContent = data.orders.length;
+                document.getElementById('ongoing-deliveries').textContent = data.orders.length;
+                
+                if (data.orders.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🚛</div>
+                            <p>目前沒有配送中的訂單</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.orders.map(order => `
+                        <div class="order-card my-order" onclick="showOrderDetail(${order.id}, 'complete')">
+                            <div class="order-header">
+                                <span class="order-number">#${order.id}</span>
+                                <span class="order-status delivering">🚛 配送中</span>
+                                <span class="order-amount">$${order.total}</span>
+                            </div>
+                            <div class="order-customer">
+                                <span class="customer-name">👤 ${order.customer_name}</span>
+                                <span class="customer-phone">📞 ${order.customer_phone}</span>
+                            </div>
+                            <div class="order-address">
+                                📍 ${order.address}
+                            </div>
+                            <div class="order-footer">
+                                <span class="taken-time">接單時間: ${formatTime(order.taken_at)}</span>
+                                <button class="complete-btn" onclick="completeOrder(${order.id}); event.stopPropagation();">
+                                    ✅ 完成配送
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('載入我的訂單失敗:', error);
+            }
+        }
+
+        // 載入已完成訂單
+        async function loadCompletedOrders() {
+            try {
+                const response = await fetch('/api/driver/completed-orders');
+                const data = await response.json();
+                
+                const container = document.getElementById('completed-orders');
+                const countBadge = document.getElementById('completed-count');
+                
+                countBadge.textContent = data.orders.length;
+                document.getElementById('today-completed').textContent = data.orders.length;
+                
+                container.innerHTML = data.orders.map(order => `
+                    <div class="order-card completed">
+                        <div class="order-header">
+                            <span class="order-number">#${order.id}</span>
+                            <span class="order-status completed">✅ 已完成</span>
+                            <span class="order-amount">$${order.total}</span>
+                        </div>
+                        <div class="order-customer">
+                            <span class="customer-name">👤 ${order.customer_name}</span>
+                        </div>
+                        <div class="order-footer">
+                            <span class="completed-time">完成時間: ${formatTime(order.completed_at)}</span>
+                            <span class="earning">+$${order.delivery_fee || 50}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('載入已完成訂單失敗:', error);
+            }
+        }
+
+        // 更新統計數據
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/driver/stats');
+                const data = await response.json();
+                
+                document.getElementById('today-earnings').textContent = '$' + data.todayEarnings;
+            } catch (error) {
+                console.error('更新統計失敗:', error);
+            }
+        }
+
+        // 顯示訂單詳情
+        async function showOrderDetail(orderId, action) {
+            try {
+                const response = await fetch(`/api/driver/order/${orderId}`);
+                const order = await response.json();
+                
+                currentOrderId = orderId;
+                currentAction = action;
+                
+                const content = document.getElementById('order-detail-content');
+                const actionBtn = document.getElementById('modal-action-btn');
+                
+                content.innerHTML = `
+                    <div class="order-detail">
+                        <div class="detail-section">
+                            <h4>📦 訂單資訊</h4>
+                            <p><strong>訂單編號:</strong> #${order.id}</p>
+                            <p><strong>下單時間:</strong> ${formatTime(order.created_at)}</p>
+                            <p><strong>訂單金額:</strong> $${order.total}</p>
+                            <p><strong>付款方式:</strong> ${order.payment_method}</p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>👤 客戶資訊</h4>
+                            <p><strong>姓名:</strong> ${order.customer_name}</p>
+                            <p><strong>電話:</strong> ${order.customer_phone}</p>
+                            <p><strong>地址:</strong> ${order.address}</p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>🛒 商品清單</h4>
+                            ${order.items.map(item => `
+                                <div class="item-row">
+                                    <span>${item.product_name}</span>
+                                    <span>x${item.quantity}</span>
+                                    <span>$${item.price * item.quantity}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>💰 費用明細</h4>
+                            <div class="fee-row">
+                                <span>商品金額:</span>
+                                <span>$${order.subtotal}</span>
+                            </div>
+                            <div class="fee-row">
+                                <span>配送費:</span>
+                                <span>$${order.delivery_fee || 0}</span>
+                            </div>
+                            <div class="fee-row total">
+                                <span>總金額:</span>
+                                <span>$${order.total}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                if (action === 'take') {
+                    actionBtn.textContent = '🚛 接取這個訂單';
+                    actionBtn.className = 'btn-primary';
+                } else if (action === 'complete') {
+                    actionBtn.textContent = '✅ 完成配送';
+                    actionBtn.className = 'btn-success';
+                }
+                
+                document.getElementById('order-detail-modal').style.display = 'flex';
+            } catch (error) {
+                console.error('載入訂單詳情失敗:', error);
+                showNotification('載入訂單詳情失敗', 'error');
+            }
+        }
+
+        // 處理訂單操作
+        async function handleOrderAction() {
+            if (!currentOrderId || !currentAction) return;
+            
+            try {
+                let response;
+                if (currentAction === 'take') {
+                    response = await fetch(`/api/driver/take-order/${currentOrderId}`, {
+                        method: 'POST'
+                    });
+                } else if (currentAction === 'complete') {
+                    response = await fetch(`/api/driver/complete-order/${currentOrderId}`, {
+                        method: 'POST'
+                    });
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(
+                        currentAction === 'take' ? '訂單接取成功！' : '配送完成！',
+                        'success'
+                    );
+                    closeOrderModal();
+                    loadAvailableOrders();
+                    loadMyOrders();
+                    loadCompletedOrders();
+                    updateStats();
+                } else {
+                    showNotification(result.message || '操作失敗', 'error');
+                }
+            } catch (error) {
+                console.error('操作失敗:', error);
+                showNotification('操作失敗，請重試', 'error');
+            }
+        }
+
+        // 完成配送
+        async function completeOrder(orderId) {
+            if (confirm('確認已完成這筆配送？')) {
+                try {
+                    const response = await fetch(`/api/driver/complete-order/${orderId}`, {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showNotification('配送完成！', 'success');
+                        loadMyOrders();
+                        loadCompletedOrders();
+                        updateStats();
+                    } else {
+                        showNotification(result.message || '操作失敗', 'error');
+                    }
+                } catch (error) {
+                    console.error('完成配送失敗:', error);
+                    showNotification('操作失敗，請重試', 'error');
+                }
+            }
+        }
+
+        // 關閉訂單彈窗
+        function closeOrderModal() {
+            document.getElementById('order-detail-modal').style.display = 'none';
+            currentOrderId = null;
+            currentAction = null;
+        }
+
+        // 重新整理可接訂單
+        function refreshAvailableOrders() {
+            loadAvailableOrders();
+            showNotification('訂單列表已更新', 'info');
+        }
+
+        // 工具函數
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleString('zh-TW', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getAreaFromAddress(address) {
+            if (address.includes('三峽')) return '三峽區';
+            if (address.includes('北大')) return '北大特區';
+            if (address.includes('樹林')) return '樹林區';
+            if (address.includes('鶯歌')) return '鶯歌區';
+            if (address.includes('土城')) return '土城區';
+            return '其他區域';
+        }
+
+        // 通知系統
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">
+                        ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
+                    </span>
+                    <span class="notification-message">${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 350px;
+                font-size: 14px;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
