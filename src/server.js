@@ -472,11 +472,19 @@ app.get('/admin/login', (req, res) => {
 // 處理登入
 app.post('/admin/login', loginLimiter, validateAdminPassword, (req, res) => {
   const { password } = req.body;
-  if (password === process.env.ADMIN_PASSWORD) {
+  const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
+  
+  console.log('登入嘗試 - 輸入密碼:', password);
+  console.log('期望密碼:', adminPassword);
+  
+  if (password === adminPassword) {
     req.session.isAdmin = true;
     req.session.loginTime = new Date();
+    console.log('登入成功，重導向到 dashboard');
     return res.redirect('/admin/dashboard');
   }
+  
+  console.log('密碼錯誤');
   res.render('admin_login', { error: '密碼錯誤' });
 });
 
