@@ -237,9 +237,63 @@ async function fetchProducts() {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
-    res.render('index', { products });
+    res.render('index', { 
+      products: products,
+      sessionLine: req.session.line || null
+    });
   } catch (err) {
     next(err);
+  }
+});
+
+// 🚀 管理後台路由
+app.get('/admin/dashboard', async (req, res, next) => {
+  console.log('📊 管理後台被訪問');
+  
+  try {
+    // 準備儀表板數據
+    const dashboardData = {
+      stats: {
+        todayRevenue: 12450,
+        todayOrders: 47,
+        todayCustomers: 38,
+        avgOrderValue: 265
+      },
+      recentOrders: [],
+      inventoryAlerts: [],
+      deliveryStatus: {}
+    };
+    
+    if (!demoMode) {
+      // 從資料庫獲取真實數據
+      try {
+        const revenueQuery = await pool.query(`
+          SELECT COALESCE(SUM(total_amount), 0) as today_revenue,
+                 COUNT(*) as today_orders
+          FROM orders 
+          WHERE DATE(created_at) = CURRENT_DATE
+        `);
+        
+        if (revenueQuery.rows.length > 0) {
+          dashboardData.stats.todayRevenue = parseFloat(revenueQuery.rows[0].today_revenue || 0);
+          dashboardData.stats.todayOrders = parseInt(revenueQuery.rows[0].today_orders || 0);
+        }
+      } catch (dbError) {
+        console.warn('⚠️ 無法從資料庫獲取數據，使用demo數據:', dbError.message);
+      }
+    }
+    
+    res.render('admin_dashboard', { 
+      title: '誠意鮮蔬 - 管理後台',
+      dashboardData: dashboardData,
+      user: {
+        name: '黃士嘉',
+        role: '系統管理員'
+      }
+    });
+  } catch (error) {
+    console.error('❌ 管理後台載入錯誤:', error);
+    next(error);
   }
 });
 
