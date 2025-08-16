@@ -25,10 +25,10 @@ const orderLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 登入嘗試限制
+// 登入嘗試限制（開發期間放寬）
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分鐘
-  max: 5, // 每個IP最多5次登入嘗試
+  windowMs: 5 * 60 * 1000, // 5分鐘
+  max: 20, // 每個IP最多20次登入嘗試
   message: '登入嘗試過於頻繁，請稍後再試',
   standardHeaders: true,
   legacyHeaders: false,
