@@ -67,7 +67,10 @@
         <div class="tab-content active" id="available-tab">
             <div class="section-header">
                 <h2>📦 可接訂單</h2>
-                <button class="refresh-btn" onclick="refreshAvailableOrders()">🔄 重新整理</button>
+                <div class="header-actions">
+                    <button class="batch-select-btn" onclick="showBatchRecommendation()">🎯 智能批次推薦</button>
+                    <button class="refresh-btn" onclick="refreshAvailableOrders()">🔄 重新整理</button>
+                </div>
             </div>
             
             <div class="orders-list" id="available-orders">
@@ -158,6 +161,172 @@
             document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
+        // 智能路線推薦算法 - 批次配送優化（最多15筆）
+        function smartRouteRecommendation(orders) {
+            // 區域配送效率分析
+            const areaEfficiency = {
+                '三峽區': { 
+                    priority: 1, 
+                    avgTime: 8,      // 平均每筆8分鐘
+                    capacity: 5,     // 建議同區域最多5筆
+                    efficiency: 10   // 效率評分
+                },
+                '北大特區': { 
+                    priority: 2, 
+                    avgTime: 12, 
+                    capacity: 4, 
+                    efficiency: 8 
+                },
+                '樹林區': { 
+                    priority: 3, 
+                    avgTime: 15, 
+                    capacity: 3, 
+                    efficiency: 6 
+                },
+                '鶯歌區': { 
+                    priority: 4, 
+                    avgTime: 18, 
+                    capacity: 2, 
+                    efficiency: 4 
+                },
+                '土城區': { 
+                    priority: 5, 
+                    avgTime: 22, 
+                    capacity: 2, 
+                    efficiency: 3 
+                }
+            };
+            
+            // 按區域分組統計
+            const areaGroups = {};
+            orders.forEach(order => {
+                const area = getAreaFromAddress(order.address);
+                if (!areaGroups[area]) {
+                    areaGroups[area] = [];
+                }
+                areaGroups[area].push(order);
+            });
+            
+            // 為每個訂單計算綜合推薦分數
+            orders.forEach(order => {
+                const area = getAreaFromAddress(order.address);
+                const areaInfo = areaEfficiency[area] || { priority: 6, avgTime: 25, capacity: 1, efficiency: 2 };
+                const areaOrderCount = areaGroups[area].length;
+                
+                // 時間因素計算
+                const waitTime = (Date.now() - new Date(order.packed_at).getTime()) / (1000 * 60); // 分鐘
+                const urgencyScore = Math.min(waitTime / 15, 8); // 15分鐘後開始緊急
+                
+                // 金額效率計算
+                const valueEfficiency = order.total / areaInfo.avgTime; // 每分鐘收益
+                
+                // 批次效率獎勵
+                const batchBonus = Math.min(areaOrderCount, areaInfo.capacity) * 2;
+                
+                // 總效率分數計算
+                order.recommendScore = (
+                    areaInfo.efficiency * 2 +           // 區域基礎效率 (20分)
+                    urgencyScore +                      // 等待緊急度 (8分)
+                    Math.min(valueEfficiency / 10, 5) + // 價值效率 (5分)
+                    batchBonus                          // 批次獎勵 (10分)
+                );
+                
+                // 生成智能推薦原因
+                order.recommendReason = generateRecommendReason(order, area, areaInfo, areaOrderCount, waitTime, valueEfficiency);
+                order.batchInfo = `${area} (${areaOrderCount}筆)`;
+                order.estimatedTime = areaInfo.avgTime;
+            });
+            
+            // 智能排序：優先推薦能形成高效批次的訂單
+            return optimizeBatchDelivery(orders, areaEfficiency);
+        }
+        
+        // 生成推薦原因
+        function generateRecommendReason(order, area, areaInfo, areaCount, waitTime, valueEfficiency) {
+            let reasons = [];
+            
+            // 效率原因
+            if (areaInfo.efficiency >= 8) {
+                reasons.push(`${area}高效區域`);
+            } else if (areaInfo.efficiency >= 5) {
+                reasons.push(`${area}中效區域`);
+            } else {
+                reasons.push(`${area}遠程配送`);
+            }
+            
+            // 批次原因
+            if (areaCount >= 3) {
+                reasons.push(`可批次配送${areaCount}筆`);
+            } else if (areaCount === 2) {
+                reasons.push(`可搭配同區1筆`);
+            }
+            
+            // 緊急原因
+            if (waitTime > 45) {
+                reasons.push(`包裝超過45分鐘，急需配送`);
+            } else if (waitTime > 30) {
+                reasons.push(`包裝已久，建議優先`);
+            }
+            
+            // 價值原因
+            if (valueEfficiency > 20) {
+                reasons.push(`高收益訂單`);
+            } else if (order.total > 300) {
+                reasons.push(`高價值訂單`);
+            }
+            
+            // 時間效率
+            if (areaInfo.avgTime <= 10) {
+                reasons.push(`預計${areaInfo.avgTime}分鐘完成`);
+            }
+            
+            return reasons.slice(0, 3).join('，'); // 最多顯示3個原因
+        }
+        
+        // 批次配送優化算法
+        function optimizeBatchDelivery(orders, areaEfficiency) {
+            const result = [];
+            const processedAreas = new Set();
+            
+            // 按區域效率排序所有區域
+            const areasByEfficiency = Object.entries(areaEfficiency)
+                .sort((a, b) => b[1].efficiency - a[1].efficiency)
+                .map(([area]) => area);
+            
+            // 優先處理高效區域的批次
+            areasByEfficiency.forEach(area => {
+                if (processedAreas.has(area)) return;
+                
+                const areaOrders = orders.filter(order => 
+                    getAreaFromAddress(order.address) === area
+                );
+                
+                if (areaOrders.length > 0) {
+                    // 同區域內按分數排序
+                    areaOrders.sort((a, b) => b.recommendScore - a.recommendScore);
+                    
+                    // 添加批次標記
+                    areaOrders.forEach((order, index) => {
+                        if (index === 0 && areaOrders.length >= 2) {
+                            order.batchLeader = true;
+                            order.batchSize = areaOrders.length;
+                        }
+                    });
+                    
+                    result.push(...areaOrders);
+                    processedAreas.add(area);
+                }
+            });
+            
+            // 添加剩餘訂單
+            const remainingOrders = orders.filter(order => 
+                !processedAreas.has(getAreaFromAddress(order.address))
+            );
+            result.push(...remainingOrders.sort((a, b) => b.recommendScore - a.recommendScore));
+            
+            return result;
+        }
+
         // 載入可接訂單
         async function loadAvailableOrders() {
             try {
@@ -178,8 +347,13 @@
                         </div>
                     `;
                 } else {
-                    container.innerHTML = data.orders.map(order => `
-                        <div class="order-card available" onclick="showOrderDetail(${order.id}, 'take')">
+                    // 智能路線推薦排序
+                    const sortedOrders = smartRouteRecommendation(data.orders);
+                    
+                    container.innerHTML = sortedOrders.map((order, index) => `
+                        <div class="order-card available ${index === 0 ? 'recommended' : ''} ${order.batchLeader ? 'batch-leader' : ''}" onclick="showOrderDetail(${order.id}, 'take')">
+                            ${index === 0 ? '<div class="recommend-badge">🎯 推薦優先</div>' : ''}
+                            ${order.batchLeader ? `<div class="batch-badge">📦 批次配送 ${order.batchSize}筆</div>` : ''}
                             <div class="order-header">
                                 <span class="order-number">#${order.id}</span>
                                 <span class="order-area">${getAreaFromAddress(order.address)}</span>
@@ -196,6 +370,12 @@
                                 ${order.items.map(item => `
                                     <span class="item">${item.product_name} x${item.quantity}</span>
                                 `).join(', ')}
+                            </div>
+                            ${order.recommendReason ? `<div class="recommend-reason">💡 ${order.recommendReason}</div>` : ''}
+                            <div class="order-efficiency">
+                                <span class="batch-info">🎯 ${order.batchInfo}</span>
+                                <span class="time-estimate">⏱️ 預計${order.estimatedTime}分鐘</span>
+                                <span class="efficiency-score">🏆 效率分數: ${Math.round(order.recommendScore)}</span>
                             </div>
                             <div class="order-footer">
                                 <span class="delivery-fee">配送費: $${order.delivery_fee || 0}</span>
@@ -380,6 +560,10 @@
         async function handleOrderAction() {
             if (!currentOrderId || !currentAction) return;
             
+            // 顯示確認對話框
+            const confirmed = await showConfirmDialog(currentAction, currentOrderId);
+            if (!confirmed) return;
+            
             try {
                 let response;
                 if (currentAction === 'take') {
@@ -396,26 +580,113 @@
                 
                 if (result.success) {
                     showNotification(
-                        currentAction === 'take' ? '訂單接取成功！' : '配送完成！',
+                        currentAction === 'take' ? '✅ 訂單接取成功！' : '🎉 配送完成！客戶已收到通知',
                         'success'
                     );
                     closeOrderModal();
-                    loadAvailableOrders();
-                    loadMyOrders();
-                    loadCompletedOrders();
+                    
+                    // 重新載入所有訂單列表
+                    await Promise.all([
+                        loadAvailableOrders(),
+                        loadMyOrders(), 
+                        loadCompletedOrders()
+                    ]);
                     updateStats();
                 } else {
                     showNotification(result.message || '操作失敗', 'error');
                 }
             } catch (error) {
                 console.error('操作失敗:', error);
-                showNotification('操作失敗，請重試', 'error');
+                showNotification('❌ 操作失敗，請檢查網路連線後重試', 'error');
             }
         }
 
-        // 完成配送
+        // 顯示確認對話框
+        function showConfirmDialog(action, orderId) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'confirm-modal';
+                modal.innerHTML = `
+                    <div class="confirm-content">
+                        <div class="confirm-header">
+                            <h3>${action === 'take' ? '🚛 確認接取訂單' : '✅ 確認完成配送'}</h3>
+                        </div>
+                        <div class="confirm-body">
+                            <p>
+                                ${action === 'take' 
+                                    ? `確定要接取訂單 #${orderId} 嗎？<br>接取後訂單將移到「我的配送」` 
+                                    : `確定已完成訂單 #${orderId} 的配送嗎？<br>系統將自動發送通知給客戶<br><strong>此操作無法撤銷</strong>`
+                                }
+                            </p>
+                        </div>
+                        <div class="confirm-footer">
+                            <button class="btn-secondary" onclick="closeConfirm(false)">取消</button>
+                            <button class="${action === 'take' ? 'btn-primary' : 'btn-success'}" onclick="closeConfirm(true)">
+                                ${action === 'take' ? '🚛 確認接取' : '✅ 確認完成'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // 樣式
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 20px;
+                `;
+                
+                const content = modal.querySelector('.confirm-content');
+                content.style.cssText = `
+                    background: white;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    width: 100%;
+                    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+                    animation: confirmSlideIn 0.3s ease;
+                `;
+                
+                // 添加動畫CSS
+                if (!document.getElementById('confirm-animations')) {
+                    const style = document.createElement('style');
+                    style.id = 'confirm-animations';
+                    style.textContent = `
+                        @keyframes confirmSlideIn {
+                            from { transform: scale(0.8); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                        .confirm-header { padding: 20px 20px 10px; text-align: center; }
+                        .confirm-header h3 { margin: 0; color: #2c3e50; }
+                        .confirm-body { padding: 10px 20px 20px; text-align: center; color: #34495e; line-height: 1.5; }
+                        .confirm-footer { padding: 0 20px 20px; display: flex; gap: 10px; justify-content: center; }
+                        .confirm-footer button { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; min-width: 80px; }
+                        .btn-success { background: #27ae60; color: white; }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(modal);
+                
+                // 關閉函數
+                window.closeConfirm = (result) => {
+                    modal.remove();
+                    delete window.closeConfirm;
+                    resolve(result);
+                };
+            });
+        }
+
+        // 完成配送 (使用新的確認對話框)
         async function completeOrder(orderId) {
-            if (confirm('確認已完成這筆配送？')) {
+            const confirmed = await showConfirmDialog('complete', orderId);
+            if (confirmed) {
                 try {
                     const response = await fetch(`/api/driver/complete-order/${orderId}`, {
                         method: 'POST'
@@ -423,16 +694,18 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        showNotification('配送完成！', 'success');
-                        loadMyOrders();
-                        loadCompletedOrders();
+                        showNotification('🎉 配送完成！客戶已收到通知', 'success');
+                        await Promise.all([
+                            loadMyOrders(),
+                            loadCompletedOrders()
+                        ]);
                         updateStats();
                     } else {
                         showNotification(result.message || '操作失敗', 'error');
                     }
                 } catch (error) {
                     console.error('完成配送失敗:', error);
-                    showNotification('操作失敗，請重試', 'error');
+                    showNotification('❌ 操作失敗，請檢查網路連線後重試', 'error');
                 }
             }
         }
@@ -448,6 +721,173 @@
         function refreshAvailableOrders() {
             loadAvailableOrders();
             showNotification('訂單列表已更新', 'info');
+        }
+
+        // 智能批次推薦
+        async function showBatchRecommendation() {
+            try {
+                const response = await fetch('/api/driver/available-orders');
+                const data = await response.json();
+                
+                if (data.orders.length === 0) {
+                    showNotification('目前沒有可接的訂單', 'info');
+                    return;
+                }
+                
+                const sortedOrders = smartRouteRecommendation(data.orders);
+                const optimalBatch = selectOptimalBatch(sortedOrders);
+                
+                showBatchModal(optimalBatch);
+            } catch (error) {
+                console.error('生成批次推薦失敗:', error);
+                showNotification('批次推薦失敗，請重試', 'error');
+            }
+        }
+        
+        // 選擇最佳批次（最多15筆）
+        function selectOptimalBatch(orders) {
+            const maxOrders = 15;
+            const batch = [];
+            const areaGroups = {};
+            let totalTime = 0;
+            let totalValue = 0;
+            
+            // 按區域分組
+            orders.forEach(order => {
+                const area = getAreaFromAddress(order.address);
+                if (!areaGroups[area]) areaGroups[area] = [];
+                areaGroups[area].push(order);
+            });
+            
+            // 優先選擇高效率區域的批次
+            const areaEfficiency = {
+                '三峽區': { avgTime: 8, capacity: 5 },
+                '北大特區': { avgTime: 12, capacity: 4 },
+                '樹林區': { avgTime: 15, capacity: 3 },
+                '鶯歌區': { avgTime: 18, capacity: 2 },
+                '土城區': { avgTime: 22, capacity: 2 }
+            };
+            
+            // 按效率排序區域並選擇訂單
+            Object.entries(areaGroups)
+                .sort(([areaA], [areaB]) => {
+                    const effA = areaEfficiency[areaA]?.avgTime || 25;
+                    const effB = areaEfficiency[areaB]?.avgTime || 25;
+                    return effA - effB;
+                })
+                .forEach(([area, areaOrders]) => {
+                    const capacity = areaEfficiency[area]?.capacity || 1;
+                    const avgTime = areaEfficiency[area]?.avgTime || 25;
+                    
+                    // 從該區域選擇最多capacity筆訂單
+                    const selectedFromArea = areaOrders
+                        .sort((a, b) => b.recommendScore - a.recommendScore)
+                        .slice(0, Math.min(capacity, maxOrders - batch.length));
+                    
+                    selectedFromArea.forEach(order => {
+                        if (batch.length < maxOrders) {
+                            batch.push(order);
+                            totalTime += avgTime;
+                            totalValue += order.total;
+                        }
+                    });
+                });
+            
+            return {
+                orders: batch,
+                totalTime: totalTime,
+                totalValue: totalValue,
+                efficiency: totalValue / totalTime,
+                areaCount: Object.keys(areaGroups).length
+            };
+        }
+        
+        // 顯示批次推薦彈窗
+        function showBatchModal(batchData) {
+            const modal = document.createElement('div');
+            modal.className = 'batch-modal';
+            modal.innerHTML = `
+                <div class="batch-modal-content">
+                    <div class="batch-header">
+                        <h3>🎯 智能批次推薦</h3>
+                        <button class="modal-close" onclick="closeBatchModal()">&times;</button>
+                    </div>
+                    <div class="batch-summary">
+                        <div class="summary-stats">
+                            <div class="stat">
+                                <span class="stat-label">📦 推薦訂單數</span>
+                                <span class="stat-value">${batchData.orders.length} 筆</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">⏱️ 預計總時間</span>
+                                <span class="stat-value">${Math.round(batchData.totalTime)} 分鐘</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">💰 總收益</span>
+                                <span class="stat-value">$${batchData.totalValue}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">🏆 效率指數</span>
+                                <span class="stat-value">${batchData.efficiency.toFixed(1)}</span>
+                            </div>
+                        </div>
+                        <div class="batch-efficiency">
+                            <h4>📊 效率分析</h4>
+                            <p>✅ 涵蓋 ${batchData.areaCount} 個配送區域</p>
+                            <p>✅ 平均每筆訂單 ${(batchData.totalTime / batchData.orders.length).toFixed(1)} 分鐘</p>
+                            <p>✅ 每分鐘收益 $${batchData.efficiency.toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div class="batch-orders">
+                        <h4>📋 推薦訂單清單</h4>
+                        <div class="batch-order-list">
+                            ${batchData.orders.map((order, index) => `
+                                <div class="batch-order-item">
+                                    <span class="order-rank">${index + 1}</span>
+                                    <div class="order-info">
+                                        <strong>#${order.id}</strong> - ${getAreaFromAddress(order.address)}
+                                        <br><small>👤 ${order.customer_name} | 💰 $${order.total}</small>
+                                    </div>
+                                    <div class="order-reason">
+                                        <small>💡 ${order.recommendReason}</small>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="batch-footer">
+                        <button class="btn-secondary" onclick="closeBatchModal()">取消</button>
+                        <button class="btn-primary" onclick="acceptBatchRecommendation()">🎯 接受推薦並開始配送</button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加樣式
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.6); display: flex;
+                align-items: center; justify-content: center; z-index: 10000; padding: 20px;
+            `;
+            
+            document.body.appendChild(modal);
+            window.currentBatchModal = modal;
+            window.currentBatchData = batchData;
+        }
+        
+        function closeBatchModal() {
+            if (window.currentBatchModal) {
+                window.currentBatchModal.remove();
+                delete window.currentBatchModal;
+                delete window.currentBatchData;
+            }
+        }
+        
+        function acceptBatchRecommendation() {
+            if (window.currentBatchData) {
+                showNotification(`🎯 開始批次配送 ${window.currentBatchData.orders.length} 筆訂單`, 'success');
+                // 這裡可以實作批次接取所有推薦訂單的邏輯
+                closeBatchModal();
+            }
         }
 
         // 工具函數

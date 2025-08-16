@@ -316,6 +316,13 @@ body {
     color: var(--text-dark);
 }
 
+/* 頭部操作按鈕 */
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 .refresh-btn {
     background: var(--info-blue);
     color: var(--white);
@@ -324,6 +331,178 @@ body {
     border-radius: var(--radius-small);
     font-size: 0.8rem;
     cursor: pointer;
+}
+
+.batch-select-btn {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: var(--white);
+    border: none;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-small);
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    transition: all 0.3s ease;
+}
+
+.batch-select-btn:hover {
+    background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* 批次推薦彈窗樣式 */
+.batch-modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.batch-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8f5ff, #ffffff);
+}
+
+.batch-header h3 {
+    margin: 0;
+    color: #8e44ad;
+    font-size: 1.3rem;
+}
+
+.batch-summary {
+    padding: 20px 24px;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    text-align: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.batch-efficiency {
+    background: #e8f5e8;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #27ae60;
+}
+
+.batch-efficiency h4 {
+    margin: 0 0 12px 0;
+    color: #27ae60;
+}
+
+.batch-efficiency p {
+    margin: 6px 0;
+    font-size: 0.9rem;
+    color: #2d5a3d;
+}
+
+.batch-orders {
+    padding: 0 24px 20px;
+}
+
+.batch-orders h4 {
+    margin: 0 0 16px 0;
+    color: #2c3e50;
+}
+
+.batch-order-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.batch-order-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #3498db;
+}
+
+.order-rank {
+    background: #3498db;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.order-info {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.order-reason {
+    flex: 1;
+    color: #666;
+}
+
+.batch-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.batch-footer button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.batch-footer .btn-primary {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+}
+
+.batch-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    transform: translateY(-1px);
 }
 
 /* 訂單列表 */
@@ -647,6 +826,137 @@ body {
 
 .order-card {
     animation: fadeIn 0.3s ease;
+}
+
+/* 推薦訂單樣式 */
+.order-card.recommended {
+    border: 2px solid #f39c12;
+    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+    position: relative;
+    animation: recommendedPulse 2s ease-in-out infinite;
+}
+
+@keyframes recommendedPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(243, 156, 18, 0.1); }
+}
+
+.recommend-badge {
+    position: absolute;
+    top: -8px;
+    right: 15px;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    z-index: 10;
+}
+
+.recommend-reason {
+    background: rgba(243, 156, 18, 0.1);
+    color: #d68910;
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-left: 3px solid #f39c12;
+}
+
+.order-card.recommended:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.2);
+}
+
+/* 智能推薦標籤 */
+.smart-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+/* 批次配送樣式 */
+.order-card.batch-leader {
+    border-left: 4px solid #9b59b6;
+    background: linear-gradient(135deg, #f8f5ff 0%, #ffffff 100%);
+}
+
+.batch-badge {
+    position: absolute;
+    top: -8px;
+    left: 15px;
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    z-index: 10;
+}
+
+.order-efficiency {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(52, 152, 219, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid #3498db;
+}
+
+.batch-info, .time-estimate, .efficiency-score {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.batch-info {
+    background: rgba(155, 89, 182, 0.1);
+    color: #8e44ad;
+}
+
+.time-estimate {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+}
+
+.efficiency-score {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+    font-weight: 600;
+}
+
+/* 批次配送動畫 */
+.order-card.batch-leader:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.2);
+}
+
+/* 效率評分顏色 */
+.efficiency-score[data-score="high"] {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+}
+
+.efficiency-score[data-score="medium"] {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+}
+
+.efficiency-score[data-score="low"] {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
 }
 
 /* 通知樣式在JS中定義 */

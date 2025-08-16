@@ -6,7 +6,7 @@
     <title>誠意鮮蔬 - 管理儀表板</title>
     <link rel="stylesheet" href="/css/admin-dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry"></script>
+    <!-- Google Maps API will be loaded at the bottom with proper key -->
 </head>
 <body>
     <!-- 側邊導航欄 -->
@@ -414,6 +414,265 @@
     </main>
 
     <script src="/js/admin-dashboard.js"></script>
+    
+    <!-- Google Maps API -->
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let storeMarker;
+        let driverMarkers = [];
+        
+        // 初始化 Google Maps
+        function initMap() {
+            // 三峽區誠意鮮蔬總店位置
+            const storeLocation = { lat: 24.9348, lng: 121.3722 };
+            
+            map = new google.maps.Map(document.getElementById('delivery-map'), {
+                zoom: 13,
+                center: storeLocation,
+                styles: [
+                    {
+                        "featureType": "poi",
+                        "elementType": "labels",
+                        "stylers": [{"visibility": "off"}]
+                    },
+                    {
+                        "featureType": "road",
+                        "elementType": "labels.icon",
+                        "stylers": [{"visibility": "off"}]
+                    }
+                ]
+            });
+            
+            // 設定路線服務
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                polylineOptions: {
+                    strokeColor: '#2d5a3d',
+                    strokeWeight: 4,
+                    strokeOpacity: 0.8
+                }
+            });
+            directionsRenderer.setMap(map);
+            
+            // 添加總店標記
+            storeMarker = new google.maps.Marker({
+                position: storeLocation,
+                map: map,
+                title: '🍃 誠意鮮蔬總店',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#2d5a3d" stroke="#fff" stroke-width="2"/>
+                            <text x="20" y="28" text-anchor="middle" fill="white" font-size="20">🍃</text>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(40, 40),
+                    anchor: new google.maps.Point(20, 20)
+                }
+            });
+            
+            // 添加店家資訊視窗
+            const storeInfoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 10px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; color: #2d5a3d;">🍃 誠意鮮蔬總店</h3>
+                        <p style="margin: 5px 0;"><strong>📍 地址:</strong> 新北市三峽區中山路123號</p>
+                        <p style="margin: 5px 0;"><strong>📞 電話:</strong> 02-2345-6789</p>
+                        <p style="margin: 5px 0;"><strong>⏰ 營業時間:</strong> 06:00-13:00</p>
+                    </div>
+                `
+            });
+            
+            storeMarker.addListener('click', () => {
+                storeInfoWindow.open(map, storeMarker);
+            });
+            
+            // 載入配送員位置
+            loadDriverLocations();
+            
+            console.log('✅ Google Maps 地圖初始化完成');
+        }
+        
+        // 載入配送員即時位置
+        function loadDriverLocations() {
+            // 模擬配送員位置數據
+            const drivers = [
+                {
+                    id: 1,
+                    name: '李大明',
+                    vehicle: 'ABC-1234',
+                    lat: 24.9450,
+                    lng: 121.3650,
+                    status: '配送中',
+                    orders: 3,
+                    phone: '0912-345-678'
+                },
+                {
+                    id: 2,
+                    name: '王小華',
+                    vehicle: 'DEF-5678', 
+                    lat: 24.9200,
+                    lng: 121.3900,
+                    status: '配送中',
+                    orders: 2,
+                    phone: '0923-456-789'
+                }
+            ];
+            
+            // 清除舊標記
+            driverMarkers.forEach(marker => marker.setMap(null));
+            driverMarkers = [];
+            
+            // 添加配送員標記
+            drivers.forEach(driver => {
+                const driverMarker = new google.maps.Marker({
+                    position: { lat: driver.lat, lng: driver.lng },
+                    map: map,
+                    title: `配送員：${driver.name}`,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg width="35" height="35" viewBox="0 0 35 35" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="17.5" cy="17.5" r="15" fill="#3498db" stroke="#fff" stroke-width="2"/>
+                                <text x="17.5" y="25" text-anchor="middle" fill="white" font-size="16">🚛</text>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(35, 35),
+                        anchor: new google.maps.Point(17.5, 17.5)
+                    }
+                });
+                
+                // 配送員資訊視窗
+                const driverInfoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="padding: 10px; min-width: 200px;">
+                            <h4 style="margin: 0 0 10px 0; color: #3498db;">🚛 ${driver.name}</h4>
+                            <p style="margin: 5px 0;"><strong>🚗 車牌:</strong> ${driver.vehicle}</p>
+                            <p style="margin: 5px 0;"><strong>📱 電話:</strong> ${driver.phone}</p>
+                            <p style="margin: 5px 0;"><strong>📦 配送中:</strong> ${driver.orders} 筆訂單</p>
+                            <p style="margin: 5px 0;"><strong>📍 狀態:</strong> <span style="color: #27ae60;">${driver.status}</span></p>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <button onclick="callDriver('${driver.phone}')" style="background: #27ae60; color: white; border: none; padding: 5px 15px; border-radius: 4px; margin-right: 5px; cursor: pointer;">📞 通話</button>
+                                <button onclick="trackDriver(${driver.id})" style="background: #3498db; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">📍 追蹤</button>
+                            </div>
+                        </div>
+                    `
+                });
+                
+                driverMarker.addListener('click', () => {
+                    driverInfoWindow.open(map, driverMarker);
+                });
+                
+                driverMarkers.push(driverMarker);
+            });
+        }
+        
+        // 地圖控制功能
+        function centerMap() {
+            map.setCenter({ lat: 24.9348, lng: 121.3722 });
+            map.setZoom(13);
+            showNotification('🎯 地圖視角已重置', 'info');
+        }
+        
+        let trafficLayer = null;
+        function toggleTraffic() {
+            if (trafficLayer) {
+                trafficLayer.setMap(null);
+                trafficLayer = null;
+                showNotification('🚦 交通狀況已隱藏', 'info');
+            } else {
+                trafficLayer = new google.maps.TrafficLayer();
+                trafficLayer.setMap(map);
+                showNotification('🚦 交通狀況已顯示', 'success');
+            }
+        }
+        
+        function toggleRoutes() {
+            // 示範路線規劃
+            const start = { lat: 24.9348, lng: 121.3722 }; // 總店
+            const end = { lat: 24.9450, lng: 121.3650 }; // 配送點
+            
+            directionsService.route({
+                origin: start,
+                destination: end,
+                travelMode: google.maps.TravelMode.DRIVING,
+                avoidTolls: true
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                    showNotification('🛣️ 配送路線已顯示', 'success');
+                } else {
+                    showNotification('❌ 路線規劃失敗', 'error');
+                }
+            });
+        }
+        
+        // 配送員功能
+        function callDriver(phone) {
+            window.open(`tel:${phone}`);
+        }
+        
+        function trackDriver(driverId) {
+            showNotification(`📍 正在追蹤外送員 #${driverId}`, 'info');
+            // 這裡可以加入更詳細的追蹤功能
+        }
+        
+        // 通知系統
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-icon">
+                        ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
+                    </span>
+                    <span class="notification-message">${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 350px;
+                font-size: 14px;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 每30秒更新配送員位置
+        setInterval(loadDriverLocations, 30000);
+    </script>
+    
+    <!-- 載入 Google Maps API -->
+    <script async defer 
+            src="https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&libraries=geometry&callback=initMap">
+    </script>
+    
     <script>
         // 初始化頁面
         document.addEventListener('DOMContentLoaded', function() {

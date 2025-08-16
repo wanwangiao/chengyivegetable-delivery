@@ -293,61 +293,220 @@ app.get('/driver/logout', (req, res) => {
 });
 
 // 🚛 外送員API - 可接訂單
-app.get('/api/driver/available-orders', (req, res) => {
-  // 模擬可接訂單數據
-  const orders = [
-    {
-      id: 1234,
-      customer_name: '王小明',
-      customer_phone: '0912-345-678',
-      address: '新北市三峽區中山路123號',
-      total: 185,
-      delivery_fee: 0,
-      packed_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      items: [
-        { product_name: '高麗菜', quantity: 2, price: 45 },
-        { product_name: '葡萄', quantity: 1, price: 95 }
-      ]
-    },
-    {
-      id: 1235,
-      customer_name: '李小華',
-      customer_phone: '0923-456-789',
-      address: '新北市北大特區學成路456號',
-      total: 230,
-      delivery_fee: 0,
-      packed_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      items: [
-        { product_name: '番茄', quantity: 3, price: 60 },
-        { product_name: '胡蘿蔔', quantity: 2, price: 35 }
-      ]
+app.get('/api/driver/available-orders', async (req, res) => {
+  try {
+    let orders = [];
+    
+    if (!demoMode && pool) {
+      // 從資料庫獲取已包裝但未接取的訂單
+      const query = `
+        SELECT o.*, 
+               c.name as customer_name, 
+               c.phone as customer_phone,
+               c.address,
+               COALESCE(o.delivery_fee, 0) as delivery_fee
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.id
+        WHERE o.status = 'packed' 
+          AND o.driver_id IS NULL
+        ORDER BY o.created_at ASC
+      `;
+      
+      const result = await pool.query(query);
+      orders = result.rows;
+      
+      // 為每個訂單獲取商品詳情
+      for (let order of orders) {
+        const itemsQuery = `
+          SELECT oi.*, p.name as product_name
+          FROM order_items oi
+          JOIN products p ON oi.product_id = p.id
+          WHERE oi.order_id = $1
+        `;
+        const itemsResult = await pool.query(itemsQuery, [order.id]);
+        order.items = itemsResult.rows;
+        order.total = parseFloat(order.total_amount || 0);
+        order.packed_at = order.packed_at || order.updated_at;
+      }
+    } else {
+      // Demo模式的範例數據
+      orders = [
+        {
+          id: 1234,
+          customer_name: '王小明',
+          customer_phone: '0912-345-678',
+          address: '新北市三峽區中山路123號',
+          total: 185,
+          delivery_fee: 0,
+          packed_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          items: [
+            { product_name: '高麗菜', quantity: 2, price: 45 },
+            { product_name: '葡萄', quantity: 1, price: 95 }
+          ]
+        },
+        {
+          id: 1235,
+          customer_name: '李小華',
+          customer_phone: '0923-456-789',
+          address: '新北市北大特區學成路456號',
+          total: 230,
+          delivery_fee: 0,
+          packed_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          items: [
+            { product_name: '番茄', quantity: 3, price: 60 },
+            { product_name: '胡蘿蔔', quantity: 2, price: 35 }
+          ]
+        }
+      ];
     }
-  ];
-  
-  res.json({ success: true, orders });
+    
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error('獲取可接訂單失敗:', error);
+    res.status(500).json({ success: false, message: '獲取訂單失敗' });
+  }
 });
 
 // 🚛 外送員API - 我的配送
-app.get('/api/driver/my-orders', (req, res) => {
-  // 模擬配送中訂單
-  const orders = [];
-  res.json({ success: true, orders });
+app.get('/api/driver/my-orders', async (req, res) => {
+  try {
+    const driverId = req.session.driverId;
+    if (!driverId) {
+      return res.status(401).json({ success: false, message: '請先登入' });
+    }
+    
+    let orders = [];
+    
+    if (!demoMode && pool) {
+      // 從資料庫獲取該外送員正在配送的訂單
+      const query = `
+        SELECT o.*, 
+               c.name as customer_name, 
+               c.phone as customer_phone,
+               c.address,
+               COALESCE(o.delivery_fee, 0) as delivery_fee,
+               o.taken_at
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.id
+        WHERE o.driver_id = $1 
+          AND o.status = 'delivering'
+        ORDER BY o.taken_at ASC
+      `;
+      
+      const result = await pool.query(query, [driverId]);
+      orders = result.rows;
+      
+      // 為每個訂單獲取商品詳情
+      for (let order of orders) {
+        const itemsQuery = `
+          SELECT oi.*, p.name as product_name
+          FROM order_items oi
+          JOIN products p ON oi.product_id = p.id
+          WHERE oi.order_id = $1
+        `;
+        const itemsResult = await pool.query(itemsQuery, [order.id]);
+        order.items = itemsResult.rows;
+        order.total = parseFloat(order.total_amount || 0);
+      }
+    }
+    
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error('獲取我的配送訂單失敗:', error);
+    res.status(500).json({ success: false, message: '獲取訂單失敗' });
+  }
 });
 
 // 🚛 外送員API - 已完成訂單
-app.get('/api/driver/completed-orders', (req, res) => {
-  // 模擬已完成訂單
-  const orders = [];
-  res.json({ success: true, orders });
+app.get('/api/driver/completed-orders', async (req, res) => {
+  try {
+    const driverId = req.session.driverId;
+    if (!driverId) {
+      return res.status(401).json({ success: false, message: '請先登入' });
+    }
+    
+    let orders = [];
+    
+    if (!demoMode && pool) {
+      // 從資料庫獲取該外送員今日已完成的訂單
+      const query = `
+        SELECT o.*, 
+               c.name as customer_name, 
+               c.phone as customer_phone,
+               c.address,
+               COALESCE(o.delivery_fee, 50) as delivery_fee,
+               o.completed_at
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.id
+        WHERE o.driver_id = $1 
+          AND o.status = 'delivered'
+          AND DATE(o.completed_at) = CURRENT_DATE
+        ORDER BY o.completed_at DESC
+      `;
+      
+      const result = await pool.query(query, [driverId]);
+      orders = result.rows;
+      
+      // 為每個訂單獲取商品詳情
+      for (let order of orders) {
+        const itemsQuery = `
+          SELECT oi.*, p.name as product_name
+          FROM order_items oi
+          JOIN products p ON oi.product_id = p.id
+          WHERE oi.order_id = $1
+        `;
+        const itemsResult = await pool.query(itemsQuery, [order.id]);
+        order.items = itemsResult.rows;
+        order.total = parseFloat(order.total_amount || 0);
+      }
+    }
+    
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error('獲取已完成訂單失敗:', error);
+    res.status(500).json({ success: false, message: '獲取訂單失敗' });
+  }
 });
 
 // 🚛 外送員API - 統計數據
-app.get('/api/driver/stats', (req, res) => {
-  res.json({
-    success: true,
-    todayEarnings: 0,
-    todayCompleted: 0
-  });
+app.get('/api/driver/stats', async (req, res) => {
+  try {
+    const driverId = req.session.driverId;
+    if (!driverId) {
+      return res.status(401).json({ success: false, message: '請先登入' });
+    }
+    
+    let todayEarnings = 0;
+    let todayCompleted = 0;
+    
+    if (!demoMode && pool) {
+      // 計算今日收入和完成訂單數
+      const statsQuery = `
+        SELECT 
+          COUNT(*) as completed_count,
+          COALESCE(SUM(delivery_fee), 0) as total_earnings
+        FROM orders 
+        WHERE driver_id = $1 
+          AND status = 'delivered'
+          AND DATE(completed_at) = CURRENT_DATE
+      `;
+      
+      const result = await pool.query(statsQuery, [driverId]);
+      if (result.rows.length > 0) {
+        todayCompleted = parseInt(result.rows[0].completed_count || 0);
+        todayEarnings = parseFloat(result.rows[0].total_earnings || 0);
+      }
+    }
+    
+    res.json({
+      success: true,
+      todayEarnings: todayEarnings,
+      todayCompleted: todayCompleted
+    });
+  } catch (error) {
+    console.error('獲取統計數據失敗:', error);
+    res.status(500).json({ success: false, message: '獲取統計失敗' });
+  }
 });
 
 // 🚛 外送員API - 訂單詳情
@@ -375,7 +534,7 @@ app.get('/api/driver/order/:id', (req, res) => {
 });
 
 // 🚛 外送員API - 接取訂單
-app.post('/api/driver/take-order/:id', (req, res) => {
+app.post('/api/driver/take-order/:id', async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
   
@@ -383,14 +542,48 @@ app.post('/api/driver/take-order/:id', (req, res) => {
     return res.status(401).json({ success: false, message: '請先登入' });
   }
   
-  // 這裡應該更新資料庫，將訂單標記為已接取
-  console.log(`外送員 ${driverId} 接取了訂單 ${orderId}`);
-  
-  res.json({ success: true, message: '訂單接取成功' });
+  try {
+    if (!demoMode && pool) {
+      // 檢查訂單是否還可以接取
+      const checkQuery = `
+        SELECT id, status, driver_id 
+        FROM orders 
+        WHERE id = $1 AND status = 'packed' AND driver_id IS NULL
+      `;
+      const checkResult = await pool.query(checkQuery, [orderId]);
+      
+      if (checkResult.rows.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '此訂單已被其他外送員接取或狀態已變更' 
+        });
+      }
+      
+      // 更新訂單狀態為配送中，並指派給外送員
+      const updateQuery = `
+        UPDATE orders 
+        SET status = 'delivering', 
+            driver_id = $1, 
+            taken_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+      `;
+      await pool.query(updateQuery, [driverId, orderId]);
+      
+      console.log(`✅ 外送員 ${driverId} 成功接取訂單 ${orderId}`);
+    } else {
+      console.log(`📝 Demo模式: 外送員 ${driverId} 接取了訂單 ${orderId}`);
+    }
+    
+    res.json({ success: true, message: '訂單接取成功' });
+  } catch (error) {
+    console.error('接取訂單失敗:', error);
+    res.status(500).json({ success: false, message: '接取訂單失敗，請重試' });
+  }
 });
 
 // 🚛 外送員API - 完成配送
-app.post('/api/driver/complete-order/:id', (req, res) => {
+app.post('/api/driver/complete-order/:id', async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
   
@@ -398,10 +591,46 @@ app.post('/api/driver/complete-order/:id', (req, res) => {
     return res.status(401).json({ success: false, message: '請先登入' });
   }
   
-  // 這裡應該更新資料庫，將訂單標記為已完成
-  console.log(`外送員 ${driverId} 完成了訂單 ${orderId}`);
-  
-  res.json({ success: true, message: '配送完成' });
+  try {
+    if (!demoMode && pool) {
+      // 檢查訂單是否屬於該外送員且正在配送中
+      const checkQuery = `
+        SELECT id, status, driver_id, customer_id
+        FROM orders 
+        WHERE id = $1 AND driver_id = $2 AND status = 'delivering'
+      `;
+      const checkResult = await pool.query(checkQuery, [orderId, driverId]);
+      
+      if (checkResult.rows.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '此訂單不存在或不屬於您，或狀態已變更' 
+        });
+      }
+      
+      // 更新訂單狀態為已完成
+      const updateQuery = `
+        UPDATE orders 
+        SET status = 'delivered', 
+            completed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+      `;
+      await pool.query(updateQuery, [orderId]);
+      
+      // TODO: 這裡可以發送LINE通知給客戶
+      const customerId = checkResult.rows[0].customer_id;
+      console.log(`✅ 外送員 ${driverId} 完成訂單 ${orderId}，應發送通知給客戶 ${customerId}`);
+      
+    } else {
+      console.log(`📝 Demo模式: 外送員 ${driverId} 完成了訂單 ${orderId}`);
+    }
+    
+    res.json({ success: true, message: '配送完成' });
+  } catch (error) {
+    console.error('完成配送失敗:', error);
+    res.status(500).json({ success: false, message: '完成配送失敗，請重試' });
+  }
 });
 
 // 🚀 管理後台路由
