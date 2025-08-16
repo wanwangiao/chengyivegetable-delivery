@@ -857,7 +857,7 @@ app.get('/admin/login', (req, res) => {
 });
 
 // 處理登入
-app.post('/admin/login', loginLimiter, validateAdminPassword, (req, res) => {
+app.post('/admin/login', validateAdminPassword, (req, res) => {
   const { password } = req.body;
   const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
   
