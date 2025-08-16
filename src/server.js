@@ -676,7 +676,8 @@ app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
       user: {
         name: '黃士嘉',
         role: '系統管理員'
-      }
+      },
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
     });
   } catch (error) {
     console.error('❌ 管理後台載入錯誤:', error);
