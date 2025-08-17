@@ -852,6 +852,15 @@ app.get('/order-success', async (req, res) => {
   }
 });
 
+// 管理後台根路徑重定向
+app.get('/admin', (req, res) => {
+  if (req.session && req.session.isAdmin) {
+    res.redirect('/admin/dashboard');
+  } else {
+    res.redirect('/admin/login');
+  }
+});
+
 // 登入頁
 app.get('/admin/login', (req, res) => {
   res.render('admin_login', { error: null });
