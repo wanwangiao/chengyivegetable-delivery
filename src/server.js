@@ -30,10 +30,34 @@ let demoMode = false;
 async function createDatabasePool() {
   console.log('🔧 開始嘗試資料庫連線...');
   
-  // 方法1: 嘗試使用 IPv4 強制解析
-  console.log('方法1: 嘗試強制 IPv4 連線...');
+  // 方法1: 優先使用環境變數的 DATABASE_URL
+  if (process.env.DATABASE_URL) {
+    console.log('方法1: 使用環境變數 DATABASE_URL...');
+    try {
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { 
+          rejectUnauthorized: false 
+        },
+        connectionTimeoutMillis: 30000,
+        idleTimeoutMillis: 30000,
+        max: 5
+      });
+      
+      // 測試連線
+      const testResult = await pool.query('SELECT NOW() as current_time');
+      console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
+      demoMode = false;
+      return pool;
+      
+    } catch (error1) {
+      console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
+    }
+  }
+  
+  // 方法2: 嘗試使用直接配置
+  console.log('方法2: 嘗試直接配置連線...');
   try {
-    // 設置更多的 IPv4 強制選項
     const connectionConfig = {
       host: 'db.siwnqjavjljhicekloss.supabase.co',
       port: 5432,
@@ -41,51 +65,49 @@ async function createDatabasePool() {
       user: 'postgres', 
       password: '@Chengyivegetable',
       ssl: { 
-        rejectUnauthorized: false,
-        sslmode: 'require'
+        rejectUnauthorized: false
       },
-      connectionTimeoutMillis: 15000,
-      idleTimeoutMillis: 5000,
-      max: 3,
-      // 強制 IPv4
-      family: 4,
-      // 額外的網路設定
-      keepAlive: true,
-      keepAliveInitialDelayMillis: 0
+      connectionTimeoutMillis: 30000,
+      idleTimeoutMillis: 30000,
+      max: 5
     };
     
     pool = new Pool(connectionConfig);
     
     // 測試連線
-    const testResult = await pool.query('SELECT 1 as test');
-    console.log('✅ 資料庫連線成功 (IPv4強制連線)', testResult.rows[0]);
+    const testResult = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ 資料庫連線成功 (直接配置)', testResult.rows[0]);
     demoMode = false;
     return pool;
     
-  } catch (error1) {
-    console.log('❌ IPv4強制連線失敗:', error1.code, error1.message);
+  } catch (error2) {
+    console.log('❌ 直接配置連線失敗:', error2.code, error2.message);
     
-    // 方法2: 嘗試連線字串方式
-    console.log('方法2: 嘗試連線字串...');
+    // 方法3: 使用備用連線字串
+    console.log('方法3: 嘗試備用連線字串...');
     try {
       const connectionString = 'postgresql://postgres:%40Chengyivegetable@db.siwnqjavjljhicekloss.supabase.co:5432/postgres?sslmode=require';
       
       pool = new Pool({
         connectionString,
         ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 15000,
-        family: 4
+        connectionTimeoutMillis: 30000,
+        idleTimeoutMillis: 30000,
+        max: 5
       });
       
-      await pool.query('SELECT 1');
-      console.log('✅ 資料庫連線成功 (連線字串)');
+      await pool.query('SELECT NOW()');
+      console.log('✅ 資料庫連線成功 (備用連線字串)');
       demoMode = false;
       return pool;
       
-    } catch (error2) {
-      console.log('❌ 連線字串也失敗:', error2.code, error2.message);
+    } catch (error3) {
+      console.log('❌ 所有連線方法都失敗了');
+      console.log('❌ 錯誤1:', error1?.message);
+      console.log('❌ 錯誤2:', error2?.message);
+      console.log('❌ 錯誤3:', error3?.message);
       
-      // 方法3: 啟用示範模式
+      // 方法4: 最後選擇 - 啟用示範模式
       console.log('🔄 啟用示範模式 - 使用本機示範資料');
       demoMode = true;
       
@@ -1532,12 +1554,26 @@ app.get('/api/business-hours', (req, res) => {
 
 // 🚀 API：部署資料庫更新（執行商品新增和選項建立）
 app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
+  // 如果在示範模式，先嘗試重新連接資料庫
   if (demoMode) {
-    return res.json({ 
-      success: false, 
-      message: '示範模式下無法執行資料庫更新',
-      demo: true 
-    });
+    console.log('🔄 示範模式檢測到，嘗試重新連接資料庫...');
+    try {
+      await createDatabasePool();
+      if (demoMode) {
+        return res.json({ 
+          success: false, 
+          message: '資料庫連線失敗，無法執行更新。請檢查網路連線和資料庫設定。',
+          demo: true,
+          suggestion: '請稍後再試，或聯繫管理員檢查 Supabase 資料庫狀態。'
+        });
+      }
+    } catch (error) {
+      return res.json({ 
+        success: false, 
+        message: '資料庫重新連線失敗: ' + error.message,
+        demo: true 
+      });
+    }
   }
 
   try {
@@ -1755,6 +1791,47 @@ app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '部署失敗: ' + error.message
+    });
+  }
+});
+
+// 🔧 API：手動重新連接資料庫
+app.post('/api/admin/reconnect-database', ensureAdmin, async (req, res) => {
+  try {
+    console.log('🔄 管理員請求重新連接資料庫...');
+    
+    // 關閉現有連線
+    if (pool && typeof pool.end === 'function') {
+      await pool.end();
+    }
+    
+    // 重新建立連線
+    await createDatabasePool();
+    
+    if (demoMode) {
+      res.json({
+        success: false,
+        message: '資料庫連線失敗，仍在示範模式',
+        demoMode: true
+      });
+    } else {
+      // 測試連線
+      const testResult = await pool.query('SELECT NOW() as current_time, version() as db_version');
+      res.json({
+        success: true,
+        message: '資料庫重新連線成功',
+        demoMode: false,
+        connectionTime: testResult.rows[0].current_time,
+        databaseVersion: testResult.rows[0].db_version.substring(0, 50) + '...'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ 重新連線失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '重新連線失敗: ' + error.message,
+      demoMode: demoMode
     });
   }
 });
