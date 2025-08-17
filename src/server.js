@@ -65,15 +65,15 @@ async function createDatabasePool() {
   console.log('方法2: 嘗試直接配置連線...');
   try {
     const connectionConfig = {
-      host: 'db.siwnqjavjljhicekloss.supabase.co',
+      host: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co',
       port: 5432,
       database: 'postgres',
       user: 'postgres', 
-      password: '@Chengyivegetable',
+      password: 'Chengyivegetable2025!',
       ssl: { 
         rejectUnauthorized: false
       },
-      connectionTimeoutMillis: 30000,
+      connectionTimeoutMillis: 60000,
       idleTimeoutMillis: 30000,
       max: 5
     };
@@ -93,7 +93,7 @@ async function createDatabasePool() {
     // 方法3: 使用備用連線字串
     console.log('方法3: 嘗試備用連線字串...');
     try {
-      const connectionString = 'postgresql://postgres:%40Chengyivegetable@db.siwnqjavjljhicekloss.supabase.co:5432/postgres?sslmode=require';
+      const connectionString = 'postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require';
       
       pool = new Pool({
         connectionString,
