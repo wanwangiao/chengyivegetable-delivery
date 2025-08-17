@@ -1125,22 +1125,365 @@ app.get('/admin/products/new', ensureAdmin, (req, res) => {
 
 // 後台：新增產品
 app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
-  const { name, price, isPricedItem, unitHint } = req.body;
+  const { name, price, isPricedItem, unitHint, initialStock, minStockAlert, supplierName } = req.body;
+  
+  if (demoMode) {
+    console.log('📝 示範模式：模擬新增商品', { name, price });
+    return res.redirect('/admin/products');
+  }
+  
   try {
     if (!name) {
       return res.render('admin_product_new', { error: '品名必填' });
     }
+    
     const priceVal = price === '' || price === null ? null : parseFloat(price);
     const priced = isPricedItem === 'on' || isPricedItem === 'true';
-    await pool.query(
-      'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1,$2,$3,$4)',
-      [name, priceVal, priced, unitHint || null]
-    );
-    res.redirect('/admin/products');
+    
+    // 開始交易
+    await pool.query('BEGIN');
+    
+    try {
+      // 新增商品
+      const productResult = await pool.query(
+        'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1,$2,$3,$4) RETURNING id',
+        [name, priceVal, priced, unitHint || null]
+      );
+      
+      const productId = productResult.rows[0].id;
+      
+      // 自動創建庫存記錄
+      const stockVal = parseInt(initialStock) || 0;
+      const minAlertVal = parseInt(minStockAlert) || 10;
+      const unitCostVal = priceVal ? parseFloat(priceVal) * 0.7 : 0; // 假設成本是售價的70%
+      
+      await pool.query(
+        'INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, unit_cost, supplier_name) VALUES ($1,$2,$3,$4,$5,$6)',
+        [productId, stockVal, minAlertVal, 1000, unitCostVal, supplierName || null]
+      );
+      
+      // 記錄初始庫存
+      if (stockVal > 0) {
+        await pool.query(
+          'INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name) VALUES ($1,$2,$3,$4,$5,$6)',
+          [productId, 'in', stockVal, unitCostVal, '新商品初始庫存', '管理員']
+        );
+      }
+      
+      // 提交交易
+      await pool.query('COMMIT');
+      console.log(`✅ 成功新增商品：${name}，初始庫存：${stockVal}`);
+      
+      res.redirect('/admin/products');
+    } catch (error) {
+      // 回滾交易
+      await pool.query('ROLLBACK');
+      throw error;
+    }
   } catch (err) {
+    console.error('新增商品錯誤:', err);
+    res.render('admin_product_new', { 
+      error: '新增商品失敗：' + err.message,
+      formData: req.body 
+    });
+  }
+});
+
+// 📋 後台：庫存管理頁面
+app.get('/admin/inventory', ensureAdmin, async (req, res, next) => {
+  try {
+    let inventoryData = [];
+    
+    if (!demoMode && pool) {
+      // 從資料庫獲取庫存資料
+      const query = `
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.unit_hint,
+          COALESCE(i.current_stock, 0) as current_stock,
+          COALESCE(i.min_stock_alert, 10) as min_stock_alert,
+          COALESCE(i.max_stock_capacity, 1000) as max_stock_capacity,
+          COALESCE(i.unit_cost, 0) as unit_cost,
+          i.supplier_name,
+          i.last_updated
+        FROM products p
+        LEFT JOIN inventory i ON p.id = i.product_id
+        ORDER BY p.name
+      `;
+      const result = await pool.query(query);
+      inventoryData = result.rows;
+    } else {
+      // Demo模式數據
+      inventoryData = [
+        { id: 1, name: '🥬 有機高麗菜', current_stock: 45, min_stock_alert: 10, unit_cost: 25.00, supplier_name: '新鮮農場' },
+        { id: 2, name: '🍅 新鮮番茄', current_stock: 8, min_stock_alert: 15, unit_cost: 18.00, supplier_name: '陽光果園' },
+        { id: 3, name: '🥬 青江菜', current_stock: 23, min_stock_alert: 10, unit_cost: 12.00, supplier_name: '綠野農場' }
+      ];
+    }
+    
+    res.render('admin_inventory', { 
+      inventoryData,
+      title: '庫存管理',
+      lowStockCount: inventoryData.filter(item => item.current_stock <= item.min_stock_alert).length
+    });
+  } catch (err) {
+    console.error('庫存管理頁面錯誤:', err);
     next(err);
   }
 });
+
+// 📋 API：更新庫存
+app.post('/api/admin/inventory/update', ensureAdmin, async (req, res) => {
+  try {
+    const { productId, currentStock, minStockAlert, maxStockCapacity, unitCost, supplierName } = req.body;
+    
+    if (!demoMode && pool) {
+      // 檢查是否已有庫存記錄
+      const existingQuery = 'SELECT id FROM inventory WHERE product_id = $1';
+      const existingResult = await pool.query(existingQuery, [productId]);
+      
+      if (existingResult.rows.length > 0) {
+        // 更新現有記錄
+        await pool.query(`
+          UPDATE inventory 
+          SET current_stock = $1, min_stock_alert = $2, max_stock_capacity = $3, 
+              unit_cost = $4, supplier_name = $5, last_updated = CURRENT_TIMESTAMP
+          WHERE product_id = $6
+        `, [currentStock, minStockAlert, maxStockCapacity, unitCost, supplierName, productId]);
+      } else {
+        // 新增庫存記錄
+        await pool.query(`
+          INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, unit_cost, supplier_name)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [productId, currentStock, minStockAlert, maxStockCapacity, unitCost, supplierName]);
+      }
+      
+      // 記錄庫存異動
+      await pool.query(`
+        INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name)
+        VALUES ($1, 'adjustment', $2, $3, '庫存調整', '管理員')
+      `, [productId, currentStock, unitCost]);
+    }
+    
+    res.json({ success: true, message: '庫存更新成功' });
+  } catch (err) {
+    console.error('更新庫存錯誤:', err);
+    res.status(500).json({ success: false, message: '更新失敗' });
+  }
+});
+
+// 📋 API：進貨操作
+app.post('/api/admin/inventory/restock', ensureAdmin, async (req, res) => {
+  try {
+    const { productId, quantity, unitCost, supplierName, reason } = req.body;
+    
+    if (!demoMode && pool) {
+      // 更新庫存數量
+      await pool.query(`
+        UPDATE inventory 
+        SET current_stock = current_stock + $1, unit_cost = $2, supplier_name = $3, last_updated = CURRENT_TIMESTAMP
+        WHERE product_id = $4
+      `, [quantity, unitCost, supplierName, productId]);
+      
+      // 記錄進貨
+      await pool.query(`
+        INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name)
+        VALUES ($1, 'in', $2, $3, $4, '管理員')
+      `, [productId, quantity, unitCost, reason || '進貨補充']);
+    }
+    
+    res.json({ success: true, message: '進貨記錄成功' });
+  } catch (err) {
+    console.error('進貨操作錯誤:', err);
+    res.status(500).json({ success: false, message: '進貨失敗' });
+  }
+});
+
+// 📈 後台：統計報表頁面
+app.get('/admin/reports', ensureAdmin, async (req, res, next) => {
+  try {
+    // 準備報表數據
+    const reportData = {
+      revenue: {
+        total: 287650,
+        growth: 8.3,
+        orders: 1247,
+        avgOrderValue: 231
+      },
+      products: [],
+      customers: {
+        total: 1456,
+        returnRate: 68,
+        newCustomers: 234
+      },
+      delivery: {
+        avgTime: 42,
+        onTimeRate: 94.2,
+        cost: 12450
+      }
+    };
+    
+    if (!demoMode && pool) {
+      try {
+        // 從資料庫獲取真實統計數據
+        const revenueQuery = await pool.query(`
+          SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as orders,
+            SUM(total_amount) as revenue
+          FROM orders 
+          WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+          GROUP BY DATE(created_at)
+          ORDER BY date
+        `);
+        
+        const productQuery = await pool.query(`
+          SELECT 
+            p.name,
+            COUNT(oi.id) as sales_count,
+            SUM(oi.line_total) as sales_revenue
+          FROM products p
+          LEFT JOIN order_items oi ON p.id = oi.product_id
+          LEFT JOIN orders o ON oi.order_id = o.id
+          WHERE o.created_at >= CURRENT_DATE - INTERVAL '30 days'
+          GROUP BY p.id, p.name
+          ORDER BY sales_revenue DESC
+          LIMIT 10
+        `);
+        
+        reportData.revenueData = revenueQuery.rows;
+        reportData.productData = productQuery.rows;
+      } catch (dbError) {
+        console.warn('⚠️ 無法從資料庫獲取報表數據，使用demo數據:', dbError.message);
+      }
+    }
+    
+    res.render('admin_reports', { 
+      title: '統計報表分析',
+      reportData: reportData
+    });
+  } catch (err) {
+    console.error('❌ 統計報表頁面錯誤:', err);
+    next(err);
+  }
+});
+
+// 📈 API：獲取報表數據
+app.get('/api/admin/reports/:type', ensureAdmin, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { timeRange = '30', startDate, endDate } = req.query;
+    
+    let data = {};
+    
+    if (!demoMode && pool) {
+      const days = parseInt(timeRange);
+      const whereClause = startDate && endDate 
+        ? `created_at BETWEEN '${startDate}' AND '${endDate}'`
+        : `created_at >= CURRENT_DATE - INTERVAL '${days} days'`;
+      
+      switch (type) {
+        case 'revenue':
+          const revenueResult = await pool.query(`
+            SELECT 
+              DATE(created_at) as date,
+              COUNT(*) as orders,
+              SUM(total_amount) as revenue,
+              AVG(total_amount) as avg_order_value
+            FROM orders 
+            WHERE ${whereClause}
+            GROUP BY DATE(created_at)
+            ORDER BY date
+          `);
+          data = revenueResult.rows;
+          break;
+          
+        case 'products':
+          const productsResult = await pool.query(`
+            SELECT 
+              p.name,
+              COUNT(oi.id) as sales_count,
+              SUM(oi.line_total) as sales_revenue,
+              AVG(oi.line_total) as avg_price
+            FROM products p
+            LEFT JOIN order_items oi ON p.id = oi.product_id
+            LEFT JOIN orders o ON oi.order_id = o.id
+            WHERE o.${whereClause}
+            GROUP BY p.id, p.name
+            ORDER BY sales_revenue DESC
+          `);
+          data = productsResult.rows;
+          break;
+          
+        case 'customers':
+          const customersResult = await pool.query(`
+            SELECT 
+              contact_name,
+              contact_phone,
+              COUNT(*) as order_count,
+              SUM(total_amount) as total_spent,
+              MAX(created_at) as last_order
+            FROM orders 
+            WHERE ${whereClause}
+            GROUP BY contact_name, contact_phone
+            ORDER BY total_spent DESC
+          `);
+          data = customersResult.rows;
+          break;
+          
+        default:
+          // Demo數據
+          data = generateDemoData(type, days);
+      }
+    } else {
+      // Demo模式
+      data = generateDemoData(type, parseInt(timeRange));
+    }
+    
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('報表數據API錯誤:', err);
+    res.status(500).json({ success: false, message: '獲取報表數據失敗' });
+  }
+});
+
+// 生成示範數據
+function generateDemoData(type, days) {
+  const data = [];
+  const today = new Date();
+  
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    
+    switch (type) {
+      case 'revenue':
+        data.push({
+          date: date.toISOString().split('T')[0],
+          orders: Math.floor(Math.random() * 50) + 20,
+          revenue: Math.floor(Math.random() * 15000) + 5000,
+          avg_order_value: Math.floor(Math.random() * 100) + 180
+        });
+        break;
+        
+      case 'products':
+        const products = ['🥬 高麗菜', '🍇 葡萄', '🥬 大白菜', '🍅 番茄', '🥕 胡蘿蔔'];
+        products.forEach((name, index) => {
+          data.push({
+            name,
+            sales_count: Math.floor(Math.random() * 200) + 100,
+            sales_revenue: Math.floor(Math.random() * 20000) + 10000,
+            avg_price: Math.floor(Math.random() * 50) + 20
+          });
+        });
+        break;
+    }
+  }
+  
+  return data;
+}
 
 // 🕰️ 後台：營業時間管理頁面
 app.get('/admin/business-hours', ensureAdmin, (req, res) => {
