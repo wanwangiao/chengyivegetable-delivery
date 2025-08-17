@@ -32,18 +32,47 @@ async function createDatabasePool() {
   
   const errors = [];
   
-  // 方法1: 優先使用環境變數的 DATABASE_URL
+  // 方法1: 直接使用IPv4配置（避免IPv6問題）
+  console.log('方法1: 使用IPv4直接配置...');
+  try {
+    pool = new Pool({
+      host: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co',
+      port: 5432,
+      database: 'postgres',
+      user: 'postgres',
+      password: 'Chengyivegetable2025!',
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 60000,
+      idleTimeoutMillis: 30000,
+      max: 5,
+      // 強制IPv4
+      family: 4
+    });
+    
+    const testResult = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ 資料庫連線成功 (IPv4直接配置)', testResult.rows[0]);
+    demoMode = false;
+    return pool;
+    
+  } catch (error1) {
+    console.log('❌ IPv4直接配置失敗:', error1.code, error1.message);
+    errors.push({ method: 'IPv4直接配置', error: error1.message });
+  }
+  
+  // 方法2: 使用環境變數 DATABASE_URL（備用）
   if (process.env.DATABASE_URL) {
-    console.log('方法1: 使用環境變數 DATABASE_URL...');
+    console.log('方法2: 使用環境變數 DATABASE_URL...');
     try {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { 
           rejectUnauthorized: false 
         },
-        connectionTimeoutMillis: 30000,
+        connectionTimeoutMillis: 60000,
         idleTimeoutMillis: 30000,
-        max: 5
+        max: 5,
+        // 強制IPv4
+        family: 4
       });
       
       // 測試連線
@@ -52,88 +81,35 @@ async function createDatabasePool() {
       demoMode = false;
       return pool;
       
-    } catch (error1) {
-      console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
-      errors.push({ method: '環境變數', error: error1.message });
+    } catch (error2) {
+      console.log('❌ 環境變數連線失敗:', error2.code, error2.message);
+      errors.push({ method: '環境變數', error: error2.message });
     }
   } else {
     console.log('⏭️ 未設置 DATABASE_URL 環境變數');
     errors.push({ method: '環境變數', error: '未設置 DATABASE_URL' });
   }
   
-  // 方法2: 嘗試使用直接配置
-  console.log('方法2: 嘗試直接配置連線...');
-  try {
-    const connectionConfig = {
-      host: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co',
-      port: 5432,
-      database: 'postgres',
-      user: 'postgres', 
-      password: 'Chengyivegetable2025!',
-      ssl: { 
-        rejectUnauthorized: false
-      },
-      connectionTimeoutMillis: 60000,
-      idleTimeoutMillis: 30000,
-      max: 5
-    };
-    
-    pool = new Pool(connectionConfig);
-    
-    // 測試連線
-    const testResult = await pool.query('SELECT NOW() as current_time');
-    console.log('✅ 資料庫連線成功 (直接配置)', testResult.rows[0]);
-    demoMode = false;
-    return pool;
-    
-  } catch (error2) {
-    console.log('❌ 直接配置連線失敗:', error2.code, error2.message);
-    errors.push({ method: '直接配置', error: error2.message });
-    
-    // 方法3: 使用備用連線字串
-    console.log('方法3: 嘗試備用連線字串...');
-    try {
-      const connectionString = 'postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require';
-      
-      pool = new Pool({
-        connectionString,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 30000,
-        idleTimeoutMillis: 30000,
-        max: 5
-      });
-      
-      await pool.query('SELECT NOW()');
-      console.log('✅ 資料庫連線成功 (備用連線字串)');
-      demoMode = false;
-      return pool;
-      
-    } catch (error3) {
-      console.log('❌ 備用連線字串失敗:', error3.code, error3.message);
-      errors.push({ method: '備用連線字串', error: error3.message });
-      
-      // 記錄所有錯誤
-      console.log('❌ 所有連線方法都失敗了');
-      errors.forEach((err, index) => {
-        console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
-      });
-      
-      // 方法4: 最後選擇 - 啟用示範模式
-      console.log('🔄 啟用示範模式 - 使用本機示範資料');
-      demoMode = true;
-      
-      // 創建一個模擬的 pool 避免崩潰
-      pool = {
-        query: async (sql, params) => {
-          console.log('📝 模擬SQL查詢:', sql.substring(0, 50));
-          throw new Error('資料庫連線失敗，正在使用示範資料');
-        },
-        end: () => console.log('📴 模擬資料庫連線結束')
-      };
-      
-      return pool;
-    }
-  }
+  // 記錄所有錯誤
+  console.log('❌ 所有連線方法都失敗了');
+  errors.forEach((err, index) => {
+    console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
+  });
+  
+  // 最後選擇 - 啟用示範模式
+  console.log('🔄 啟用示範模式 - 使用本機示範資料');
+  demoMode = true;
+  
+  // 創建一個模擬的 pool 避免崩潰
+  pool = {
+    query: async (sql, params) => {
+      console.log('📝 模擬SQL查詢:', sql.substring(0, 50));
+      throw new Error('資料庫連線失敗，正在使用示範資料');
+    },
+    end: () => console.log('📴 模擬資料庫連線結束')
+  };
+  
+  return pool;
 }
 
 // 初始化資料庫連線
