@@ -8,6 +8,8 @@ services:
     startCommand: "node src/server.js"
     autoDeploy: true
     envVars:
+      - key: DATABASE_URL
+        value: "postgresql://postgres:Chengyivegetable2025%21@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require&connect_timeout=60&application_name=chengyivegetable"
       - key: PORT
         value: 3000
       - key: NODE_ENV

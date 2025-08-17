@@ -15,6 +15,9 @@ dns.setDefaultResultOrder('ipv4first');
 // 嘗試設置 Node.js 使用 IPv4
 process.env.FORCE_IPV4 = '1';
 
+// 設置 Node.js 偏好 IPv4 
+process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+
 // 導入中間件
 const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter');
 const { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation');
@@ -29,11 +32,40 @@ let demoMode = false;
 
 async function createDatabasePool() {
   console.log('🔧 開始嘗試資料庫連線...');
+  console.log('🔍 環境變數檢查:');
+  console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '已設定' : '未設定');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
   
   const errors = [];
   
-  // 方法1: 直接使用IPv4配置（避免IPv6問題）
-  console.log('方法1: 使用IPv4直接配置...');
+  // 方法1: 優先使用環境變數（正確方式）
+  if (process.env.DATABASE_URL) {
+    console.log('方法1: 使用環境變數 DATABASE_URL...');
+    try {
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 60000,
+        idleTimeoutMillis: 30000,
+        max: 5
+      });
+      
+      const testResult = await pool.query('SELECT NOW() as current_time');
+      console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
+      demoMode = false;
+      return pool;
+      
+    } catch (error1) {
+      console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
+      errors.push({ method: '環境變數', error: error1.message });
+    }
+  } else {
+    console.log('⚠️ DATABASE_URL 環境變數未設定');
+    errors.push({ method: '環境變數', error: 'DATABASE_URL 未設定' });
+  }
+  
+  // 方法2: IPv4直接配置（備用）
+  console.log('方法2: 使用IPv4直接配置...');
   try {
     pool = new Pool({
       host: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co',
@@ -44,9 +76,7 @@ async function createDatabasePool() {
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 60000,
       idleTimeoutMillis: 30000,
-      max: 5,
-      // 強制IPv4
-      family: 4
+      max: 5
     });
     
     const testResult = await pool.query('SELECT NOW() as current_time');
@@ -54,40 +84,45 @@ async function createDatabasePool() {
     demoMode = false;
     return pool;
     
-  } catch (error1) {
-    console.log('❌ IPv4直接配置失敗:', error1.code, error1.message);
-    errors.push({ method: 'IPv4直接配置', error: error1.message });
+  } catch (error2) {
+    console.log('❌ IPv4直接配置失敗:', error2.code, error2.message);
+    errors.push({ method: 'IPv4直接配置', error: error2.message });
   }
   
-  // 方法2: 使用環境變數 DATABASE_URL（備用）
-  if (process.env.DATABASE_URL) {
-    console.log('方法2: 使用環境變數 DATABASE_URL...');
-    try {
-      pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { 
-          rejectUnauthorized: false 
-        },
-        connectionTimeoutMillis: 60000,
-        idleTimeoutMillis: 30000,
-        max: 5,
-        // 強制IPv4
-        family: 4
-      });
-      
-      // 測試連線
-      const testResult = await pool.query('SELECT NOW() as current_time');
-      console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
-      demoMode = false;
-      return pool;
-      
-    } catch (error2) {
-      console.log('❌ 環境變數連線失敗:', error2.code, error2.message);
-      errors.push({ method: '環境變數', error: error2.message });
-    }
-  } else {
-    console.log('⏭️ 未設置 DATABASE_URL 環境變數');
-    errors.push({ method: '環境變數', error: '未設置 DATABASE_URL' });
+  
+  // 方法3: 使用解析的IP地址直接連線
+  console.log('方法3: 使用IP地址直接連線...');
+  try {
+    // 手動解析為IPv4地址
+    const { promisify } = require('util');
+    const resolve4 = promisify(dns.resolve4);
+    const ipAddresses = await resolve4('db.cywcuzgbuqmxjxwyrrsp.supabase.co');
+    const ipAddress = ipAddresses[0]; // 使用第一個IPv4地址
+    
+    console.log(`🔍 解析到IPv4地址: ${ipAddress}`);
+    
+    pool = new Pool({
+      host: ipAddress,
+      port: 5432,
+      database: 'postgres',
+      user: 'postgres',
+      password: 'Chengyivegetable2025!',
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 60000,
+      idleTimeoutMillis: 30000,
+      max: 5,
+      // 確保使用IPv4
+      family: 4
+    });
+    
+    const testResult = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ 資料庫連線成功 (IP直連)', testResult.rows[0]);
+    demoMode = false;
+    return pool;
+    
+  } catch (error3) {
+    console.log('❌ IP直連失敗:', error3.code, error3.message);
+    errors.push({ method: 'IP直連', error: error3.message });
   }
   
   // 記錄所有錯誤

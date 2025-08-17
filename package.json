@@ -4,7 +4,9 @@
   "description": "蔬果外送資料庫版本系統",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test:connection": "node test_render_connection.js",
+    "test:local": "DATABASE_URL='postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require' node test_render_connection.js"
   },
   "dependencies": {
     "express": "^4.18.2",
