@@ -1521,6 +1521,235 @@ app.get('/api/business-hours', (req, res) => {
   }
 });
 
+// 🚀 API：部署資料庫更新（執行商品新增和選項建立）
+app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
+  if (demoMode) {
+    return res.json({ 
+      success: false, 
+      message: '示範模式下無法執行資料庫更新',
+      demo: true 
+    });
+  }
+
+  try {
+    console.log('🚀 開始執行資料庫部署更新...');
+    
+    // 建立商品選項相關資料表
+    console.log('📋 建立商品選項相關資料表...');
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_option_groups (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        is_required BOOLEAN DEFAULT true,
+        selection_type VARCHAR(20) DEFAULT 'single',
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS product_options (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES product_option_groups(id) ON DELETE CASCADE,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price_modifier NUMERIC(10,2) DEFAULT 0,
+        is_default BOOLEAN DEFAULT false,
+        sort_order INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS order_item_options (
+        id SERIAL PRIMARY KEY,
+        order_item_id INTEGER NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+        option_group_id INTEGER NOT NULL REFERENCES product_option_groups(id),
+        option_id INTEGER NOT NULL REFERENCES product_options(id),
+        option_name VARCHAR(100) NOT NULL,
+        price_modifier NUMERIC(10,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log('✅ 商品選項資料表建立完成');
+
+    // 檢查並新增商品
+    console.log('🥬 檢查並新增商品...');
+    
+    const existingProducts = await pool.query(`
+      SELECT name FROM products 
+      WHERE name IN ('🥬 空心菜', '🥬 高麗菜', '🌽 水果玉米')
+    `);
+    
+    const existingNames = existingProducts.rows.map(p => p.name);
+    const results = { created: [], existing: [] };
+
+    // 1. 新增空心菜
+    if (!existingNames.includes('🥬 空心菜')) {
+      const spinachResult = await pool.query(
+        'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1, $2, $3, $4) RETURNING id',
+        ['🥬 空心菜', 50, false, '每把']
+      );
+      const spinachId = spinachResult.rows[0].id;
+      
+      await pool.query(
+        'INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, unit_cost, supplier_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [spinachId, 30, 5, 100, 35.0, '新鮮農場']
+      );
+      
+      await pool.query(
+        'INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [spinachId, 'in', 30, 35.0, '新商品初始庫存', '管理員']
+      );
+      
+      results.created.push('🥬 空心菜');
+      console.log('✅ 空心菜新增完成');
+    } else {
+      results.existing.push('🥬 空心菜');
+    }
+
+    // 2. 新增高麗菜  
+    if (!existingNames.includes('🥬 高麗菜')) {
+      const cabbageResult = await pool.query(
+        'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1, $2, $3, $4) RETURNING id',
+        ['🥬 高麗菜', 45, true, '每斤']
+      );
+      const cabbageId = cabbageResult.rows[0].id;
+      
+      await pool.query(
+        'INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, unit_cost, supplier_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [cabbageId, 20, 3, 50, 31.5, '有機農場']
+      );
+      
+      await pool.query(
+        'INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [cabbageId, 'in', 20, 31.5, '新商品初始庫存', '管理員']
+      );
+      
+      results.created.push('🥬 高麗菜');
+      console.log('✅ 高麗菜新增完成');
+    } else {
+      results.existing.push('🥬 高麗菜');
+    }
+
+    // 3. 新增水果玉米
+    let cornId;
+    if (!existingNames.includes('🌽 水果玉米')) {
+      const cornResult = await pool.query(
+        'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1, $2, $3, $4) RETURNING id',
+        ['🌽 水果玉米', 80, false, '每條']
+      );
+      cornId = cornResult.rows[0].id;
+      
+      await pool.query(
+        'INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, unit_cost, supplier_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [cornId, 25, 5, 100, 56.0, '玉米專業農場']
+      );
+      
+      await pool.query(
+        'INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name) VALUES ($1, $2, $3, $4, $5, $6)',
+        [cornId, 'in', 25, 56.0, '新商品初始庫存', '管理員']
+      );
+      
+      results.created.push('🌽 水果玉米');
+      console.log('✅ 水果玉米新增完成');
+    } else {
+      results.existing.push('🌽 水果玉米');
+      const cornResult = await pool.query('SELECT id FROM products WHERE name = $1', ['🌽 水果玉米']);
+      cornId = cornResult.rows[0].id;
+    }
+
+    // 為水果玉米建立選項
+    console.log('🌽 為水果玉米建立選項...');
+    
+    const existingGroups = await pool.query(
+      'SELECT id, name FROM product_option_groups WHERE product_id = $1',
+      [cornId]
+    );
+
+    if (existingGroups.rows.length === 0) {
+      // 建立撥皮選項群組
+      const peelGroupResult = await pool.query(`
+        INSERT INTO product_option_groups (product_id, name, description, is_required, selection_type, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+      `, [cornId, '撥皮服務', '是否需要代為撥玉米皮', true, 'single', 1]);
+      
+      const peelGroupId = peelGroupResult.rows[0].id;
+
+      // 建立撥皮選項
+      await pool.query(`
+        INSERT INTO product_options (group_id, name, description, price_modifier, is_default, sort_order)
+        VALUES 
+        ($1, '要撥皮', '代為撥除玉米外皮', 5, false, 1),
+        ($1, '不撥皮', '保持原狀不處理', 0, true, 2)
+      `, [peelGroupId]);
+
+      // 建立切片選項群組
+      const sliceGroupResult = await pool.query(`
+        INSERT INTO product_option_groups (product_id, name, description, is_required, selection_type, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+      `, [cornId, '切片服務', '是否需要切成片狀', true, 'single', 2]);
+      
+      const sliceGroupId = sliceGroupResult.rows[0].id;
+
+      // 建立切片選項
+      await pool.query(`
+        INSERT INTO product_options (group_id, name, description, price_modifier, is_default, sort_order)
+        VALUES 
+        ($1, '要切片', '切成適合食用的片狀', 3, false, 1),
+        ($1, '不切片', '保持整條狀態', 0, true, 2)
+      `, [sliceGroupId]);
+
+      console.log('✅ 水果玉米選項已建立');
+    } else {
+      console.log('⏭️ 水果玉米選項已存在，跳過');
+    }
+
+    // 驗證結果
+    const finalResult = await pool.query(`
+      SELECT 
+        p.id,
+        p.name,
+        p.price,
+        p.is_priced_item,
+        p.unit_hint,
+        i.current_stock,
+        i.supplier_name,
+        COUNT(pog.id) as option_groups_count
+      FROM products p
+      LEFT JOIN inventory i ON p.id = i.product_id
+      LEFT JOIN product_option_groups pog ON p.id = pog.product_id
+      WHERE p.name IN ('🥬 空心菜', '🥬 高麗菜', '🌽 水果玉米')
+      GROUP BY p.id, p.name, p.price, p.is_priced_item, p.unit_hint, i.current_stock, i.supplier_name
+      ORDER BY p.id DESC
+    `);
+
+    console.log('🎉 部署完成！');
+    
+    res.json({
+      success: true,
+      message: '部署更新完成',
+      results: {
+        created: results.created,
+        existing: results.existing,
+        products: finalResult.rows
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ 部署失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '部署失敗: ' + error.message
+    });
+  }
+});
+
 // 404處理
 app.use(notFoundHandler);
 

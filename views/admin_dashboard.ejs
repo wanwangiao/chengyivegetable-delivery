@@ -85,6 +85,7 @@
                 <span>首頁</span> > <span class="current">儀表板</span>
             </div>
             <div class="top-nav-actions">
+                <button class="deploy-btn" onclick="deployUpdates()" style="background: #e74c3c; margin-right: 10px;">🚀 部署更新</button>
                 <button class="refresh-btn" onclick="refreshData()">🔄 重新整理</button>
                 <div class="datetime">
                     <span id="current-datetime"></span>
@@ -680,6 +681,75 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
         });
+
+        // 部署更新功能
+        async function deployUpdates() {
+            const deployBtn = document.querySelector('.deploy-btn');
+            const originalText = deployBtn.innerHTML;
+            
+            try {
+                deployBtn.innerHTML = '⏳ 部署中...';
+                deployBtn.disabled = true;
+                
+                const response = await fetch('/api/admin/deploy-updates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    deployBtn.innerHTML = '✅ 部署完成';
+                    deployBtn.style.background = '#27ae60';
+                    
+                    // 顯示部署結果
+                    let message = '🎉 部署更新完成！\n\n';
+                    if (result.results.created.length > 0) {
+                        message += '✅ 新增商品：\n' + result.results.created.join('\n') + '\n\n';
+                    }
+                    if (result.results.existing.length > 0) {
+                        message += '⏭️ 已存在商品：\n' + result.results.existing.join('\n') + '\n\n';
+                    }
+                    message += '🌽 水果玉米選項功能已啟用：\n';
+                    message += '• 撥皮服務 → 要撥皮 (+5元) / 不撥皮 (免費)\n';
+                    message += '• 切片服務 → 要切片 (+3元) / 不切片 (免費)\n\n';
+                    message += '請刷新前台頁面查看新商品！';
+                    
+                    alert(message);
+                    
+                    // 3秒後恢復按鈕
+                    setTimeout(() => {
+                        deployBtn.innerHTML = originalText;
+                        deployBtn.style.background = '#e74c3c';
+                        deployBtn.disabled = false;
+                    }, 3000);
+                    
+                } else {
+                    deployBtn.innerHTML = '❌ 部署失敗';
+                    deployBtn.style.background = '#e74c3c';
+                    alert('部署失敗：' + result.message);
+                    
+                    // 3秒後恢復按鈕
+                    setTimeout(() => {
+                        deployBtn.innerHTML = originalText;
+                        deployBtn.disabled = false;
+                    }, 3000);
+                }
+                
+            } catch (error) {
+                deployBtn.innerHTML = '❌ 連線失敗';
+                deployBtn.style.background = '#e74c3c';
+                alert('連線失敗：' + error.message);
+                
+                // 3秒後恢復按鈕
+                setTimeout(() => {
+                    deployBtn.innerHTML = originalText;
+                    deployBtn.disabled = false;
+                }, 3000);
+            }
+        }
 
         // 更新時間顯示
         function updateDateTime() {
