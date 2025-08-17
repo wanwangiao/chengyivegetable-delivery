@@ -30,6 +30,8 @@ let demoMode = false;
 async function createDatabasePool() {
   console.log('🔧 開始嘗試資料庫連線...');
   
+  const errors = [];
+  
   // 方法1: 優先使用環境變數的 DATABASE_URL
   if (process.env.DATABASE_URL) {
     console.log('方法1: 使用環境變數 DATABASE_URL...');
@@ -52,7 +54,11 @@ async function createDatabasePool() {
       
     } catch (error1) {
       console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
+      errors.push({ method: '環境變數', error: error1.message });
     }
+  } else {
+    console.log('⏭️ 未設置 DATABASE_URL 環境變數');
+    errors.push({ method: '環境變數', error: '未設置 DATABASE_URL' });
   }
   
   // 方法2: 嘗試使用直接配置
@@ -82,6 +88,7 @@ async function createDatabasePool() {
     
   } catch (error2) {
     console.log('❌ 直接配置連線失敗:', error2.code, error2.message);
+    errors.push({ method: '直接配置', error: error2.message });
     
     // 方法3: 使用備用連線字串
     console.log('方法3: 嘗試備用連線字串...');
@@ -102,10 +109,14 @@ async function createDatabasePool() {
       return pool;
       
     } catch (error3) {
+      console.log('❌ 備用連線字串失敗:', error3.code, error3.message);
+      errors.push({ method: '備用連線字串', error: error3.message });
+      
+      // 記錄所有錯誤
       console.log('❌ 所有連線方法都失敗了');
-      console.log('❌ 錯誤1:', error1?.message);
-      console.log('❌ 錯誤2:', error2?.message);
-      console.log('❌ 錯誤3:', error3?.message);
+      errors.forEach((err, index) => {
+        console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
+      });
       
       // 方法4: 最後選擇 - 啟用示範模式
       console.log('🔄 啟用示範模式 - 使用本機示範資料');
