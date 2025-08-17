@@ -15,6 +15,11 @@ dns.setDefaultResultOrder('ipv4first');
 // 嘗試設置 Node.js 使用 IPv4
 process.env.FORCE_IPV4 = '1';
 
+// Supabase IPv4 地址映射 (專家建議的直接IP連線)
+const SUPABASE_IPv4_MAPPING = {
+  'db.cywcuzgbuqmxjxwyrrsp.supabase.co': '18.206.107.106' // Supabase US East IPv4
+};
+
 // 設置 Node.js 偏好 IPv4 
 process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 
@@ -64,29 +69,57 @@ async function createDatabasePool() {
     errors.push({ method: '環境變數', error: 'DATABASE_URL 未設定' });
   }
   
-  // 方法2: IPv4直接配置（備用）
-  console.log('方法2: 使用IPv4直接配置...');
+  // 方法2: 直接IP地址連線（專家建議）
+  console.log('方法2: 使用直接IP地址連線...');
   try {
+    const directIP = SUPABASE_IPv4_MAPPING['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
+    console.log(`🔗 嘗試直接連線到 IP: ${directIP}`);
+    
     pool = new Pool({
-      host: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co',
+      host: directIP,
       port: 5432,
       database: 'postgres',
       user: 'postgres',
       password: 'Chengyivegetable2025!',
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 60000,
+      ssl: { 
+        rejectUnauthorized: false,
+        // 因為使用IP而非域名，需要指定servername
+        servername: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co'
+      },
+      connectionTimeoutMillis: 30000,
       idleTimeoutMillis: 30000,
       max: 5
     });
     
     const testResult = await pool.query('SELECT NOW() as current_time');
-    console.log('✅ 資料庫連線成功 (IPv4直接配置)', testResult.rows[0]);
+    console.log('✅ 資料庫連線成功 (直接IP)', testResult.rows[0]);
     demoMode = false;
     return pool;
     
   } catch (error2) {
-    console.log('❌ IPv4直接配置失敗:', error2.code, error2.message);
-    errors.push({ method: 'IPv4直接配置', error: error2.message });
+    console.log('❌ 直接IP連線失敗:', error2.code, error2.message);
+    errors.push({ method: '直接IP', error: error2.message });
+  }
+  
+  // 方法3: 使用Supabase標準IPv4池
+  console.log('方法3: 使用Supabase IPv4連線池...');
+  try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL?.replace('db.cywcuzgbuqmxjxwyrrsp.supabase.co', 'aws-0-us-east-1.pooler.supabase.com'),
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 30000,
+      idleTimeoutMillis: 30000,
+      max: 5
+    });
+    
+    const testResult = await pool.query('SELECT NOW() as current_time');
+    console.log('✅ 資料庫連線成功 (Supabase連線池)', testResult.rows[0]);
+    demoMode = false;
+    return pool;
+    
+  } catch (error3) {
+    console.log('❌ Supabase連線池失敗:', error3.code, error3.message);
+    errors.push({ method: 'Supabase連線池', error: error3.message });
   }
   
   
