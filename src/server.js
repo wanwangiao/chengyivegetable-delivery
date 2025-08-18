@@ -28,6 +28,12 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
 const { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation');
 const { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler');
 
+// 導入 Agent 系統
+const { createAgentSystem } = require('./agents');
+
+// Agent 系統實例
+let agentSystem = null;
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -181,7 +187,17 @@ async function createDatabasePool() {
 }
 
 // 初始化資料庫連線
-createDatabasePool().catch(console.error);
+createDatabasePool().then(async () => {
+  // 初始化 Agent 系統
+  try {
+    agentSystem = createAgentSystem(pool);
+    await agentSystem.initialize();
+    console.log('🤖 Agent 系統已啟動');
+  } catch (error) {
+    console.error('❌ Agent 系統啟動失敗:', error);
+    // 即使 Agent 系統啟動失敗，伺服器仍可繼續運行
+  }
+}).catch(console.error);
 
 // 設定 view engine 與靜態檔案
 app.set('view engine', 'ejs');
@@ -1607,6 +1623,151 @@ app.get('/api/business-hours', (req, res) => {
   }
 });
 
+// 🤖 Agent 系統管理 API
+app.get('/api/admin/agents/status', ensureAdmin, (req, res) => {
+  try {
+    const status = agentSystem ? agentSystem.getSystemStatus() : { status: 'not_initialized' };
+    res.json({ success: true, ...status });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/admin/agents/restart/:agentName', ensureAdmin, async (req, res) => {
+  try {
+    const { agentName } = req.params;
+    
+    if (!agentSystem) {
+      return res.status(400).json({ success: false, message: 'Agent 系統未初始化' });
+    }
+
+    await agentSystem.restartAgent(agentName);
+    res.json({ success: true, message: `${agentName} 重啟成功` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/admin/agents/health-check', ensureAdmin, async (req, res) => {
+  try {
+    const healthReport = agentSystem ? await agentSystem.healthCheck() : { systemHealthy: false };
+    res.json({ success: true, health: healthReport });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 🤖 使用 Agent 系統的 API 端點
+app.post('/api/orders-agent', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
+  const { name, phone, address, notes, invoice, items } = req.body;
+  
+  try {
+    if (!agentSystem) {
+      // 降級到原有邏輯
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Agent 系統未啟動，請稍後再試' 
+      });
+    }
+
+    // 使用 OrderAgent 建立訂單
+    const result = await agentSystem.executeTask('OrderAgent', 'create_order', {
+      name, phone, address, notes, invoice, items
+    });
+
+    res.json({ 
+      success: true, 
+      ...result,
+      message: '訂單已透過 Agent 系統建立'
+    });
+    
+  } catch (error) {
+    console.error('Agent 系統建立訂單錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '建立訂單時發生錯誤：' + error.message 
+    });
+  }
+}));
+
+app.get('/api/inventory-agent/stock/:productId?', asyncWrapper(async (req, res) => {
+  try {
+    if (!agentSystem) {
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Agent 系統未啟動' 
+      });
+    }
+
+    const { productId } = req.params;
+    
+    const result = await agentSystem.executeTask('InventoryAgent', 'check_stock', {
+      productId: productId ? parseInt(productId) : undefined
+    });
+
+    res.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('Agent 庫存查詢錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+}));
+
+app.get('/api/inventory-agent/low-stock', asyncWrapper(async (req, res) => {
+  try {
+    if (!agentSystem) {
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Agent 系統未啟動' 
+      });
+    }
+
+    const result = await agentSystem.executeTask('InventoryAgent', 'get_low_stock_items', {});
+
+    res.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('Agent 低庫存查詢錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+}));
+
+app.post('/api/inventory-agent/restock', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    if (!agentSystem) {
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Agent 系統未啟動' 
+      });
+    }
+
+    const { productId, quantity, unitCost, supplierName, reason } = req.body;
+    
+    const result = await agentSystem.executeTask('InventoryAgent', 'restock_item', {
+      productId: parseInt(productId),
+      quantity: parseInt(quantity),
+      unitCost: parseFloat(unitCost),
+      supplierName,
+      reason
+    });
+
+    res.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('Agent 進貨錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+}));
+
 // 🚀 API：部署資料庫更新（執行商品新增和選項建立）
 app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
   // 如果在示範模式，先嘗試重新連接資料庫
@@ -1900,10 +2061,49 @@ app.use('/api/*', apiErrorHandler);
 // 頁面錯誤處理
 app.use(pageErrorHandler);
 
+// 優雅關閉處理
+const gracefulShutdown = async (signal) => {
+  console.log(`\n📴 收到 ${signal} 信號，正在優雅關閉...`);
+  
+  try {
+    // 關閉 Agent 系統
+    if (agentSystem) {
+      console.log('🤖 正在關閉 Agent 系統...');
+      await agentSystem.shutdown();
+    }
+    
+    // 關閉資料庫連線
+    if (pool && typeof pool.end === 'function') {
+      console.log('🔌 正在關閉資料庫連線...');
+      await pool.end();
+    }
+    
+    console.log('✅ 系統已優雅關閉');
+    process.exit(0);
+    
+  } catch (error) {
+    console.error('❌ 關閉過程中發生錯誤:', error);
+    process.exit(1);
+  }
+};
+
+// 監聽關閉信號
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('uncaughtException', (error) => {
+  console.error('❌ 未捕獲的例外:', error);
+  gracefulShutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ 未處理的 Promise 拒絕:', reason);
+  gracefulShutdown('unhandledRejection');
+});
+
 // 啟動伺服器
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
   console.log(`📱 前台網址: http://localhost:${port}`);
   console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
+  console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
   console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
 });
