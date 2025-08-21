@@ -2994,30 +2994,57 @@ app.get('/api/line/debug', (req, res) => {
   });
 });
 
-// LINE Webhook 接收器 - 無驗證版本
-app.post('/api/line/webhook', express.json(), (req, res) => {
-  console.log('📱 LINE Webhook 請求收到');
-  console.log('🔧 Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('🔧 Body:', JSON.stringify(req.body, null, 2));
-  console.log('🔧 環境變數:', {
-    NODE_ENV: process.env.NODE_ENV,
-    VERCEL: process.env.VERCEL,
-    LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID || 'MISSING',
-    LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET' : 'MISSING',
-    LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET' : 'MISSING'
-  });
+// LINE Webhook 接收器 - 超級簡化版本
+app.post('/api/line/webhook', (req, res) => {
+  console.log('🚨 LINE Webhook 進入處理器');
+  console.log('🚨 請求方法:', req.method);
+  console.log('🚨 請求路徑:', req.path);
+  console.log('🚨 請求 URL:', req.url);
+  console.log('🚨 請求 IP:', req.ip);
+  console.log('🚨 User-Agent:', req.get('user-agent'));
+  console.log('🚨 Content-Type:', req.get('content-type'));
+  console.log('🚨 X-Line-Signature:', req.get('x-line-signature'));
   
-  // 總是返回 200 OK
-  res.status(200).json({
-    success: true,
-    message: 'Webhook processed successfully',
-    timestamp: new Date().toISOString(),
-    received: {
-      headers: !!req.headers,
-      body: !!req.body,
-      signature: !!req.headers['x-line-signature']
-    }
-  });
+  try {
+    console.log('🚨 準備返回 200 響應');
+    
+    // 設定響應標頭
+    res.set({
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache'
+    });
+    
+    console.log('🚨 響應標頭已設定');
+    
+    const response = {
+      status: 'SUCCESS',
+      code: 200,
+      message: 'LINE Webhook received and processed',
+      timestamp: new Date().toISOString(),
+      server: 'Vercel',
+      path: req.path,
+      method: req.method
+    };
+    
+    console.log('🚨 準備發送響應:', JSON.stringify(response));
+    
+    res.status(200).json(response);
+    
+    console.log('🚨 響應已發送 - 狀態碼 200');
+    
+  } catch (error) {
+    console.error('🚨 Webhook 處理錯誤:', error);
+    console.error('🚨 錯誤堆疊:', error.stack);
+    
+    res.status(200).json({
+      status: 'ERROR_BUT_OK',
+      code: 200,
+      message: 'Error occurred but returning 200',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // 404處理
