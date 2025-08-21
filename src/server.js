@@ -1511,8 +1511,9 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     res.status(500).json({ 
       success: false, 
       message: '建立訂單時發生錯誤，請稍後再試',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-      debug: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      error: err.message, // 暫時在生產環境也顯示錯誤信息
+      errorCode: err.code,
+      debug: err.stack
     });
   }
 }));
