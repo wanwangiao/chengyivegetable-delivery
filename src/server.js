@@ -31,13 +31,15 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       WebSocketManager = require('./services/WebSocketManager'),
       SmartRouteService = require('./services/SmartRouteService'),
       RouteOptimizationService = require('./services/RouteOptimizationService'),
-      LineNotificationService = require('./services/LineNotificationService');
+      LineNotificationService = require('./services/LineNotificationService'),
+      LineBotService = require('./services/LineBotService');
 
 let agentSystem = null;
 let smartRouteService = null;
 let routeOptimizationService = null;
 let webSocketManager = null;
 let lineNotificationService = null;
+let lineBotService = null;
 
 const app = express(),
       port = process.env.PORT || 3002;
@@ -3132,9 +3134,6 @@ app.post('/api/test/create-orders', async (req, res) => {
 // LINE Bot 整合路由
 // =====================================
 
-const LineBotService = require('./services/LineBotService');
-const lineBotService = new LineBotService();
-
 const OrderNotificationHook = require('./services/OrderNotificationHook');
 const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 
@@ -3698,5 +3697,13 @@ const server = app.listen(port, () => {
     console.log('🔔 LINE通知服務已初始化');
   } catch (error) {
     console.error('❌ LINE通知服務初始化失敗:', error);
+  }
+  
+  // 初始化LINE Bot服務
+  try {
+    lineBotService = new LineBotService();
+    console.log('🤖 LINE Bot服務已初始化');
+  } catch (error) {
+    console.error('❌ LINE Bot服務初始化失敗:', error);
   }
 });
