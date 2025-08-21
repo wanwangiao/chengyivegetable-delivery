@@ -3217,6 +3217,25 @@ app.get('/health', (req, res) => {
   });
 });
 
+// LINE 環境變數診斷端點
+app.get('/api/line/debug', (req, res) => {
+  res.status(200).json({
+    timestamp: new Date().toISOString(),
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? 'SET (' + process.env.LINE_CHANNEL_ID + ')' : 'MISSING',
+      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : 'MISSING',
+      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : 'MISSING'
+    },
+    lineBotService: lineBotService ? {
+      initialized: true,
+      demoMode: lineBotService.demoMode,
+      hasClient: !!lineBotService.client
+    } : 'NOT_INITIALIZED'
+  });
+});
+
 // LINE 服務狀態檢查端點（用於診斷）
 app.get('/api/line/status', (req, res) => {
   const status = {
@@ -3239,23 +3258,29 @@ app.get('/api/line/status', (req, res) => {
   res.json(status);
 });
 
-// 簡單的 LINE Webhook 接收器（繞過所有驗證）
-app.post('/api/line/webhook', (req, res) => {
-  console.log('📱 LINE Webhook 接收請求');
-  console.log('📝 請求標頭:', req.headers);
-  console.log('🔧 環境變數狀態:', {
+// LINE Webhook 接收器 - 無驗證版本
+app.post('/api/line/webhook', express.json(), (req, res) => {
+  console.log('📱 LINE Webhook 請求收到');
+  console.log('🔧 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🔧 Body:', JSON.stringify(req.body, null, 2));
+  console.log('🔧 環境變數:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL: process.env.VERCEL,
     LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID || 'MISSING',
     LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET' : 'MISSING',
-    NODE_ENV: process.env.NODE_ENV
+    LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET' : 'MISSING'
   });
   
-  // 無論什麼情況都返回 200（符合 LINE 要求）
+  // 總是返回 200 OK
   res.status(200).json({
-    status: 'OK',
-    message: 'Webhook received',
+    success: true,
+    message: 'Webhook processed successfully',
     timestamp: new Date().toISOString(),
-    hasChannelId: !!process.env.LINE_CHANNEL_ID,
-    hasChannelSecret: !!process.env.LINE_CHANNEL_SECRET
+    received: {
+      headers: !!req.headers,
+      body: !!req.body,
+      signature: !!req.headers['x-line-signature']
+    }
   });
 });
 
