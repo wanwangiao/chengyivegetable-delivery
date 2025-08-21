@@ -3047,6 +3047,15 @@ app.post('/api/line/webhook', (req, res) => {
   }
 });
 
+// 健康檢查端點 (必須在 404 處理器之前)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'vegdelivery-system'
+  });
+});
+
 // 404處理
 app.use(notFoundHandler);
 
@@ -3280,16 +3289,6 @@ app.post('/api/line/bind-user', async (req, res) => {
     });
   }
 });
-
-// 健康檢查端點
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'vegdelivery-system'
-  });
-});
-
 
 // 手動發送訂單通知 (用於測試)
 app.post('/api/line/send-order-notification/:orderId', async (req, res) => {
