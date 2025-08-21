@@ -66,7 +66,11 @@
                 <!-- 左側圖片 -->
                 <div class="product-image-left">
                   <div class="product-image-container">
-                    <% if (product.name.includes('高麗菜')) { %>
+                    <% if (product.image_url && product.image_url.startsWith('/uploads/')) { %>
+                      <img src="<%= product.image_url %>" alt="<%= product.name %>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    <% } else if (product.image_url) { %>
+                      <%= product.image_url %>
+                    <% } else if (product.name.includes('高麗菜')) { %>
                       🥬
                     <% } else if (product.name.includes('番茄')) { %>
                       🍅
@@ -76,6 +80,10 @@
                       🥒
                     <% } else if (product.name.includes('洋蔥')) { %>
                       🧅
+                    <% } else if (product.name.includes('玉米')) { %>
+                      🌽
+                    <% } else if (product.name.includes('馬鈴薯')) { %>
+                      🥔
                     <% } else { %>
                       🥬
                     <% } %>
@@ -214,7 +222,7 @@
         
         <div class="modal-product-image">
           <div class="modal-image-container" id="modal-image">
-            🥬
+            <!-- 動態更新商品圖片 -->
           </div>
           <div class="modal-badge" id="modal-badge">新品</div>
         </div>
@@ -383,7 +391,7 @@
           let line = `
             <li class="cart-item">
               <span class="item-name">${product.name}</span>
-              <span class="item-qty">× ${item.quantity}</span>
+              <span class="item-qty">× ${item.quantity}${item.selectedUnit ? ` (${item.selectedUnit})` : ''}</span>
               <span class="item-price">`;
           
           if (product.is_priced_item) {
@@ -487,18 +495,31 @@
         
         // 更新商品圖片
         const modalImage = document.getElementById('modal-image');
-        if (product.name.includes('高麗菜')) {
-          modalImage.textContent = '🥬';
-        } else if (product.name.includes('番茄')) {
-          modalImage.textContent = '🍅';
-        } else if (product.name.includes('胡蘿蔔')) {
-          modalImage.textContent = '🥕';
-        } else if (product.name.includes('小黃瓜')) {
-          modalImage.textContent = '🥒';
-        } else if (product.name.includes('洋蔥')) {
-          modalImage.textContent = '🧅';
+        if (product.image_url && product.image_url.startsWith('/uploads/')) {
+          // 真實上傳的圖片
+          modalImage.innerHTML = `<img src="${product.image_url}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+        } else if (product.image_url) {
+          // emoji圖片
+          modalImage.textContent = product.image_url;
         } else {
-          modalImage.textContent = '🥬';
+          // 預設emoji（舊邏輯）
+          if (product.name.includes('高麗菜')) {
+            modalImage.textContent = '🥬';
+          } else if (product.name.includes('番茄')) {
+            modalImage.textContent = '🍅';
+          } else if (product.name.includes('胡蘿蔔')) {
+            modalImage.textContent = '🥕';
+          } else if (product.name.includes('小黃瓜')) {
+            modalImage.textContent = '🥒';
+          } else if (product.name.includes('洋蔥')) {
+            modalImage.textContent = '🧅';
+          } else if (product.name.includes('玉米')) {
+            modalImage.textContent = '🌽';
+          } else if (product.name.includes('馬鈴薯')) {
+            modalImage.textContent = '🥔';
+          } else {
+            modalImage.textContent = '🥬';
+          }
         }
         
         // 更新標籤
@@ -516,7 +537,34 @@
         
         // 更新價格選項
         const priceOptions = document.getElementById('modal-price-options');
-        if (product.is_priced_item) {
+        
+        // 檢查是否有自訂選項群組
+        if (product.optionGroups && product.optionGroups.length > 0) {
+          let optionsHtml = '';
+          
+          product.optionGroups.forEach(group => {
+            if (group.options && group.options.length > 0) {
+              optionsHtml += `<div class="option-group-title">${group.name}</div>`;
+              
+              group.options.forEach((option, index) => {
+                const finalPrice = (product.price || 0) + (option.price_modifier || 0);
+                const isActive = option.is_default || index === 0 ? 'active' : '';
+                
+                optionsHtml += `
+                  <div class="modal-price-item ${isActive}" onclick="selectPriceOption(this)" 
+                       data-option-id="${option.id}" data-option-name="${option.name}" 
+                       data-price-modifier="${option.price_modifier}">
+                    <div class="price-main">${option.name}:$${finalPrice}</div>
+                    <div class="price-desc">${option.description || ''}</div>
+                  </div>
+                `;
+              });
+            }
+          });
+          
+          priceOptions.innerHTML = optionsHtml;
+        } else if (product.is_priced_item) {
+          // 計價商品的傳統顯示
           priceOptions.innerHTML = `
             <div class="modal-price-item active" onclick="selectPriceOption(this)">
               <div class="price-main">1斤約${Math.floor(Math.random() * 50) + 100}~</div>
@@ -524,6 +572,7 @@
             </div>
           `;
         } else {
+          // 固定價格商品的傳統顯示（舊邏輯）
           if (product.id % 3 === 1) {
             priceOptions.innerHTML = `
               <div class="modal-price-item active" onclick="selectPriceOption(this)">
@@ -602,13 +651,64 @@
         if (!currentModalProduct) return;
         
         const qty = parseInt(document.getElementById('modal-qty').value) || 1;
+        
+        // 獲取選中的價格選項
+        const activeOption = document.querySelector('.modal-price-item.active');
+        let selectedUnit = currentModalProduct.unit_hint || '每個';
+        let unitQuantity = qty;
+        let selectedOptionId = null;
+        let selectedOptionName = null;
+        let priceModifier = 0;
+        
+        if (activeOption) {
+          // 檢查是否為自訂選項
+          if (activeOption.dataset.optionId) {
+            selectedOptionId = activeOption.dataset.optionId;
+            selectedOptionName = activeOption.dataset.optionName;
+            priceModifier = parseFloat(activeOption.dataset.priceModifier || 0);
+            selectedUnit = selectedOptionName; // 使用選項名稱作為單位
+          } else {
+            // 傳統選項解析邏輯
+            const priceText = activeOption.querySelector('.price-main').textContent;
+            if (priceText.includes('半斤')) {
+              selectedUnit = '半斤';
+            } else if (priceText.includes('1斤')) {
+              selectedUnit = '每斤';
+            } else if (priceText.includes('5顆')) {
+              selectedUnit = '每顆';
+              unitQuantity = qty * 5; // 5顆選項
+            } else if (priceText.includes('10顆')) {
+              selectedUnit = '每顆';
+              unitQuantity = qty * 10; // 10顆選項
+            } else if (priceText.includes('半顆')) {
+              selectedUnit = '半顆';
+            } else if (priceText.includes('1顆')) {
+              selectedUnit = '每顆';
+            }
+          }
+        }
+        
         const cart = getCart();
         
-        const existing = cart.find(item => item.productId === currentModalProduct.id);
+        const existing = cart.find(item => 
+          item.productId === currentModalProduct.id && 
+          item.selectedUnit === selectedUnit &&
+          item.selectedOptionId === selectedOptionId
+        );
+        
         if (existing) {
           existing.quantity += qty;
+          existing.unitQuantity += unitQuantity;
         } else {
-          cart.push({ productId: currentModalProduct.id, quantity: qty });
+          cart.push({ 
+            productId: currentModalProduct.id, 
+            quantity: qty,
+            selectedUnit: selectedUnit,
+            unitQuantity: unitQuantity,
+            selectedOptionId: selectedOptionId,
+            selectedOptionName: selectedOptionName,
+            priceModifier: priceModifier
+          });
         }
         
         saveCart(cart);

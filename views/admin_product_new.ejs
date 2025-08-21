@@ -145,6 +145,213 @@
             text-decoration: none;
         }
         
+        /* 商品選項樣式 */
+        .option-group {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        
+        .option-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .option-group-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .remove-group-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .option-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .option-item input {
+            flex: 1;
+            margin: 0;
+        }
+        
+        .remove-option-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 2px solid #3498db;
+            color: #3498db;
+        }
+        
+        .btn-outline:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        /* 圖片上傳樣式 */
+        .image-upload-container {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        
+        .image-preview {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .preview-placeholder {
+            color: #7f8c8d;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-upload-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        #productImage {
+            display: none;
+        }
+        
+        .image-upload-container.drag-over {
+            border-color: #3498db;
+            background: #e8f4fd;
+        }
+        
+        /* 圖片編輯控制樣式 */
+        .image-edit-controls {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f1f2f6;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .zoom-controls, .position-controls {
+            margin-bottom: 15px;
+        }
+        
+        .zoom-controls label, .position-controls label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .zoom-controls label {
+            margin-bottom: 0;
+            margin-right: 10px;
+        }
+        
+        #zoomSlider {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .zoom-btn, .pos-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .zoom-btn:hover, .pos-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        .position-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .position-buttons > div {
+            display: flex;
+            gap: 5px;
+        }
+        
+        #zoomValue {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .preview-edit-mode {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .preview-edit-mode img {
+            transition: transform 0.2s ease;
+            cursor: move;
+        }
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -200,6 +407,60 @@
                             <div class="help-text">說明商品的銷售單位</div>
                         </div>
                     </div>
+                    
+                    <!-- 商品圖片上傳 -->
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="productImage">商品圖片</label>
+                            <div class="image-upload-container">
+                                <input type="file" id="productImage" name="productImage" 
+                                       accept="image/*" capture="environment">
+                                <div class="image-preview" id="imagePreview">
+                                    <div class="preview-placeholder">
+                                        📷<br>
+                                        點擊選擇圖片<br>
+                                        <small>支援手機拍照或相簿選擇</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- 圖片編輯控制 -->
+                                <div class="image-edit-controls" id="imageEditControls" style="display: none;">
+                                    <div class="zoom-controls">
+                                        <label>縮放調整：</label>
+                                        <button type="button" class="zoom-btn" onclick="adjustZoom(-0.1)">🔍➖</button>
+                                        <input type="range" id="zoomSlider" min="0.5" max="3" step="0.1" value="1" oninput="updateZoom(this.value)">
+                                        <button type="button" class="zoom-btn" onclick="adjustZoom(0.1)">🔍➕</button>
+                                        <span id="zoomValue">100%</span>
+                                    </div>
+                                    <div class="position-controls">
+                                        <label>位置調整：</label>
+                                        <div class="position-buttons">
+                                            <button type="button" class="pos-btn" onclick="adjustPosition(0, -10)">⬆️</button>
+                                            <div>
+                                                <button type="button" class="pos-btn" onclick="adjustPosition(-10, 0)">⬅️</button>
+                                                <button type="button" class="pos-btn" onclick="resetPosition()">🎯</button>
+                                                <button type="button" class="pos-btn" onclick="adjustPosition(10, 0)">➡️</button>
+                                            </div>
+                                            <button type="button" class="pos-btn" onclick="adjustPosition(0, 10)">⬇️</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="image-upload-controls">
+                                    <button type="button" class="btn btn-outline" onclick="document.getElementById('productImage').click()">
+                                        📱 選擇圖片
+                                    </button>
+                                    <button type="button" class="btn btn-success" onclick="confirmImage()" id="confirmImageBtn" style="display: none;">
+                                        ✅ 確認使用
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="clearImage()" id="clearImageBtn" style="display: none;">
+                                        🗑️ 重新選擇
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="help-text">建議使用正方形圖片，系統會自動調整為300x300像素</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- 價格設定 -->
@@ -222,6 +483,21 @@
                             <div class="help-text">固定價格商品填寫此欄位，計價商品可留空</div>
                         </div>
                     </div>
+                </div>
+                
+                <!-- 商品選項設定 -->
+                <div class="form-section">
+                    <h3>⚙️ 商品選項設定</h3>
+                    <div class="help-text">為商品設定不同的規格選項（如小份、中份、大份等）</div>
+                    
+                    <!-- 選項群組 -->
+                    <div id="option-groups">
+                        <!-- 動態生成的選項群組會出現在這裡 -->
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline" onclick="addOptionGroup()">
+                        ➕ 新增選項群組
+                    </button>
                 </div>
                 
                 <!-- 庫存設定 -->
@@ -291,6 +567,357 @@
                     e.preventDefault();
                     return;
                 }
+            }
+        });
+        
+        // 商品選項管理
+        let optionGroupCounter = 0;
+        
+        function addOptionGroup() {
+            optionGroupCounter++;
+            const container = document.getElementById('option-groups');
+            
+            const groupHtml = `
+                <div class="option-group" id="group-${optionGroupCounter}">
+                    <div class="option-group-header">
+                        <div class="option-group-title">選項群組 ${optionGroupCounter}</div>
+                        <button type="button" class="remove-group-btn" onclick="removeOptionGroup(${optionGroupCounter})">
+                            🗑️ 移除群組
+                        </button>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>群組名稱 *</label>
+                            <input type="text" name="optionGroups[${optionGroupCounter}][name]" 
+                                   placeholder="例如: 份量選擇" required>
+                        </div>
+                        <div class="form-group">
+                            <label>群組說明</label>
+                            <input type="text" name="optionGroups[${optionGroupCounter}][description]" 
+                                   placeholder="例如: 選擇商品的份量大小">
+                        </div>
+                    </div>
+                    
+                    <div class="option-items" id="options-${optionGroupCounter}">
+                        <!-- 選項會動態添加到這裡 -->
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline" onclick="addOption(${optionGroupCounter})">
+                        ➕ 新增選項
+                    </button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', groupHtml);
+            
+            // 自動添加第一個選項
+            addOption(optionGroupCounter);
+        }
+        
+        function removeOptionGroup(groupId) {
+            const group = document.getElementById(`group-${groupId}`);
+            if (group && confirm('確定要移除這個選項群組嗎？')) {
+                group.remove();
+            }
+        }
+        
+        function addOption(groupId) {
+            const container = document.getElementById(`options-${groupId}`);
+            const optionCount = container.children.length;
+            
+            const optionHtml = `
+                <div class="option-item">
+                    <input type="text" name="optionGroups[${groupId}][options][${optionCount}][name]" 
+                           placeholder="選項名稱 (例如: 小份)" required>
+                    <input type="text" name="optionGroups[${groupId}][options][${optionCount}][description]" 
+                           placeholder="說明 (例如: 約300克)">
+                    <input type="number" step="0.01" name="optionGroups[${groupId}][options][${optionCount}][priceModifier]" 
+                           placeholder="加價金額" value="0">
+                    <label>
+                        <input type="checkbox" name="optionGroups[${groupId}][options][${optionCount}][isDefault]">
+                        預設
+                    </label>
+                    <button type="button" class="remove-option-btn" onclick="removeOption(this)">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', optionHtml);
+        }
+        
+        function removeOption(button) {
+            const optionItem = button.closest('.option-item');
+            if (optionItem) {
+                optionItem.remove();
+            }
+        }
+        
+        // 圖片上傳處理
+        let selectedImage = null;
+        let originalImage = null;
+        let currentZoom = 1;
+        let currentX = 0;
+        let currentY = 0;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        document.getElementById('productImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageUpload(file);
+            }
+        });
+        
+        function handleImageUpload(file) {
+            // 檢查檔案類型
+            if (!file.type.startsWith('image/')) {
+                alert('請選擇圖片檔案！');
+                return;
+            }
+            
+            // 檢查檔案大小 (限制5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('圖片檔案不能超過5MB！');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    showImageEditor(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function showImageEditor(img) {
+            // 重置編輯參數
+            currentZoom = 1;
+            currentX = 0;
+            currentY = 0;
+            
+            // 顯示預覽圖片
+            const preview = document.getElementById('imagePreview');
+            preview.className = 'image-preview preview-edit-mode';
+            
+            // 計算初始顯示尺寸
+            const previewSize = 300;
+            const imgAspect = img.width / img.height;
+            let displayWidth, displayHeight;
+            
+            if (imgAspect > 1) {
+                // 寬圖
+                displayHeight = previewSize;
+                displayWidth = previewSize * imgAspect;
+            } else {
+                // 高圖
+                displayWidth = previewSize;
+                displayHeight = previewSize / imgAspect;
+            }
+            
+            preview.innerHTML = `<img src="${img.src}" class="preview-image-edit" alt="編輯預覽" 
+                                      style="width: ${displayWidth}px; height: ${displayHeight}px;">`;
+            
+            // 添加拖移事件
+            const previewImg = preview.querySelector('img');
+            addDragEvents(previewImg);
+            
+            // 顯示編輯控制
+            document.getElementById('imageEditControls').style.display = 'block';
+            document.getElementById('confirmImageBtn').style.display = 'inline-block';
+            document.getElementById('clearImageBtn').style.display = 'inline-block';
+            
+            // 更新滑桿
+            document.getElementById('zoomSlider').value = currentZoom;
+            document.getElementById('zoomValue').textContent = Math.round(currentZoom * 100) + '%';
+            
+            // 更新預覽
+            updatePreview();
+        }
+        
+        function addDragEvents(img) {
+            img.addEventListener('mousedown', startDrag);
+            img.addEventListener('touchstart', startDrag);
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+        
+        function startDrag(e) {
+            isDragging = true;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            lastMouseX = clientX;
+            lastMouseY = clientY;
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const deltaX = clientX - lastMouseX;
+            const deltaY = clientY - lastMouseY;
+            
+            currentX += deltaX;
+            currentY += deltaY;
+            
+            lastMouseX = clientX;
+            lastMouseY = clientY;
+            
+            updatePreview();
+            e.preventDefault();
+        }
+        
+        function endDrag() {
+            isDragging = false;
+        }
+        
+        function updatePreview() {
+            const preview = document.getElementById('imagePreview');
+            const img = preview.querySelector('img');
+            if (img) {
+                const transform = `translate(${currentX}px, ${currentY}px) scale(${currentZoom})`;
+                img.style.transform = transform;
+            }
+        }
+        
+        function updateZoom(value) {
+            currentZoom = parseFloat(value);
+            document.getElementById('zoomValue').textContent = Math.round(currentZoom * 100) + '%';
+            updatePreview();
+        }
+        
+        function adjustZoom(delta) {
+            const newZoom = Math.max(0.5, Math.min(3, currentZoom + delta));
+            currentZoom = newZoom;
+            document.getElementById('zoomSlider').value = newZoom;
+            document.getElementById('zoomValue').textContent = Math.round(newZoom * 100) + '%';
+            updatePreview();
+        }
+        
+        function adjustPosition(deltaX, deltaY) {
+            currentX += deltaX;
+            currentY += deltaY;
+            updatePreview();
+        }
+        
+        function resetPosition() {
+            currentX = 0;
+            currentY = 0;
+            currentZoom = 1;
+            document.getElementById('zoomSlider').value = 1;
+            document.getElementById('zoomValue').textContent = '100%';
+            updatePreview();
+        }
+        
+        function confirmImage() {
+            if (!originalImage) return;
+            
+            // 建立canvas進行最終裁切
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 設定輸出尺寸為300x300
+            const targetSize = 300;
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            
+            // 計算裁切參數
+            const previewSize = 300;
+            const scale = Math.min(originalImage.width, originalImage.height) / previewSize;
+            
+            // 計算實際圖片上的裁切區域
+            const cropSize = targetSize / currentZoom * scale;
+            const cropX = (originalImage.width / 2) - (cropSize / 2) - (currentX * scale / currentZoom);
+            const cropY = (originalImage.height / 2) - (cropSize / 2) - (currentY * scale / currentZoom);
+            
+            // 繪製裁切後的圖片
+            ctx.drawImage(originalImage, cropX, cropY, cropSize, cropSize, 0, 0, targetSize, targetSize);
+            
+            // 轉換為base64
+            const processedImageData = canvas.toDataURL('image/jpeg', 0.8);
+            selectedImage = processedImageData;
+            
+            // 顯示最終預覽
+            const preview = document.getElementById('imagePreview');
+            preview.className = 'image-preview';
+            preview.innerHTML = `<img src="${processedImageData}" class="preview-image" alt="商品圖片預覽">`;
+            
+            // 隱藏編輯控制
+            document.getElementById('imageEditControls').style.display = 'none';
+            document.getElementById('confirmImageBtn').style.display = 'none';
+            
+            // 更新按鈕文字
+            document.getElementById('clearImageBtn').textContent = '🗑️ 重新選擇';
+        }
+        
+        function clearImage() {
+            selectedImage = null;
+            originalImage = null;
+            currentZoom = 1;
+            currentX = 0;
+            currentY = 0;
+            
+            const preview = document.getElementById('imagePreview');
+            preview.className = 'image-preview';
+            preview.innerHTML = `
+                <div class="preview-placeholder">
+                    📷<br>
+                    點擊選擇圖片<br>
+                    <small>支援手機拍照或相簿選擇</small>
+                </div>
+            `;
+            
+            document.getElementById('productImage').value = '';
+            document.getElementById('imageEditControls').style.display = 'none';
+            document.getElementById('confirmImageBtn').style.display = 'none';
+            document.getElementById('clearImageBtn').style.display = 'none';
+        }
+        
+        // 拖放上傳支援
+        const uploadContainer = document.querySelector('.image-upload-container');
+        
+        uploadContainer.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadContainer.classList.add('drag-over');
+        });
+        
+        uploadContainer.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadContainer.classList.remove('drag-over');
+        });
+        
+        uploadContainer.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadContainer.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageUpload(files[0]);
+            }
+        });
+        
+        // 表單提交時添加圖片資料
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (selectedImage) {
+                // 建立隱藏欄位來傳送圖片資料
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'imageData';
+                hiddenInput.value = selectedImage;
+                this.appendChild(hiddenInput);
             }
         });
     </script>

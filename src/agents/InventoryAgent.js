@@ -147,6 +147,38 @@ class InventoryAgent extends BaseAgent {
   /**
    * 預留庫存（用於訂單）
    */
+  /**
+   * 單位換算函數
+   * 將客戶下單單位換算為庫存單位
+   */
+  convertToInventoryUnit(customerQuantity, customerUnit, inventoryUnit) {
+    // 如果單位相同，直接返回
+    if (customerUnit === inventoryUnit) {
+      return customerQuantity;
+    }
+    
+    // 重量單位換算 (每公斤 ⇄ 每斤)
+    // 1斤 = 600克 = 0.6公斤
+    if (customerUnit === '每斤' && inventoryUnit === '每公斤') {
+      return customerQuantity * 0.6; // 1斤 = 0.6公斤
+    }
+    if (customerUnit === '每公斤' && inventoryUnit === '每斤') {
+      return customerQuantity / 0.6; // 1公斤 = 1.67斤
+    }
+    
+    // 顆數單位換算 (半顆 ⇄ 顆)
+    if (customerUnit === '半顆' && inventoryUnit === '每顆') {
+      return customerQuantity * 0.5; // 1個半顆 = 0.5顆
+    }
+    if (customerUnit === '每顆' && inventoryUnit === '半顆') {
+      return customerQuantity * 2; // 1顆 = 2個半顆
+    }
+    
+    // 如果無法換算，返回原數量 (假設同等對待)
+    console.warn(`⚠️ 無法換算單位: ${customerUnit} → ${inventoryUnit}，使用原數量`);
+    return customerQuantity;
+  }
+
   async handleReserveStock(data) {
     const { orderId, items } = data;
     
@@ -161,17 +193,25 @@ class InventoryAgent extends BaseAgent {
       }
 
       for (const item of items) {
-        const stock = await this.getStockByProductId(item.productId);
-        if (!stock) {
+        // 獲取商品庫存資訊 (包含單位資訊)
+        const stockInfo = await this.getStockWithProductInfo(item.productId);
+        if (!stockInfo) {
           throw new Error(`商品 ${item.productId} 庫存記錄不存在`);
         }
+        
+        // 進行單位換算
+        const customerUnit = item.unit || stockInfo.unit_hint || '每個';
+        const inventoryUnit = stockInfo.unit_hint || '每個';
+        const convertedQuantity = this.convertToInventoryUnit(item.quantity, customerUnit, inventoryUnit);
+        
+        console.log(`🔄 單位換算: ${item.quantity}${customerUnit} → ${convertedQuantity}${inventoryUnit}`);
 
-        if (stock.current_stock < item.quantity) {
-          throw new Error(`商品 ${item.name} 庫存不足：需要 ${item.quantity}，現有 ${stock.current_stock}`);
+        if (stockInfo.current_stock < convertedQuantity) {
+          throw new Error(`商品 ${item.name} 庫存不足：需要 ${convertedQuantity}${inventoryUnit}，現有 ${stockInfo.current_stock}${inventoryUnit}`);
         }
 
         // 預留庫存
-        const newStock = stock.current_stock - item.quantity;
+        const newStock = stockInfo.current_stock - convertedQuantity;
         
         if (!this.demoMode && this.pool) {
           await this.pool.query(`
@@ -185,13 +225,16 @@ class InventoryAgent extends BaseAgent {
             INSERT INTO stock_movements 
             (product_id, movement_type, quantity, reason, operator_name, reference_id, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-          `, [item.productId, 'reserved', item.quantity, `訂單預留 #${orderId}`, 'OrderAgent', orderId]);
+          `, [item.productId, 'reserved', convertedQuantity, `訂單預留 #${orderId} (${item.quantity}${customerUnit}→${convertedQuantity}${inventoryUnit})`, 'OrderAgent', orderId]);
         }
 
         reservations.push({
           productId: item.productId,
           productName: item.name,
-          reservedQuantity: item.quantity,
+          reservedQuantity: convertedQuantity,
+          originalQuantity: item.quantity,
+          customerUnit: customerUnit,
+          inventoryUnit: inventoryUnit,
           remainingStock: newStock
         });
       }
@@ -525,6 +568,33 @@ class InventoryAgent extends BaseAgent {
         current_stock: 25,
         min_stock_alert: 10,
         product_name: `示範商品 ${productId}`
+      };
+    }
+  }
+
+  async getStockWithProductInfo(productId) {
+    if (!this.demoMode && this.pool) {
+      const result = await this.pool.query(`
+        SELECT 
+          i.*,
+          p.name as product_name,
+          p.unit_hint,
+          p.price,
+          p.is_priced_item
+        FROM inventory i
+        JOIN products p ON i.product_id = p.id
+        WHERE i.product_id = $1
+      `, [productId]);
+      
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } else {
+      // 示範模式
+      return {
+        product_id: productId,
+        current_stock: 25,
+        min_stock_alert: 10,
+        product_name: `示範商品 ${productId}`,
+        unit_hint: '每個'
       };
     }
   }

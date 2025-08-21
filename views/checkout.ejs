@@ -45,6 +45,16 @@
             <input type="text" id="invoice" placeholder="統編或載具（選填）">
           </div>
           
+          <div class="form-group">
+            <label for="paymentMethod">💳 付款方式 *</label>
+            <select id="paymentMethod" required>
+              <option value="">請選擇付款方式</option>
+              <option value="cash">💰 現金付款</option>
+              <option value="linepay">📱 LINE Pay</option>
+              <option value="bank_transfer">🏦 銀行轉帳</option>
+            </select>
+          </div>
+          
           <div class="info-box">
             <p>📋 <strong>注意事項：</strong></p>
             <ul>
@@ -165,6 +175,7 @@
         const address = document.getElementById('address').value.trim();
         const notes = document.getElementById('notes').value.trim();
         const invoice = document.getElementById('invoice').value.trim();
+        const paymentMethod = document.getElementById('paymentMethod').value;
         
         // 前端驗證
         if (!name || name.length < 2) {
@@ -185,12 +196,22 @@
           return;
         }
         
-        const items = cart.map(it => ({ productId: it.productId, quantity: it.quantity }));
+        if (!paymentMethod) {
+          showMessage('請選擇付款方式', 'error');
+          resetButton();
+          return;
+        }
+        
+        const items = cart.map(it => ({ 
+          productId: it.productId, 
+          quantity: it.unitQuantity || it.quantity,
+          selectedUnit: it.selectedUnit
+        }));
         
         fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, address, notes, invoice, items })
+          body: JSON.stringify({ name, phone, address, notes, invoice, paymentMethod, items })
         })
         .then(resp => resp.json())
         .then(data => {

@@ -1,47 +1,55 @@
-const express = require('express');
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const { Pool } = require('pg');
-const path = require('path');
-const helmet = require('helmet');
-const compression = require('compression');
-const cors = require('cors');
-const dns = require('dns');
+const express = require('express'),
+      session = require('express-session'),
+      bodyParser = require('body-parser'),
+      { Pool } = require('pg'),
+      path = require('path'),
+      helmet = require('helmet'),
+      compression = require('compression'),
+      cors = require('cors'),
+      dns = require('dns');
+
 require('dotenv').config();
 
-// 強制使用 IPv4 DNS 解析
 dns.setDefaultResultOrder('ipv4first');
-
-// 嘗試設置 Node.js 使用 IPv4
 process.env.FORCE_IPV4 = '1';
 
-// Supabase IPv4 地址映射 (專家建議的直接IP連線)
-const SUPABASE_IPv4_MAPPING = {
-  'db.cywcuzgbuqmxjxwyrrsp.supabase.co': '18.206.107.106' // Supabase US East IPv4
+const SUPABASE_IPv4_MAP = {
+  'db.cywcuzgbuqmxjxwyrrsp.supabase.co': '18.206.107.106'
 };
 
-// 設置 Node.js 偏好 IPv4 
 process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 
-// 導入中間件
-const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter');
-const { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation');
-const { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler');
+const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter'),
+      { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation'),
+      { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler'),
+      { createAgentSystem } = require('./agents'),
+      driverApiRoutes = require('./routes/driver_api'),
+      customerApiRoutes = require('./routes/customer_api'),
+      adminReportsApiRoutes = require('./routes/admin_reports_api'),
+      { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
+      { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
+      WebSocketManager = require('./services/WebSocketManager'),
+      SmartRouteService = require('./services/SmartRouteService'),
+      RouteOptimizationService = require('./services/RouteOptimizationService'),
+      LineNotificationService = require('./services/LineNotificationService');
 
-// 導入 Agent 系統
-const { createAgentSystem } = require('./agents');
-
-// Agent 系統實例
 let agentSystem = null;
+let smartRouteService = null;
+let routeOptimizationService = null;
+let webSocketManager = null;
+let lineNotificationService = null;
 
-const app = express();
-const port = process.env.PORT || 3000;
+const app = express(),
+      port = process.env.PORT || 3002;
 
-// PostgreSQL 連線配置 - 嘗試多種連線方法
-let pool;
-let demoMode = false;
+let pool,
+    demoMode = false;
 
 async function createDatabasePool() {
+  // 設置 Node.js 環境使用 UTF-8 編碼
+  process.env.LC_ALL = 'zh_TW.UTF-8';
+  process.env.LANG = 'zh_TW.UTF-8';
+  
   console.log('🔧 開始嘗試資料庫連線...');
   console.log('🔍 環境變數檢查:');
   console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '已設定' : '未設定');
@@ -58,7 +66,9 @@ async function createDatabasePool() {
         ssl: { rejectUnauthorized: false },
         connectionTimeoutMillis: 60000,
         idleTimeoutMillis: 30000,
-        max: 5
+        max: 5,
+        // 確保資料庫連線使用 UTF-8 編碼
+        options: '--client_encoding=UTF8'
       });
       
       const testResult = await pool.query('SELECT NOW() as current_time');
@@ -134,6 +144,19 @@ async function createDatabasePool() {
   try {
     // 手動解析為IPv4地址
     const { promisify } = require('util');
+
+// 暫時註解即時通知系統服務導入，避免啟動錯誤
+// const SSENotificationService = require('./services/SSENotificationService');
+// const OrderNotificationService = require('./services/OrderNotificationService');
+// const DriverLocationService = require('./services/DriverLocationService');
+// const DeliveryEstimationService = require('./services/DeliveryEstimationService');
+// const initializeRealtimeRoutes = require('./routes/realtime_api');
+
+// 即時通知服務實例
+let sseNotificationService = null;
+let orderNotificationService = null;
+let driverLocationService = null;
+let deliveryEstimationService = null;
     const resolve4 = promisify(dns.resolve4);
     const ipAddresses = await resolve4('db.cywcuzgbuqmxjxwyrrsp.supabase.co');
     const ipAddress = ipAddresses[0]; // 使用第一個IPv4地址
@@ -197,11 +220,71 @@ createDatabasePool().then(async () => {
     console.error('❌ Agent 系統啟動失敗:', error);
     // 即使 Agent 系統啟動失敗，伺服器仍可繼續運行
   }
+  
+  // 初始化 Google Maps API 服務
+  try {
+    setGoogleMapsDatabasePool(pool);
+    console.log('🗺️ Google Maps API 服務已初始化');
+
+  // 暫時註解即時通知系統初始化
+  // try {
+    // 1. 創建SSE通知服務
+    // sseNotificationService = new SSENotificationService();
+    // console.log('📡 SSE通知服務已初始化');
+    // 
+    // // 2. 創建訂單通知服務
+    // orderNotificationService = new OrderNotificationService(pool, sseNotificationService);
+    // console.log('📋 訂單通知服務已初始化');
+    // 
+    // // 3. 創建外送員位置服務
+    // driverLocationService = new DriverLocationService(pool, sseNotificationService);
+    // console.log('🚚 外送員位置服務已初始化');
+    // 
+    // // 4. 創建配送時間預估服務
+    // deliveryEstimationService = new DeliveryEstimationService(pool, null);
+    // console.log('⏰ 配送時間預估服務已初始化');
+    // 
+    // // 5. 設置心跳包發送
+    // setInterval(() => {
+    //   if (sseNotificationService) {
+    //     sseNotificationService.sendHeartbeat();
+    //   }
+    // }, 30000); // 每30秒發送心跳包
+    // 
+    // console.log('🎉 即時通知系統已完全初始化');
+    
+  // } catch (error) {
+  //   console.error('❌ 即時通知系統初始化失敗:', error);
+  // }
+  } catch (error) {
+    console.error('❌ Google Maps API 服務初始化失敗:', error);
+  }
+  
+  // 初始化智能路線服務
+  try {
+    smartRouteService = new SmartRouteService(pool);
+    console.log('🧠 SmartRouteService 已初始化');
+  } catch (error) {
+    console.error('❌ SmartRouteService 初始化失敗:', error);
+  }
+  
+  // 初始化路線優化服務
+  try {
+    routeOptimizationService = new RouteOptimizationService(pool);
+    console.log('🚀 RouteOptimizationService 已初始化');
+  } catch (error) {
+    console.error('❌ RouteOptimizationService 初始化失敗:', error);
+  }
 }).catch(console.error);
 
 // 設定 view engine 與靜態檔案
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
+// 設置 EJS 模板的 UTF-8 編碼
+app.set('view options', { 
+  rmWhitespace: true,
+  charset: 'utf-8'
+});
 app.use(express.static(path.join(__dirname, '../public')));
 
 // 處理 favicon.ico 請求
@@ -225,12 +308,33 @@ app.use(cors({
   credentials: true
 }));
 
+// 設置中文編碼支援
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Accept-Charset', 'utf-8');
+  next();
+});
+
 // 一般API限制
 app.use('/api/', apiLimiter);
 
-// 解析請求體
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ extended: false, limit: '10mb' }));
+// 解析請求體 - 設置正確的中文編碼
+app.use(bodyParser.json({ 
+  limit: '10mb',
+  type: 'application/json',
+  charset: 'utf-8'
+}));
+app.use(bodyParser.urlencoded({ 
+  extended: false, 
+  limit: '10mb',
+  charset: 'utf-8'
+}));
+
+// 設置響應頭確保中文正確顯示
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  next();
+});
 
 // Session配置
 app.use(session({
@@ -248,6 +352,125 @@ app.use(session({
 app.use((req, res, next) => {
   res.locals.sessionLine = req.session ? req.session.line : null;
   next();
+});
+
+// 設置全局變數供路由使用
+app.use((req, res, next) => {
+  req.app.locals.pool = pool;
+  req.app.locals.demoMode = demoMode;
+  next();
+});
+
+// 外送員API路由
+app.use('/api/driver', driverApiRoutes);
+
+// 客戶端API路由
+app.use('/api/customer', customerApiRoutes);
+
+// 後台報表API路由
+app.use('/api/admin/reports', adminReportsApiRoutes);
+
+// Google Maps API路由
+app.use('/api/maps', googleMapsApiRoutes);
+
+// WebSocket API路由
+app.use('/api/websocket', websocketApiRoutes);
+
+// 智能路線API端點
+app.post('/api/smart-route/plan', ensureAdmin, async (req, res) => {
+  try {
+    const { orderIds, options = {} } = req.body;
+    
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單ID列表必填且不能為空'
+      });
+    }
+
+    if (!smartRouteService) {
+      return res.status(503).json({
+        success: false,
+        message: '智能路線服務尚未初始化'
+      });
+    }
+
+    const routePlan = await smartRouteService.planSmartRoute(orderIds, options);
+
+    res.json({
+      success: true,
+      message: '智能路線規劃完成',
+      data: routePlan
+    });
+
+  } catch (error) {
+    console.error('智能路線規劃API錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '智能路線規劃失敗: ' + error.message
+    });
+  }
+});
+
+app.get('/api/smart-route/plans', ensureAdmin, async (req, res) => {
+  try {
+    if (!smartRouteService) {
+      return res.status(503).json({
+        success: false,
+        message: '智能路線服務尚未初始化'
+      });
+    }
+
+    const options = {
+      status: req.query.status,
+      limit: parseInt(req.query.limit) || 50,
+      offset: parseInt(req.query.offset) || 0,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate
+    };
+
+    const plans = await smartRouteService.getRoutePlans(options);
+
+    res.json({
+      success: true,
+      data: plans,
+      count: plans.length
+    });
+
+  } catch (error) {
+    console.error('獲取路線計劃API錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取路線計劃失敗: ' + error.message
+    });
+  }
+});
+
+app.get('/api/smart-route/plans/:planId', ensureAdmin, async (req, res) => {
+  try {
+    const { planId } = req.params;
+
+    if (!smartRouteService) {
+      return res.status(503).json({
+        success: false,
+        message: '智能路線服務尚未初始化'
+      });
+    }
+
+    const planDetails = await smartRouteService.getRoutePlanDetails(planId);
+
+    res.json({
+      success: true,
+      data: planDetails
+    });
+
+  } catch (error) {
+    console.error('獲取路線計劃詳情API錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取路線計劃詳情失敗: ' + error.message
+    });
+  }
 });
 
 // 地理編碼：將地址轉為座標
@@ -315,9 +538,57 @@ async function fetchProducts() {
       return demoProducts;
     }
     
-    const { rows } = await pool.query('SELECT * FROM products ORDER BY id');
-    console.log('✅ 成功從資料庫獲取', rows.length, '個產品');
-    return rows;
+    // 獲取商品基本資訊
+    const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
+    
+    // 為每個商品載入選項群組和選項
+    for (const product of products) {
+      const optionGroupsResult = await pool.query(`
+        SELECT pog.*, 
+               po.id as option_id,
+               po.name as option_name,
+               po.description as option_description,
+               po.price_modifier,
+               po.is_default,
+               po.sort_order as option_sort_order
+        FROM product_option_groups pog
+        LEFT JOIN product_options po ON pog.id = po.group_id
+        WHERE pog.product_id = $1
+        ORDER BY pog.sort_order, po.sort_order
+      `, [product.id]);
+      
+      // 組織選項群組結構
+      const optionGroupsMap = new Map();
+      for (const row of optionGroupsResult.rows) {
+        if (!optionGroupsMap.has(row.id)) {
+          optionGroupsMap.set(row.id, {
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            is_required: row.is_required,
+            selection_type: row.selection_type,
+            sort_order: row.sort_order,
+            options: []
+          });
+        }
+        
+        if (row.option_id) {
+          optionGroupsMap.get(row.id).options.push({
+            id: row.option_id,
+            name: row.option_name,
+            description: row.option_description,
+            price_modifier: row.price_modifier,
+            is_default: row.is_default,
+            sort_order: row.option_sort_order
+          });
+        }
+      }
+      
+      product.optionGroups = Array.from(optionGroupsMap.values());
+    }
+    
+    console.log('✅ 成功從資料庫獲取', products.length, '個產品（含選項）');
+    return products;
     
   } catch (error) {
     console.log('❌ 資料庫查詢失敗，切換到示範模式:', error.message);
@@ -378,11 +649,54 @@ app.get('/driver/dashboard', (req, res) => {
   });
 });
 
+// 🚀 外送員PWA工作台
+app.get('/driver', (req, res) => {
+  if (!req.session.driverId) {
+    return res.redirect('/driver/login');
+  }
+  
+  res.render('driver_pwa', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
+});
+
+// 🚛 外送員通訊中心
+app.get('/driver/chat', (req, res) => {
+  if (!req.session.driverId) {
+    return res.redirect('/driver/login');
+  }
+  
+  res.render('driver_chat', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員',
+      phone: req.session.driverPhone || ''
+    }
+  });
+});
+
 // 🚛 外送員登出
 app.get('/driver/logout', (req, res) => {
   req.session.driverId = null;
   req.session.driverName = null;
   res.redirect('/driver/login');
+});
+
+// 🛰️ 外送員GPS追蹤工作台
+app.get('/driver/dashboard-gps', (req, res) => {
+  if (!req.session.driverId) {
+    return res.redirect('/driver/login');
+  }
+  
+  res.render('driver_dashboard_gps', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
 });
 
 // 🚛 外送員API - 可接訂單
@@ -726,6 +1040,287 @@ app.post('/api/driver/complete-order/:id', async (req, res) => {
   }
 });
 
+// 🚀 PWA 外送員API - 今日統計
+app.get('/api/driver/today-stats', async (req, res) => {
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    let completed = 0;
+    let active = 0;
+    let earnings = 0;
+    
+    if (!demoMode && pool) {
+      // 今日完成訂單數和收入
+      const completedQuery = `
+        SELECT COUNT(*) as completed_count, COALESCE(SUM(total_amount), 0) as total_earnings
+        FROM orders 
+        WHERE driver_id = $1 
+          AND status = 'completed' 
+          AND DATE(updated_at) = CURRENT_DATE
+      `;
+      const completedResult = await pool.query(completedQuery, [driverId]);
+      
+      if (completedResult.rows.length > 0) {
+        completed = parseInt(completedResult.rows[0].completed_count || 0);
+        earnings = parseFloat(completedResult.rows[0].total_earnings || 0);
+      }
+      
+      // 進行中訂單數
+      const activeQuery = `
+        SELECT COUNT(*) as active_count
+        FROM orders 
+        WHERE driver_id = $1 
+          AND status IN ('assigned', 'picked_up', 'delivering')
+      `;
+      const activeResult = await pool.query(activeQuery, [driverId]);
+      
+      if (activeResult.rows.length > 0) {
+        active = parseInt(activeResult.rows[0].active_count || 0);
+      }
+    } else {
+      // Demo 模式數據
+      completed = 3;
+      active = 1;
+      earnings = 285;
+    }
+    
+    res.json({
+      completed,
+      active,
+      earnings
+    });
+  } catch (error) {
+    console.error('獲取今日統計失敗:', error);
+    res.status(500).json({ success: false, message: '獲取統計失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 當前任務
+app.get('/api/driver/current-task', async (req, res) => {
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    let currentTask = null;
+    
+    if (!demoMode && pool) {
+      const query = `
+        SELECT o.*, oi.item_name, oi.quantity, oi.unit_price
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.driver_id = $1 
+          AND o.status IN ('assigned', 'picked_up', 'delivering')
+        ORDER BY o.updated_at ASC
+        LIMIT 1
+      `;
+      const result = await pool.query(query, [driverId]);
+      
+      if (result.rows.length > 0) {
+        currentTask = result.rows[0];
+      }
+    } else {
+      // Demo 模式數據
+      currentTask = {
+        id: 1001,
+        contact_name: '王小明',
+        contact_phone: '0912-345-678',
+        address: '台北市信義區市府路1號',
+        total_amount: 280,
+        status: 'delivering',
+        lat: 25.0415,
+        lng: 121.5671
+      };
+    }
+    
+    res.json(currentTask);
+  } catch (error) {
+    console.error('獲取當前任務失敗:', error);
+    res.status(500).json({ success: false, message: '獲取當前任務失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 待配送訂單
+app.get('/api/driver/pending-orders', async (req, res) => {
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    let orders = [];
+    
+    if (!demoMode && pool) {
+      const query = `
+        SELECT id, contact_name, contact_phone, address, total_amount, status, lat, lng
+        FROM orders 
+        WHERE driver_id = $1 
+          AND status IN ('assigned', 'picked_up')
+        ORDER BY created_at ASC
+      `;
+      const result = await pool.query(query, [driverId]);
+      orders = result.rows;
+    } else {
+      // Demo 模式數據
+      orders = [
+        {
+          id: 1002,
+          contact_name: '李大華',
+          contact_phone: '0923-456-789',
+          address: '台北市大安區忠孝東路四段100號',
+          total_amount: 350,
+          status: 'assigned'
+        },
+        {
+          id: 1003,
+          contact_name: '陳美玲',
+          contact_phone: '0934-567-890',
+          address: '台北市松山區南京東路五段200號',
+          total_amount: 195,
+          status: 'assigned'
+        }
+      ];
+    }
+    
+    res.json(orders);
+  } catch (error) {
+    console.error('獲取待配送訂單失敗:', error);
+    res.status(500).json({ success: false, message: '獲取訂單失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 取貨確認
+app.post('/api/driver/pickup-order/:id', async (req, res) => {
+  const orderId = req.params.id;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    if (!demoMode && pool) {
+      await pool.query(`
+        UPDATE orders 
+        SET status = 'picked_up', updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND driver_id = $2
+      `, [orderId, driverId]);
+    }
+    
+    res.json({ success: true, message: '取貨確認成功' });
+  } catch (error) {
+    console.error('取貨確認失敗:', error);
+    res.status(500).json({ success: false, message: '取貨確認失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 開始配送
+app.post('/api/driver/start-delivery/:id', async (req, res) => {
+  const orderId = req.params.id;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    if (!demoMode && pool) {
+      await pool.query(`
+        UPDATE orders 
+        SET status = 'delivering', updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND driver_id = $2
+      `, [orderId, driverId]);
+    }
+    
+    res.json({ success: true, message: '開始配送' });
+  } catch (error) {
+    console.error('開始配送失敗:', error);
+    res.status(500).json({ success: false, message: '開始配送失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 完成配送
+app.post('/api/driver/complete-delivery/:id', async (req, res) => {
+  const orderId = req.params.id;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    if (!demoMode && pool) {
+      await pool.query(`
+        UPDATE orders 
+        SET status = 'completed', 
+            delivered_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND driver_id = $2
+      `, [orderId, driverId]);
+    }
+    
+    res.json({ success: true, message: '配送完成' });
+  } catch (error) {
+    console.error('完成配送失敗:', error);
+    res.status(500).json({ success: false, message: '完成配送失敗' });
+  }
+});
+
+// 🚀 PWA 外送員API - 獲取下一個訂單
+app.get('/api/driver/next-order/:completedOrderId', async (req, res) => {
+  const completedOrderId = req.params.completedOrderId;
+  const driverId = req.session.driverId;
+  
+  if (!driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  try {
+    let nextOrder = null;
+    
+    if (!demoMode && pool) {
+      // 獲取該外送員的下一個待配送訂單
+      const query = `
+        SELECT id, contact_name, contact_phone, address, total_amount, lat, lng
+        FROM orders 
+        WHERE driver_id = $1 
+          AND status IN ('picked_up', 'assigned')
+          AND id != $2
+        ORDER BY created_at ASC
+        LIMIT 1
+      `;
+      const result = await pool.query(query, [driverId, completedOrderId]);
+      
+      if (result.rows.length > 0) {
+        nextOrder = result.rows[0];
+      }
+    } else {
+      // Demo 模式：模擬下一個訂單
+      nextOrder = {
+        id: parseInt(completedOrderId) + 1,
+        contact_name: '下一位客戶',
+        contact_phone: '0912-000-000',
+        address: '台北市中正區重慶南路一段122號',
+        total_amount: 220,
+        lat: 25.0415,
+        lng: 121.5671
+      };
+    }
+    
+    res.json(nextOrder);
+  } catch (error) {
+    console.error('獲取下一個訂單失敗:', error);
+    res.status(500).json({ success: false, message: '獲取下一個訂單失敗' });
+  }
+});
+
 // 🚀 管理後台路由
 app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
   console.log('📊 管理後台被訪問');
@@ -785,7 +1380,7 @@ app.get('/checkout', (req, res) => {
 
 // API：提交訂單
 app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
-  const { name, phone, address, notes, invoice, items } = req.body;
+  const { name, phone, address, notes, invoice, paymentMethod, items } = req.body;
   try {
     if (!name || !phone || !address || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: '參數不完整' });
@@ -825,7 +1420,7 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     let subtotal = 0;
     const orderItems = [];
     for (const it of items) {
-      const { productId, quantity } = it;
+      const { productId, quantity, selectedUnit } = it;
       const { rows } = await pool.query('SELECT * FROM products WHERE id=$1', [productId]);
       if (rows.length === 0) {
         continue;
@@ -843,7 +1438,8 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
         quantity: Number(quantity),
         unit_price: p.price,
         line_total: lineTotal,
-        actual_weight: null
+        actual_weight: null,
+        selectedUnit: selectedUnit || p.unit_hint // 保存客戶選擇的單位
       });
     }
     const deliveryFee = subtotal >= 200 ? 0 : 50;
@@ -852,10 +1448,37 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     const geo = await geocodeAddress(address);
     // 建立訂單，儲存座標與地理狀態
     const insertOrder = await pool.query(
-      'INSERT INTO orders (contact_name, contact_phone, address, notes, invoice, subtotal, delivery_fee, total, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12) RETURNING id',
-      [name, phone, address, notes || '', invoice || '', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, invoice, payment_method, subtotal, delivery_fee, total_amount, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),$13) RETURNING id',
+      [name, phone, address, notes || '', invoice || '', paymentMethod || 'cash', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
     );
     const orderId = insertOrder.rows[0].id;
+    
+    // 🔄 自動扣庫存 - 調用InventoryAgent預留庫存
+    try {
+      if (agentSystem) {
+        const inventoryItems = orderItems
+          .filter(item => !item.is_priced_item) // 只有固定價格商品需要扣庫存
+          .map(item => ({
+            productId: item.product_id,
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.selectedUnit // 傳遞客戶選擇的單位
+          }));
+        
+        if (inventoryItems.length > 0) {
+          await agentSystem.executeTask('InventoryAgent', 'reserve_stock', {
+            orderId: orderId,
+            items: inventoryItems
+          });
+          console.log(`✅ 訂單 #${orderId} 庫存預留完成: ${inventoryItems.length} 項商品`);
+        }
+      }
+    } catch (inventoryError) {
+      console.error(`❌ 庫存預留失敗 (訂單 #${orderId}):`, inventoryError.message);
+      // 庫存預留失敗不影響訂單建立，但要記錄錯誤
+      // 管理員可以在後台手動處理庫存
+    }
+    
     // 插入品項
     for (const item of orderItems) {
       await pool.query(
@@ -1084,6 +1707,19 @@ app.get('/admin/map', ensureAdmin, (req, res) => {
   });
 });
 
+// 管理員WebSocket監控中心
+app.get('/admin/websocket-monitor', ensureAdmin, (req, res) => {
+  res.render('admin_websocket_monitor');
+});
+
+// WebSocket測試頁面 (開發模式限定)
+app.get('/websocket-test', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send('Not Found');
+  }
+  res.render('websocket_test');
+});
+
 // 返回含座標的訂單清單
 app.get('/api/admin/orders-geo', ensureAdmin, async (req, res) => {
   if (demoMode) {
@@ -1092,7 +1728,7 @@ app.get('/api/admin/orders-geo', ensureAdmin, async (req, res) => {
   }
   
   try {
-    const { rows: orders } = await pool.query('SELECT id, contact_name, contact_phone, address, status, total, lat, lng FROM orders WHERE lat IS NOT NULL AND lng IS NOT NULL');
+    const { rows: orders } = await pool.query('SELECT id, contact_name, contact_phone, address, status, total_amount as total, lat, lng FROM orders WHERE lat IS NOT NULL AND lng IS NOT NULL');
     res.json({ orders });
   } catch (err) {
     console.error(err);
@@ -1120,6 +1756,15 @@ app.get('/admin/orders', ensureAdmin, async (req, res, next) => {
   try {
     const { rows: orders } = await pool.query('SELECT * FROM orders ORDER BY id DESC');
     res.render('admin_orders', { orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 🚀 後台：路線優化管理頁面
+app.get('/admin/route-optimization', ensureAdmin, async (req, res, next) => {
+  try {
+    res.render('admin_route_optimization');
   } catch (err) {
     next(err);
   }
@@ -1227,7 +1872,7 @@ app.get('/admin/products/new', ensureAdmin, (req, res) => {
 
 // 後台：新增產品
 app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
-  const { name, price, isPricedItem, unitHint, initialStock, minStockAlert, supplierName } = req.body;
+  const { name, price, isPricedItem, unitHint, initialStock, minStockAlert, supplierName, optionGroups, imageData } = req.body;
   
   if (demoMode) {
     console.log('📝 示範模式：模擬新增商品', { name, price });
@@ -1246,10 +1891,35 @@ app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
     await pool.query('BEGIN');
     
     try {
+      // 處理圖片上傳
+      let imageUrl = null;
+      if (imageData && imageData.startsWith('data:image/')) {
+        // 將base64圖片儲存為靜態檔案
+        const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const fileName = `product_${Date.now()}.jpg`;
+        const imagePath = `uploads/products/${fileName}`;
+        
+        // 確保上傳目錄存在
+        const fs = require('fs');
+        const path = require('path');
+        const uploadDir = path.join(__dirname, '..', 'public', 'uploads', 'products');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        // 儲存圖片檔案
+        const fullPath = path.join(uploadDir, fileName);
+        fs.writeFileSync(fullPath, imageBuffer);
+        imageUrl = `/uploads/products/${fileName}`;
+        
+        console.log(`📷 圖片已儲存: ${imageUrl}`);
+      }
+      
       // 新增商品
       const productResult = await pool.query(
-        'INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES ($1,$2,$3,$4) RETURNING id',
-        [name, priceVal, priced, unitHint || null]
+        'INSERT INTO products (name, price, is_priced_item, unit_hint, image_url, image_uploaded_at) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+        [name, priceVal, priced, unitHint || null, imageUrl, imageUrl ? new Date() : null]
       );
       
       const productId = productResult.rows[0].id;
@@ -1270,6 +1940,42 @@ app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
           'INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name) VALUES ($1,$2,$3,$4,$5,$6)',
           [productId, 'in', stockVal, unitCostVal, '新商品初始庫存', '管理員']
         );
+      }
+      
+      // 處理商品選項群組
+      if (optionGroups && typeof optionGroups === 'object') {
+        for (const groupKey of Object.keys(optionGroups)) {
+          const group = optionGroups[groupKey];
+          if (group.name) {
+            // 建立選項群組
+            const groupResult = await pool.query(
+              'INSERT INTO product_option_groups (product_id, name, description, is_required, selection_type, sort_order) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+              [productId, group.name, group.description || '', true, 'single', parseInt(groupKey)]
+            );
+            
+            const groupId = groupResult.rows[0].id;
+            
+            // 建立選項
+            if (group.options && typeof group.options === 'object') {
+              for (const optionKey of Object.keys(group.options)) {
+                const option = group.options[optionKey];
+                if (option.name) {
+                  await pool.query(
+                    'INSERT INTO product_options (group_id, name, description, price_modifier, is_default, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
+                    [
+                      groupId, 
+                      option.name, 
+                      option.description || '', 
+                      parseFloat(option.priceModifier || 0), 
+                      option.isDefault === 'on', 
+                      parseInt(optionKey)
+                    ]
+                  );
+                }
+              }
+            }
+          }
+        }
       }
       
       // 提交交易
@@ -1379,7 +2085,7 @@ app.post('/api/admin/inventory/update', ensureAdmin, async (req, res) => {
 // 📋 API：進貨操作
 app.post('/api/admin/inventory/restock', ensureAdmin, async (req, res) => {
   try {
-    const { productId, quantity, unitCost, supplierName, reason } = req.body;
+    const { productId, quantity, unit, unitCost, supplierName, reason } = req.body;
     
     if (!demoMode && pool) {
       // 更新庫存數量
@@ -1390,16 +2096,62 @@ app.post('/api/admin/inventory/restock', ensureAdmin, async (req, res) => {
       `, [quantity, unitCost, supplierName, productId]);
       
       // 記錄進貨
+      const fullReason = `${reason || '進貨補充'} (${quantity}${unit || '單位'})`;
       await pool.query(`
         INSERT INTO stock_movements (product_id, movement_type, quantity, unit_cost, reason, operator_name)
         VALUES ($1, 'in', $2, $3, $4, '管理員')
-      `, [productId, quantity, unitCost, reason || '進貨補充']);
+      `, [productId, quantity, unitCost, fullReason]);
     }
     
     res.json({ success: true, message: '進貨記錄成功' });
   } catch (err) {
     console.error('進貨操作錯誤:', err);
     res.status(500).json({ success: false, message: '進貨失敗' });
+  }
+});
+
+// 🚀 API: 路線優化服務
+app.post('/api/admin/route-optimization/generate', ensureAdmin, async (req, res) => {
+  try {
+    if (!routeOptimizationService) {
+      return res.status(503).json({ 
+        success: false, 
+        message: '路線優化服務未初始化' 
+      });
+    }
+
+    const options = req.body || {};
+    const result = await routeOptimizationService.generateOptimizedRoutes(options);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('路線優化失敗:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '路線優化失敗', 
+      error: error.message 
+    });
+  }
+});
+
+// 🚀 API: 路線優化服務狀態
+app.get('/api/admin/route-optimization/status', ensureAdmin, async (req, res) => {
+  try {
+    if (!routeOptimizationService) {
+      return res.json({ 
+        initialized: false, 
+        message: '路線優化服務未初始化' 
+      });
+    }
+
+    const status = routeOptimizationService.getServiceStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('獲取路線優化狀態失敗:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取服務狀態失敗' 
+    });
   }
 });
 
@@ -1468,6 +2220,16 @@ app.get('/admin/reports', ensureAdmin, async (req, res, next) => {
     });
   } catch (err) {
     console.error('❌ 統計報表頁面錯誤:', err);
+    next(err);
+  }
+});
+
+// 🏆 外送員績效統計頁面
+app.get('/admin/driver-performance', ensureAdmin, async (req, res, next) => {
+  try {
+    res.render('admin_driver_performance');
+  } catch (err) {
+    console.error('❌ 外送員績效頁面錯誤:', err);
     next(err);
   }
 });
@@ -2013,6 +2775,161 @@ app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
 
 // 🔧 API：手動重新連接資料庫
 app.post('/api/admin/reconnect-database', ensureAdmin, async (req, res) => {
+
+// 註冊即時通知API路由
+if (sseNotificationService && orderNotificationService && driverLocationService) {
+  // app.use('/api/notifications', initializeRealtimeRoutes(
+  //   sseNotificationService,
+  //   orderNotificationService,
+  //   driverLocationService
+  // ));
+  // console.log('🔗 即時通知API路由已註冊');
+}
+
+// 訂單追蹤頁面路由
+app.get('/order-tracking/:id', async (req, res, next) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    
+    if (isNaN(orderId)) {
+      return res.status(400).render('error', { 
+        message: '無效的訂單ID' 
+      });
+    }
+    
+    // 獲取訂單詳情
+    const orderResult = await pool.query(`
+      SELECT o.*, d.name as driver_name, d.phone as driver_phone,
+             d.current_lat as driver_lat, d.current_lng as driver_lng
+      FROM orders o
+      LEFT JOIN drivers d ON o.driver_id = d.id
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).render('error', { 
+        message: '找不到指定的訂單' 
+      });
+    }
+    
+    const order = orderResult.rows[0];
+    
+    // 獲取訂單狀態歷史
+    let statusHistory = [];
+    if (orderNotificationService) {
+      try {
+        statusHistory = await orderNotificationService.getOrderStatusHistory(orderId);
+      } catch (error) {
+        console.error('獲取訂單狀態歷史失敗:', error);
+      }
+    }
+    
+    res.render('order_tracking', {
+      order,
+      statusHistory,
+      title: `訂單追蹤 #${orderId}`
+    });
+    
+  } catch (error) {
+    console.error('訂單追蹤頁面錯誤:', error);
+    next(error);
+  }
+});
+
+// 📱 即時訂單追蹤頁面
+app.get('/track-order/:id', async (req, res, next) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const { phone } = req.query;
+    
+    let order = null;
+    
+    if (demoMode) {
+      order = {
+        id: orderId,
+        contact_name: '測試客戶',
+        contact_phone: phone || '0912345678',
+        address: '新北市三峽區大學路1號',
+        total: 350,
+        status: 'delivering',
+        created_at: new Date(),
+        lat: 24.9347,
+        lng: 121.3681
+      };
+    } else if (pool) {
+      const result = await pool.query(`
+        SELECT o.*, c.name as customer_name, c.phone as customer_phone
+        FROM orders o 
+        LEFT JOIN customers c ON o.customer_id = c.id 
+        WHERE o.id = $1 AND ($2 IS NULL OR o.contact_phone = $2)
+      `, [orderId, phone]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).render('error', { 
+          message: '訂單不存在或無權限查看',
+          title: '訂單追蹤'
+        });
+      }
+      
+      order = result.rows[0];
+    }
+    
+    if (!order) {
+      return res.status(404).render('error', { 
+        message: '訂單不存在',
+        title: '訂單追蹤'
+      });
+    }
+    
+    res.render('order_tracking_realtime', {
+      title: `訂單 #${orderId} 即時追蹤`,
+      order: order
+    });
+  } catch (error) {
+    console.error('❌ 即時訂單追蹤頁面錯誤:', error);
+    next(error);
+  }
+});
+
+// 獲取訂單狀態API (供前端使用)
+app.get('/api/orders/:id/status', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    
+    const result = await pool.query(`
+      SELECT o.*, d.name as driver_name, d.phone as driver_phone,
+             d.current_lat as driver_lat, d.current_lng as driver_lng
+      FROM orders o
+      LEFT JOIN drivers d ON o.driver_id = d.id
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '訂單不存在' });
+    }
+    
+    const order = result.rows[0];
+    
+    res.json({
+      id: order.id,
+      status: order.status,
+      estimated_delivery_time: order.estimated_delivery_time,
+      driver: order.driver_name ? {
+        id: order.driver_id,
+        name: order.driver_name,
+        phone: order.driver_phone,
+        location: order.driver_lat && order.driver_lng ? {
+          lat: parseFloat(order.driver_lat),
+          lng: parseFloat(order.driver_lng)
+        } : null
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('獲取訂單狀態失敗:', error);
+    res.status(500).json({ error: '服務器錯誤' });
+  }
+});
   try {
     console.log('🔄 管理員請求重新連接資料庫...');
     
@@ -2066,6 +2983,12 @@ const gracefulShutdown = async (signal) => {
   console.log(`\n📴 收到 ${signal} 信號，正在優雅關閉...`);
   
   try {
+    // 關閉 WebSocket 管理器
+    if (webSocketManager) {
+      console.log('🔌 正在關閉 WebSocket 服務...');
+      webSocketManager.close();
+    }
+    
     // 關閉 Agent 系統
     if (agentSystem) {
       console.log('🤖 正在關閉 Agent 系統...');
@@ -2087,6 +3010,657 @@ const gracefulShutdown = async (signal) => {
   }
 };
 
+// =====================================
+// 測試數據API路由
+// =====================================
+
+// 測試數據控制面板
+app.get('/test-dashboard', (req, res) => {
+  res.render('test_data_dashboard');
+});
+
+// 獲取測試數據統計
+app.get('/api/test/stats', async (req, res) => {
+  try {
+    // 總訂單數
+    const totalOrdersResult = await pool.query('SELECT COUNT(*) as count FROM orders');
+    const totalOrders = parseInt(totalOrdersResult.rows[0].count);
+    
+    // 今日新增訂單
+    const todayOrdersResult = await pool.query(`
+      SELECT COUNT(*) as count FROM orders 
+      WHERE DATE(created_at) = CURRENT_DATE
+    `);
+    const todayOrders = parseInt(todayOrdersResult.rows[0].count);
+    
+    // 平均訂單金額
+    const avgOrderResult = await pool.query(`
+      SELECT AVG(total_amount) as avg FROM orders 
+      WHERE total_amount > 0
+    `);
+    const avgOrderValue = Math.round(parseFloat(avgOrderResult.rows[0].avg) || 0);
+    
+    // 不重複客戶數
+    const customersResult = await pool.query(`
+      SELECT COUNT(DISTINCT contact_phone) as count FROM orders
+    `);
+    const totalCustomers = parseInt(customersResult.rows[0].count);
+    
+    // 已完成訂單
+    const completedResult = await pool.query(`
+      SELECT COUNT(*) as count FROM orders 
+      WHERE status IN ('completed', 'delivered')
+    `);
+    const completedOrders = parseInt(completedResult.rows[0].count);
+    
+    // 進行中訂單
+    const activeResult = await pool.query(`
+      SELECT COUNT(*) as count FROM orders 
+      WHERE status IN ('confirmed', 'preparing', 'ready', 'delivering')
+    `);
+    const activeOrders = parseInt(activeResult.rows[0].count);
+    
+    res.json({
+      success: true,
+      totalOrders,
+      todayOrders,
+      avgOrderValue,
+      totalCustomers,
+      completedOrders,
+      activeOrders
+    });
+    
+  } catch (error) {
+    console.error('獲取測試統計失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取統計數據失敗'
+    });
+  }
+});
+
+// 獲取最新訂單列表
+app.get('/api/test/recent-orders', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, contact_name, address, total_amount, status, created_at
+      FROM orders 
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `);
+    
+    res.json({
+      success: true,
+      orders: result.rows
+    });
+    
+  } catch (error) {
+    console.error('獲取最新訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單列表失敗'
+    });
+  }
+});
+
+// 建立更多測試訂單
+app.post('/api/test/create-orders', async (req, res) => {
+  try {
+    const { count = 5 } = req.body;
+    const { createTestOrders } = require('../create_test_orders.js');
+    
+    const client = await pool.connect();
+    const createdOrders = await createTestOrders(client, count);
+    client.release();
+    
+    res.json({
+      success: true,
+      message: `成功建立 ${createdOrders.length} 筆測試訂單`,
+      created: createdOrders.length
+    });
+    
+  } catch (error) {
+    console.error('建立測試訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '建立測試訂單失敗: ' + error.message
+    });
+  }
+});
+
+// =====================================
+// LINE Bot 整合路由
+// =====================================
+
+const LineBotService = require('./services/LineBotService');
+const lineBotService = new LineBotService();
+
+const OrderNotificationHook = require('./services/OrderNotificationHook');
+const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
+
+// LIFF 入口頁面
+app.get('/liff-entry', (req, res) => {
+  const liffId = process.env.LINE_LIFF_ID || '';
+  res.render('liff_entry', { liffId });
+});
+
+// LINE Bot 測試頁面
+app.get('/line-bot-test', (req, res) => {
+  res.render('line_bot_test');
+});
+
+// LINE 用戶綁定 API
+app.post('/api/line/bind-user', async (req, res) => {
+  try {
+    const { lineUserId, displayName, pictureUrl } = req.body;
+    
+    if (!lineUserId) {
+      return res.status(400).json({
+        success: false,
+        message: 'LINE 用戶ID不能為空'
+      });
+    }
+    
+    // 檢查是否為示範模式
+    if (lineBotService.demoMode) {
+      console.log('📱 [示範模式] 用戶綁定請求:', {
+        lineUserId,
+        displayName,
+        pictureUrl
+      });
+      
+      return res.json({
+        success: true,
+        demo: true,
+        message: '示範模式：用戶綁定模擬成功'
+      });
+    }
+    
+    // 將用戶資訊儲存到資料庫
+    // 注意：這裡我們先儲存到 users 表，之後訂單建立時會關聯
+    await pool.query(`
+      INSERT INTO users (line_user_id, line_display_name, created_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (line_user_id) DO UPDATE SET
+        line_display_name = EXCLUDED.line_display_name,
+        updated_at = NOW()
+    `, [lineUserId, displayName]);
+    
+    console.log(`📱 LINE用戶綁定成功: ${displayName} (${lineUserId})`);
+    
+    res.json({
+      success: true,
+      message: '用戶綁定成功',
+      user: {
+        lineUserId,
+        displayName
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ LINE用戶綁定失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '綁定失敗：' + error.message
+    });
+  }
+});
+
+// LINE Webhook 接收器
+app.post('/api/line/webhook', async (req, res) => {
+  try {
+    const signature = req.get('X-Line-Signature');
+    const body = JSON.stringify(req.body);
+    
+    // 驗證簽名（示範模式跳過）
+    if (!lineBotService.demoMode && !lineBotService.validateSignature(body, signature)) {
+      console.warn('⚠️ LINE Webhook 簽名驗證失敗');
+      return res.status(400).send('Signature verification failed');
+    }
+    
+    // 處理 LINE 事件
+    const events = req.body.events || [];
+    const results = await lineBotService.handleWebhookEvents(events);
+    
+    console.log(`📱 處理了 ${events.length} 個 LINE 事件`);
+    
+    res.json({
+      success: true,
+      processed: events.length,
+      results
+    });
+    
+  } catch (error) {
+    console.error('❌ 處理 LINE Webhook 失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// 手動發送訂單通知 (用於測試)
+app.post('/api/line/send-order-notification/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // 查詢訂單資訊
+    const orderResult = await pool.query(`
+      SELECT o.*, u.line_user_id 
+      FROM orders o
+      LEFT JOIN users u ON o.contact_phone = u.phone
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到指定的訂單'
+      });
+    }
+    
+    const order = orderResult.rows[0];
+    
+    // 查詢訂單項目
+    const itemsResult = await pool.query(`
+      SELECT * FROM order_items WHERE order_id = $1
+    `, [orderId]);
+    
+    const orderItems = itemsResult.rows;
+    
+    // 發送通知
+    const result = await lineBotService.sendOrderCompletedNotification(order, orderItems);
+    
+    res.json({
+      success: result.success,
+      message: result.success ? '通知發送成功' : '通知發送失敗',
+      demo: result.demo,
+      reason: result.reason,
+      error: result.error
+    });
+    
+  } catch (error) {
+    console.error('❌ 發送訂單通知失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '發送失敗：' + error.message
+    });
+  }
+});
+
+// 訂單狀態更新 API (包含自動LINE通知)
+app.put('/api/orders/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, notes } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: '狀態不能為空'
+      });
+    }
+    
+    // 查詢當前訂單狀態
+    const currentOrderResult = await pool.query(
+      'SELECT status FROM orders WHERE id = $1',
+      [orderId]
+    );
+    
+    if (currentOrderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到指定的訂單'
+      });
+    }
+    
+    const oldStatus = currentOrderResult.rows[0].status;
+    
+    // 更新訂單狀態
+    const updateQuery = notes ? 
+      'UPDATE orders SET status = $1, delivery_notes = $2, updated_at = NOW() WHERE id = $3' :
+      'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2';
+    
+    const updateParams = notes ? [status, notes, orderId] : [status, orderId];
+    
+    await pool.query(updateQuery, updateParams);
+    
+    console.log(`📋 訂單 #${orderId} 狀態更新: ${oldStatus} → ${status}`);
+    
+    // 觸發通知Hook
+    await orderNotificationHook.handleOrderStatusChange(orderId, oldStatus, status);
+    
+    res.json({
+      success: true,
+      message: '訂單狀態更新成功',
+      orderId: parseInt(orderId),
+      oldStatus,
+      newStatus: status
+    });
+    
+  } catch (error) {
+    console.error('❌ 更新訂單狀態失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新失敗：' + error.message
+    });
+  }
+});
+
+// 批量更新訂單狀態 (支援多筆訂單同時更新)
+app.put('/api/orders/batch-status', async (req, res) => {
+  try {
+    const { orderIds, status, notes } = req.body;
+    
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單ID列表不能為空'
+      });
+    }
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: '狀態不能為空'
+      });
+    }
+    
+    const results = [];
+    
+    // 逐筆處理以觸發通知
+    for (const orderId of orderIds) {
+      try {
+        // 查詢當前狀態
+        const currentResult = await pool.query(
+          'SELECT status FROM orders WHERE id = $1',
+          [orderId]
+        );
+        
+        if (currentResult.rows.length === 0) {
+          results.push({ orderId, success: false, message: '訂單不存在' });
+          continue;
+        }
+        
+        const oldStatus = currentResult.rows[0].status;
+        
+        // 更新狀態
+        const updateQuery = notes ? 
+          'UPDATE orders SET status = $1, delivery_notes = $2, updated_at = NOW() WHERE id = $3' :
+          'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2';
+        
+        const updateParams = notes ? [status, notes, orderId] : [status, orderId];
+        
+        await pool.query(updateQuery, updateParams);
+        
+        // 觸發通知
+        await orderNotificationHook.handleOrderStatusChange(orderId, oldStatus, status);
+        
+        results.push({ 
+          orderId, 
+          success: true, 
+          oldStatus, 
+          newStatus: status 
+        });
+        
+      } catch (error) {
+        console.error(`❌ 處理訂單 #${orderId} 失敗:`, error);
+        results.push({ 
+          orderId, 
+          success: false, 
+          message: error.message 
+        });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    
+    res.json({
+      success: true,
+      message: `成功更新 ${successCount}/${orderIds.length} 筆訂單`,
+      results
+    });
+    
+  } catch (error) {
+    console.error('❌ 批量更新訂單狀態失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量更新失敗：' + error.message
+    });
+  }
+});
+
+// =====================================
+// 後台訂單管理 API
+// =====================================
+
+// 後台訂單管理頁面
+app.get('/admin/order-management', ensureAdmin, (req, res) => {
+  res.render('admin_order_management');
+});
+
+// 獲取訂單列表 (支援搜尋和篩選)
+app.get('/api/admin/orders-list', ensureAdmin, async (req, res) => {
+  try {
+    const { 
+      customerName, 
+      status, 
+      dateFrom, 
+      dateTo, 
+      limit = 100, 
+      offset = 0 
+    } = req.query;
+    
+    let whereConditions = ['1=1'];
+    let queryParams = [];
+    let paramIndex = 1;
+    
+    // 顧客姓名搜尋
+    if (customerName) {
+      whereConditions.push(`LOWER(contact_name) LIKE LOWER($${paramIndex})`);
+      queryParams.push(`%${customerName}%`);
+      paramIndex++;
+    }
+    
+    // 狀態篩選
+    if (status) {
+      whereConditions.push(`status = $${paramIndex}`);
+      queryParams.push(status);
+      paramIndex++;
+    }
+    
+    // 日期範圍篩選
+    if (dateFrom) {
+      whereConditions.push(`DATE(created_at) >= $${paramIndex}`);
+      queryParams.push(dateFrom);
+      paramIndex++;
+    }
+    
+    if (dateTo) {
+      whereConditions.push(`DATE(created_at) <= $${paramIndex}`);
+      queryParams.push(dateTo);
+      paramIndex++;
+    }
+    
+    const query = `
+      SELECT 
+        id, contact_name, contact_phone, address, 
+        total_amount, status, created_at, notes
+      FROM orders 
+      WHERE ${whereConditions.join(' AND ')}
+      ORDER BY created_at DESC 
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    
+    queryParams.push(limit, offset);
+    
+    const result = await pool.query(query, queryParams);
+    
+    res.json({
+      success: true,
+      orders: result.rows,
+      total: result.rows.length
+    });
+    
+  } catch (error) {
+    console.error('獲取訂單列表錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單列表失敗: ' + error.message
+    });
+  }
+});
+
+// 獲取訂單詳細資料 (包含商品明細)
+app.get('/api/admin/orders/:orderId/details', ensureAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // 查詢訂單基本資料
+    const orderResult = await pool.query(`
+      SELECT o.*, u.line_user_id 
+      FROM orders o
+      LEFT JOIN users u ON o.contact_phone = u.phone
+      WHERE o.id = $1
+    `, [orderId]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到指定的訂單'
+      });
+    }
+    
+    // 查詢訂單商品明細
+    const itemsResult = await pool.query(`
+      SELECT 
+        id, product_id, name, is_priced_item, 
+        quantity, unit_price, line_total, actual_weight
+      FROM order_items 
+      WHERE order_id = $1 
+      ORDER BY id
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      order: orderResult.rows[0],
+      items: itemsResult.rows
+    });
+    
+  } catch (error) {
+    console.error('獲取訂單詳情錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單詳情失敗: ' + error.message
+    });
+  }
+});
+
+// 更新訂單資料
+app.put('/api/admin/orders/:orderId', ensureAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { 
+      contact_name, 
+      contact_phone, 
+      address, 
+      status, 
+      notes, 
+      total_amount,
+      items 
+    } = req.body;
+    
+    // 開始事務
+    const client = await pool.connect();
+    await client.query('BEGIN');
+    
+    try {
+      // 記錄舊狀態（用於觸發通知）
+      const oldOrderResult = await client.query('SELECT status FROM orders WHERE id = $1', [orderId]);
+      const oldStatus = oldOrderResult.rows[0]?.status;
+      
+      // 更新訂單基本資料
+      await client.query(`
+        UPDATE orders SET 
+          contact_name = $1,
+          contact_phone = $2,
+          address = $3,
+          status = $4,
+          notes = $5,
+          total_amount = $6,
+          updated_at = NOW()
+        WHERE id = $7
+      `, [contact_name, contact_phone, address, status, notes, total_amount, orderId]);
+      
+      // 更新商品價格（如有變更）
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          if (item.index !== undefined && item.new_price !== undefined) {
+            // 獲取該索引的商品
+            const itemResult = await client.query(`
+              SELECT id, quantity FROM order_items 
+              WHERE order_id = $1 
+              ORDER BY id 
+              LIMIT 1 OFFSET $2
+            `, [orderId, item.index]);
+            
+            if (itemResult.rows.length > 0) {
+              const itemId = itemResult.rows[0].id;
+              const quantity = itemResult.rows[0].quantity;
+              const newLineTotal = item.new_price * quantity;
+              
+              await client.query(`
+                UPDATE order_items SET 
+                  unit_price = $1,
+                  line_total = $2
+                WHERE id = $3
+              `, [item.new_price, newLineTotal, itemId]);
+            }
+          }
+        }
+        
+        // 重新計算訂單總額
+        const totalResult = await client.query(`
+          SELECT COALESCE(SUM(line_total), 0) + 50 as new_total 
+          FROM order_items WHERE order_id = $1
+        `, [orderId]);
+        
+        const newTotal = totalResult.rows[0].new_total;
+        
+        await client.query(`
+          UPDATE orders SET total_amount = $1 WHERE id = $2
+        `, [newTotal, orderId]);
+      }
+      
+      await client.query('COMMIT');
+      
+      // 如果狀態有變更，觸發通知Hook
+      if (oldStatus && oldStatus !== status) {
+        await orderNotificationHook.handleOrderStatusChange(orderId, oldStatus, status);
+      }
+      
+      res.json({
+        success: true,
+        message: '訂單更新成功',
+        orderId: parseInt(orderId)
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('更新訂單錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新訂單失敗: ' + error.message
+    });
+  }
+});
+
 // 監聽關閉信號
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
@@ -2106,4 +3680,23 @@ const server = app.listen(port, () => {
   console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
   console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
   console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
+  
+  // 初始化WebSocket服務
+  if (!demoMode) {
+    try {
+      webSocketManager = new WebSocketManager(server);
+      setWebSocketManager(webSocketManager);
+      console.log(`🔌 WebSocket 服務已啟動: ws://localhost:${port}`);
+    } catch (error) {
+      console.error('❌ WebSocket 初始化失敗:', error);
+    }
+  }
+  
+  // 初始化LINE通知服務
+  try {
+    lineNotificationService = new LineNotificationService();
+    console.log('🔔 LINE通知服務已初始化');
+  } catch (error) {
+    console.error('❌ LINE通知服務初始化失敗:', error);
+  }
 });
