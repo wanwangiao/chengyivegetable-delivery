@@ -44,6 +44,9 @@ let lineBotService = null;
 const app = express(),
       port = process.env.PORT || 3002;
 
+// 信任代理設定（Vercel 需要）
+app.set('trust proxy', true);
+
 let pool,
     demoMode = false;
 

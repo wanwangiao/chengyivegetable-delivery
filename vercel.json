@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "simple-server.js",
+      "src": "src/server.js",
       "use": "@vercel/node"
     },
     {
@@ -12,48 +12,12 @@
   ],
   "routes": [
     {
-      "src": "/css/(.*)",
-      "dest": "/public/css/$1"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/public/js/$1"
-    },
-    {
-      "src": "/images/(.*)",
-      "dest": "/public/images/$1"
-    },
-    {
-      "src": "/api/driver/(.*)",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/api/customer/(.*)",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/api/admin/reports/(.*)",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/ws/(.*)",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/track-order/(.*)",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/driver/dashboard-gps",
-      "dest": "/src/server.js"
-    },
-    {
-      "src": "/admin/driver-performance",
+      "src": "/api/line/webhook",
       "dest": "/src/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/simple-server.js"
+      "dest": "/src/server.js"
     }
   ],
   "env": {
