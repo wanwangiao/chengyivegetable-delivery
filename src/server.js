@@ -1385,7 +1385,7 @@ app.get('/checkout', (req, res) => {
 
 // API：提交訂單
 app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
-  const { name, phone, address, notes, invoice, paymentMethod, items } = req.body;
+  const { name, phone, address, notes, paymentMethod, items } = req.body;
   try {
     if (!name || !phone || !address || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: '參數不完整' });
@@ -1453,8 +1453,8 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     const geo = await geocodeAddress(address);
     // 建立訂單，儲存座標與地理狀態
     const insertOrder = await pool.query(
-      'INSERT INTO orders (contact_name, contact_phone, address, notes, invoice, payment_method, subtotal, delivery_fee, total_amount, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),$13) RETURNING id',
-      [name, phone, address, notes || '', invoice || '', paymentMethod || 'cash', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, payment_method, subtotal, delivery_fee, total_amount, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12) RETURNING id',
+      [name, phone, address, notes || '', paymentMethod || 'cash', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
     );
     const orderId = insertOrder.rows[0].id;
     
@@ -1511,7 +1511,9 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     console.error('Create order error:', err);
     res.status(500).json({ 
       success: false, 
-      message: '建立訂單時發生錯誤，請稍後再試' 
+      message: '建立訂單時發生錯誤，請稍後再試',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      debug: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 }));
