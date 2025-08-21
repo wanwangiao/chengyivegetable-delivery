@@ -3206,10 +3206,22 @@ app.post('/api/line/bind-user', async (req, res) => {
 });
 
 // LINE Webhook 接收器
-app.post('/api/line/webhook', async (req, res) => {
+app.post('/api/line/webhook', express.raw({type: 'application/json'}), async (req, res) => {
   try {
+    // 檢查 LINE Bot 服務是否已初始化
+    if (!lineBotService) {
+      console.warn('⚠️ LINE Bot 服務尚未初始化，返回 200 避免錯誤');
+      return res.status(200).send('OK');
+    }
+    
     const signature = req.get('X-Line-Signature');
-    const body = JSON.stringify(req.body);
+    const body = req.body.toString();
+    
+    // 如果是 LINE 的驗證請求，直接返回 200
+    if (!signature) {
+      console.log('📱 LINE Webhook 驗證請求');
+      return res.status(200).send('OK');
+    }
     
     // 驗證簽名（示範模式跳過）
     if (!lineBotService.demoMode && !lineBotService.validateSignature(body, signature)) {
@@ -3217,13 +3229,16 @@ app.post('/api/line/webhook', async (req, res) => {
       return res.status(400).send('Signature verification failed');
     }
     
+    // 解析 JSON
+    const jsonBody = JSON.parse(body);
+    
     // 處理 LINE 事件
-    const events = req.body.events || [];
+    const events = jsonBody.events || [];
     const results = await lineBotService.handleWebhookEvents(events);
     
     console.log(`📱 處理了 ${events.length} 個 LINE 事件`);
     
-    res.json({
+    res.status(200).json({
       success: true,
       processed: events.length,
       results
@@ -3231,10 +3246,7 @@ app.post('/api/line/webhook', async (req, res) => {
     
   } catch (error) {
     console.error('❌ 處理 LINE Webhook 失敗:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(200).send('OK'); // LINE 需要 200 狀態碼
   }
 });
 
