@@ -2974,6 +2974,52 @@ app.get('/api/orders/:id/status', async (req, res) => {
   }
 });
 
+// LINE API 路由（必須在 404 處理器之前）
+// LINE 環境變數診斷端點
+app.get('/api/line/debug', (req, res) => {
+  res.status(200).json({
+    timestamp: new Date().toISOString(),
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? 'SET (' + process.env.LINE_CHANNEL_ID + ')' : 'MISSING',
+      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : 'MISSING',
+      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : 'MISSING'
+    },
+    lineBotService: lineBotService ? {
+      initialized: true,
+      demoMode: lineBotService.demoMode,
+      hasClient: !!lineBotService.client
+    } : 'NOT_INITIALIZED'
+  });
+});
+
+// LINE Webhook 接收器 - 無驗證版本
+app.post('/api/line/webhook', express.json(), (req, res) => {
+  console.log('📱 LINE Webhook 請求收到');
+  console.log('🔧 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🔧 Body:', JSON.stringify(req.body, null, 2));
+  console.log('🔧 環境變數:', {
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL: process.env.VERCEL,
+    LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID || 'MISSING',
+    LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET' : 'MISSING',
+    LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET' : 'MISSING'
+  });
+  
+  // 總是返回 200 OK
+  res.status(200).json({
+    success: true,
+    message: 'Webhook processed successfully',
+    timestamp: new Date().toISOString(),
+    received: {
+      headers: !!req.headers,
+      body: !!req.body,
+      signature: !!req.headers['x-line-signature']
+    }
+  });
+});
+
 // 404處理
 app.use(notFoundHandler);
 
@@ -3217,72 +3263,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// LINE 環境變數診斷端點
-app.get('/api/line/debug', (req, res) => {
-  res.status(200).json({
-    timestamp: new Date().toISOString(),
-    environment: {
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL: process.env.VERCEL,
-      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? 'SET (' + process.env.LINE_CHANNEL_ID + ')' : 'MISSING',
-      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : 'MISSING',
-      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : 'MISSING'
-    },
-    lineBotService: lineBotService ? {
-      initialized: true,
-      demoMode: lineBotService.demoMode,
-      hasClient: !!lineBotService.client
-    } : 'NOT_INITIALIZED'
-  });
-});
-
-// LINE 服務狀態檢查端點（用於診斷）
-app.get('/api/line/status', (req, res) => {
-  const status = {
-    environment: {
-      NODE_ENV: process.env.NODE_ENV,
-      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? '設定中' : '未設定',
-      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? '設定中' : '未設定', 
-      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? '設定中' : '未設定'
-    },
-    lineBotService: lineBotService ? {
-      initialized: true,
-      demoMode: lineBotService.demoMode,
-      status: lineBotService.getStatus()
-    } : {
-      initialized: false,
-      reason: 'Service not initialized'
-    }
-  };
-  
-  res.json(status);
-});
-
-// LINE Webhook 接收器 - 無驗證版本
-app.post('/api/line/webhook', express.json(), (req, res) => {
-  console.log('📱 LINE Webhook 請求收到');
-  console.log('🔧 Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('🔧 Body:', JSON.stringify(req.body, null, 2));
-  console.log('🔧 環境變數:', {
-    NODE_ENV: process.env.NODE_ENV,
-    VERCEL: process.env.VERCEL,
-    LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID || 'MISSING',
-    LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET' : 'MISSING',
-    LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET' : 'MISSING'
-  });
-  
-  // 總是返回 200 OK
-  res.status(200).json({
-    success: true,
-    message: 'Webhook processed successfully',
-    timestamp: new Date().toISOString(),
-    received: {
-      headers: !!req.headers,
-      body: !!req.body,
-      signature: !!req.headers['x-line-signature']
-    }
-  });
-});
 
 // 手動發送訂單通知 (用於測試)
 app.post('/api/line/send-order-notification/:orderId', async (req, res) => {
