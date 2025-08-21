@@ -3205,21 +3205,60 @@ app.post('/api/line/bind-user', async (req, res) => {
   }
 });
 
+// LINE 服務狀態檢查端點（用於診斷）
+app.get('/api/line/status', (req, res) => {
+  const status = {
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? '設定中' : '未設定',
+      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? '設定中' : '未設定', 
+      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? '設定中' : '未設定'
+    },
+    lineBotService: lineBotService ? {
+      initialized: true,
+      demoMode: lineBotService.demoMode,
+      status: lineBotService.getStatus()
+    } : {
+      initialized: false,
+      reason: 'Service not initialized'
+    }
+  };
+  
+  res.json(status);
+});
+
 // LINE Webhook 接收器
 app.post('/api/line/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  console.log('📱 LINE Webhook 請求接收');
+  
   try {
+    // 記錄環境變數狀態
+    console.log('🔧 環境變數檢查:', {
+      LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? '已設定' : '未設定',
+      LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? '已設定' : '未設定',
+      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? '已設定' : '未設定'
+    });
+    
     // 檢查 LINE Bot 服務是否已初始化
     if (!lineBotService) {
-      console.warn('⚠️ LINE Bot 服務尚未初始化，返回 200 避免錯誤');
+      console.warn('⚠️ LINE Bot 服務尚未初始化，返回 200');
       return res.status(200).send('OK');
     }
+    
+    console.log('🤖 LINE Bot 服務狀態:', lineBotService.getStatus());
     
     const signature = req.get('X-Line-Signature');
     const body = req.body.toString();
     
+    console.log('📝 請求詳情:', {
+      hasSignature: !!signature,
+      bodyLength: body.length,
+      demoMode: lineBotService.demoMode
+    });
+    
     // 如果是 LINE 的驗證請求，直接返回 200
     if (!signature) {
-      console.log('📱 LINE Webhook 驗證請求');
+      console.log('✅ LINE Webhook 驗證請求，返回 200');
       return res.status(200).send('OK');
     }
     
@@ -3236,7 +3275,7 @@ app.post('/api/line/webhook', express.raw({type: 'application/json'}), async (re
     const events = jsonBody.events || [];
     const results = await lineBotService.handleWebhookEvents(events);
     
-    console.log(`📱 處理了 ${events.length} 個 LINE 事件`);
+    console.log(`✅ 處理了 ${events.length} 個 LINE 事件`);
     
     res.status(200).json({
       success: true,
@@ -3246,6 +3285,7 @@ app.post('/api/line/webhook', express.raw({type: 'application/json'}), async (re
     
   } catch (error) {
     console.error('❌ 處理 LINE Webhook 失敗:', error);
+    console.error('錯誤堆疊:', error.stack);
     res.status(200).send('OK'); // LINE 需要 200 狀態碼
   }
 });
