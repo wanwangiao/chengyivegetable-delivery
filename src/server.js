@@ -1449,12 +1449,11 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     }
     const deliveryFee = subtotal >= 200 ? 0 : 50;
     const total = subtotal + deliveryFee;
-    // 進行地理編碼
-    const geo = await geocodeAddress(address);
-    // 建立訂單，儲存座標與地理狀態
+    // 簡化訂單創建，先不做地理編碼
+    console.log('Creating order with data:', { name, phone, address, notes, paymentMethod, subtotal, deliveryFee, total });
     const insertOrder = await pool.query(
-      'INSERT INTO orders (contact_name, contact_phone, address, notes, payment_method, subtotal, delivery_fee, total_amount, status, lat, lng, geocoded_at, geocode_status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12) RETURNING id',
-      [name, phone, address, notes || '', paymentMethod || 'cash', subtotal, deliveryFee, total, 'placed', geo.lat, geo.lng, geo.status]
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, payment_method, subtotal, delivery_fee, total_amount, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
+      [name, phone, address, notes || '', paymentMethod || 'cash', subtotal, deliveryFee, total, 'placed']
     );
     const orderId = insertOrder.rows[0].id;
     
