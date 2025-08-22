@@ -29,6 +29,16 @@
       </div>
     </header>
 
+    <!-- 搜尋功能 -->
+    <div class="search-section">
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <input type="text" id="search-input" placeholder="🔍 搜尋商品名稱..." class="search-input">
+          <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display: none;">✕</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 商品分類導航 -->
     <nav class="category-nav">
       <div class="category-tabs">
@@ -717,6 +727,105 @@
         closeProductModal();
       }
       
+      // 商品搜尋功能
+      function performSearch() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+        const productItems = document.querySelectorAll('.product-item');
+        const clearButton = document.getElementById('search-clear');
+        
+        // 顯示/隱藏清除按鈕
+        clearButton.style.display = searchTerm ? 'block' : 'none';
+        
+        let visibleCount = 0;
+        
+        productItems.forEach(item => {
+          const productTitle = item.querySelector('.product-title-mobile').textContent.toLowerCase();
+          const isMatch = searchTerm === '' || productTitle.includes(searchTerm);
+          
+          if (isMatch) {
+            item.style.display = 'flex';
+            visibleCount++;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+        
+        // 顯示搜尋結果提示
+        showSearchResults(searchTerm, visibleCount);
+        
+        // 重置分類選擇
+        if (searchTerm) {
+          document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.classList.remove('active');
+          });
+        }
+      }
+      
+      function clearSearch() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('search-clear').style.display = 'none';
+        
+        // 顯示所有商品
+        document.querySelectorAll('.product-item').forEach(item => {
+          item.style.display = 'flex';
+        });
+        
+        // 重新啟用推薦分類
+        document.querySelectorAll('.category-tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        document.querySelector('[data-category="all"]').classList.add('active');
+        
+        // 清除搜尋結果提示
+        hideSearchResults();
+      }
+      
+      function showSearchResults(searchTerm, count) {
+        let existingResult = document.getElementById('search-results');
+        
+        if (searchTerm && searchTerm.length > 0) {
+          if (!existingResult) {
+            existingResult = document.createElement('div');
+            existingResult.id = 'search-results';
+            existingResult.className = 'search-results-info';
+            const productsSection = document.querySelector('.products-section');
+            productsSection.insertBefore(existingResult, productsSection.firstChild);
+          }
+          
+          existingResult.innerHTML = `
+            <div class="search-result-text">
+              🔍 搜尋「<strong>${searchTerm}</strong>」找到 ${count} 項商品
+            </div>
+          `;
+          existingResult.style.display = 'block';
+        } else {
+          hideSearchResults();
+        }
+      }
+      
+      function hideSearchResults() {
+        const existingResult = document.getElementById('search-results');
+        if (existingResult) {
+          existingResult.style.display = 'none';
+        }
+      }
+      
+      // 分類篩選功能改進
+      function filterByCategory(category) {
+        const productItems = document.querySelectorAll('.product-item');
+        
+        // 清除搜尋
+        document.getElementById('search-input').value = '';
+        document.getElementById('search-clear').style.display = 'none';
+        hideSearchResults();
+        
+        productItems.forEach(item => {
+          const itemCategory = item.getAttribute('data-category');
+          const isMatch = category === 'all' || itemCategory === category;
+          item.style.display = isMatch ? 'flex' : 'none';
+        });
+      }
+
       window.onload = function() {
         console.log('🌐 頁面已載入');
         console.log('📦 產品資料:', products);
@@ -728,6 +837,36 @@
         
         // 檢查是否需要顯示營業時間
         checkBusinessHoursDisplay();
+        
+        // 設定搜尋功能
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+          // 即時搜尋
+          searchInput.addEventListener('input', function() {
+            setTimeout(performSearch, 100); // 延遲100ms避免過度觸發
+          });
+          
+          // 按Enter搜尋
+          searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+              performSearch();
+            }
+          });
+        }
+        
+        // 設定分類按鈕點擊事件
+        document.querySelectorAll('.category-tab').forEach(tab => {
+          tab.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            
+            // 更新active狀態
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 篩選商品
+            filterByCategory(category);
+          });
+        });
       };
     </script>
   </body>

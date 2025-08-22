@@ -61,6 +61,18 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="/admin/site-settings" class="nav-link">
+                    <span class="icon">🏪</span>
+                    <span>網站設定</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/bank-settings" class="nav-link">
+                    <span class="icon">🏦</span>
+                    <span>銀行設定</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="#employees" class="nav-link">
                     <span class="icon">👥</span>
                     <span>員工管理</span>
@@ -307,33 +319,13 @@
                         </tr>
                     </thead>
                     <tbody id="orders-tbody">
-                        <tr class="order-row pending">
-                            <td>#1234</td>
-                            <td>
-                                <div class="customer-info">
-                                    <span class="name">王小明</span>
-                                    <span class="phone">0912-345-678</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="order-items">
-                                    <span>🥬 高麗菜 2顆</span>
-                                    <span>🍇 葡萄 1串</span>
-                                </div>
-                            </td>
-                            <td class="amount">$185</td>
-                            <td>
-                                <span class="status-badge pending">待揀貨</span>
-                            </td>
-                            <td>14:00-16:00</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn-small primary" onclick="startPicking(1234)">開始揀貨</button>
-                                    <button class="btn-small" onclick="viewOrder(1234)">詳情</button>
-                                </div>
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px;">
+                                載入訂單數據中...
+                                <br><br>
+                                <button onclick="loadOrders()" class="btn">🔄 手動載入訂單</button>
                             </td>
                         </tr>
-                        <!-- 更多訂單... -->
                     </tbody>
                 </table>
             </div>

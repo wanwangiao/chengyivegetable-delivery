@@ -242,10 +242,13 @@ class AgentManager {
       if (!agent.isActive) return;
       
       const timeSinceActivity = now - (agent.lastActivity || agent.startTime);
-      const maxIdleTime = this.config.heartbeatInterval * 3; // 3倍心跳間隔
+      // 示範模式下使用更寬鬆的閒置時間檢查 (15分鐘)
+      const maxIdleTime = process.env.NODE_ENV === 'development' 
+        ? 15 * 60 * 1000 // 15分鐘
+        : this.config.heartbeatInterval * 3; // 生產環境：3倍心跳間隔
       
       if (timeSinceActivity > maxIdleTime) {
-        console.warn(`⚠️ Agent ${name} 可能無回應 (閒置: ${timeSinceActivity}ms)`);
+        console.warn(`⚠️ Agent ${name} 可能無回應 (閒置: ${Math.round(timeSinceActivity/1000/60)}分鐘)`);
         
         // 可以在這裡實作自動重啟邏輯
         // agent.restart();

@@ -313,9 +313,9 @@ app.use(cors({
   credentials: true
 }));
 
-// 設置中文編碼支援
+// 強化中文編碼支援
 app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  // 設置響應頭
   res.setHeader('Accept-Charset', 'utf-8');
   next();
 });
@@ -323,21 +323,28 @@ app.use((req, res, next) => {
 // 一般API限制
 app.use('/api/', apiLimiter);
 
-// 解析請求體 - 設置正確的中文編碼
+// 解析請求體 - 強化中文編碼處理
 app.use(bodyParser.json({ 
   limit: '10mb',
-  type: 'application/json',
-  charset: 'utf-8'
-}));
-app.use(bodyParser.urlencoded({ 
-  extended: false, 
-  limit: '10mb',
-  charset: 'utf-8'
+  type: ['application/json', 'application/json; charset=utf-8']
 }));
 
-// 設置響應頭確保中文正確顯示
+app.use(bodyParser.urlencoded({ 
+  extended: false, 
+  limit: '10mb'
+}));
+
+// 為API響應設置正確的編碼
+app.use('/api/', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
+// 為頁面響應設置正確的編碼
 app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  if (!res.getHeader('Content-Type')) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  }
   next();
 });
 
@@ -3059,14 +3066,13 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 404處理
-app.use(notFoundHandler);
-
-// API錯誤處理
+// API錯誤處理 (先處理API錯誤)
 app.use('/api/*', apiErrorHandler);
 
 // 頁面錯誤處理
 app.use(pageErrorHandler);
+
+// 404處理 (移動到最後，在所有路由之後)
 
 // 優雅關閉處理
 const gracefulShutdown = async (signal) => {
@@ -3493,6 +3499,16 @@ app.get('/admin/order-management', ensureAdmin, (req, res) => {
   res.render('admin_order_management');
 });
 
+// 銀行帳號設定頁面
+app.get('/admin/bank-settings', ensureAdmin, (req, res) => {
+  res.render('admin_bank_settings');
+});
+
+// 網站設定頁面
+app.get('/admin/site-settings', ensureAdmin, (req, res) => {
+  res.render('admin_site_settings');
+});
+
 // 獲取訂單列表 (支援搜尋和篩選)
 app.get('/api/admin/orders-list', ensureAdmin, async (req, res) => {
   try {
@@ -3714,6 +3730,453 @@ app.put('/api/admin/orders/:orderId', ensureAdmin, async (req, res) => {
     });
   }
 });
+
+// =====================================
+// 銀行帳號管理 API
+// =====================================
+
+// 初始化銀行帳號表格
+async function initBankAccountsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bank_accounts (
+        id SERIAL PRIMARY KEY,
+        bank_name VARCHAR(100) NOT NULL,
+        branch_name VARCHAR(100),
+        account_name VARCHAR(100) NOT NULL,
+        account_number VARCHAR(50) NOT NULL,
+        notes TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ 銀行帳號表格初始化完成');
+  } catch (error) {
+    console.error('❌ 銀行帳號表格初始化失敗:', error);
+  }
+}
+
+// 在應用啟動時初始化銀行帳號表
+initBankAccountsTable();
+
+// 獲取所有銀行帳號
+app.get('/api/admin/bank-accounts', ensureAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM bank_accounts 
+      ORDER BY is_active DESC, created_at DESC
+    `);
+    
+    res.json({ 
+      success: true, 
+      accounts: result.rows 
+    });
+  } catch (error) {
+    console.error('獲取銀行帳號錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取銀行帳號失敗: ' + error.message 
+    });
+  }
+});
+
+// 新增銀行帳號
+app.post('/api/admin/bank-accounts', ensureAdmin, async (req, res) => {
+  const { bankName, branchName, accountName, accountNumber, notes } = req.body;
+  
+  try {
+    // 驗證必要欄位
+    if (!bankName || !accountName || !accountNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '銀行名稱、戶名和帳號為必填欄位' 
+      });
+    }
+    
+    // 檢查帳號是否已存在
+    const existing = await pool.query(
+      'SELECT id FROM bank_accounts WHERE account_number = $1',
+      [accountNumber]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '此銀行帳號已存在' 
+      });
+    }
+    
+    // 新增銀行帳號
+    const result = await pool.query(`
+      INSERT INTO bank_accounts (bank_name, branch_name, account_name, account_number, notes)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id
+    `, [bankName, branchName, accountName, accountNumber, notes]);
+    
+    res.json({ 
+      success: true, 
+      message: '銀行帳號新增成功',
+      accountId: result.rows[0].id
+    });
+  } catch (error) {
+    console.error('新增銀行帳號錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '新增銀行帳號失敗: ' + error.message 
+    });
+  }
+});
+
+// 切換銀行帳號啟用狀態
+app.put('/api/admin/bank-accounts/:id/toggle', ensureAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // 獲取當前狀態
+    const current = await pool.query(
+      'SELECT is_active FROM bank_accounts WHERE id = $1',
+      [id]
+    );
+    
+    if (current.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: '銀行帳號不存在' 
+      });
+    }
+    
+    const newStatus = !current.rows[0].is_active;
+    
+    // 更新狀態
+    await pool.query(`
+      UPDATE bank_accounts 
+      SET is_active = $1, updated_at = NOW() 
+      WHERE id = $2
+    `, [newStatus, id]);
+    
+    res.json({ 
+      success: true, 
+      message: `銀行帳號已${newStatus ? '啟用' : '停用'}` 
+    });
+  } catch (error) {
+    console.error('切換銀行帳號狀態錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '切換狀態失敗: ' + error.message 
+    });
+  }
+});
+
+// 刪除銀行帳號
+app.delete('/api/admin/bank-accounts/:id', ensureAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'DELETE FROM bank_accounts WHERE id = $1',
+      [id]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: '銀行帳號不存在' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '銀行帳號已刪除' 
+    });
+  } catch (error) {
+    console.error('刪除銀行帳號錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '刪除銀行帳號失敗: ' + error.message 
+    });
+  }
+});
+
+// 獲取啟用的銀行帳號（供通知使用）
+app.get('/api/bank-accounts/active', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT bank_name, branch_name, account_name, account_number, notes
+      FROM bank_accounts 
+      WHERE is_active = true 
+      ORDER BY created_at ASC
+    `);
+    
+    res.json({ 
+      success: true, 
+      accounts: result.rows 
+    });
+  } catch (error) {
+    console.error('獲取啟用銀行帳號錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取銀行帳號失敗: ' + error.message 
+    });
+  }
+});
+
+// =====================================
+// 網站設定管理 API
+// =====================================
+
+// 初始化網站設定表格
+async function initSiteSettingsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        id SERIAL PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        setting_type VARCHAR(50) DEFAULT 'text',
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // 插入預設設定
+    const defaultSettings = [
+      { key: 'site_name', value: '誠意鮮蔬', type: 'text', desc: '網站名稱' },
+      { key: 'contact_phone', value: '', type: 'text', desc: '聯絡電話' },
+      { key: 'site_description', value: '新鮮蔬果外送服務', type: 'textarea', desc: '網站說明' },
+      { key: 'service_area', value: '三峽、北大特區、鶯歌、樹林、土城', type: 'text', desc: '服務地區' },
+      { key: 'banner_image', value: '', type: 'file', desc: '首頁橫排圖檔' },
+      { key: 'business_hours', value: '{}', type: 'json', desc: '營業時間' }
+    ];
+    
+    for (const setting of defaultSettings) {
+      await pool.query(`
+        INSERT INTO site_settings (setting_key, setting_value, setting_type, description)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (setting_key) DO NOTHING
+      `, [setting.key, setting.value, setting.type, setting.desc]);
+    }
+    
+    console.log('✅ 網站設定表格初始化完成');
+  } catch (error) {
+    console.error('❌ 網站設定表格初始化失敗:', error);
+  }
+}
+
+// 在應用啟動時初始化網站設定表
+initSiteSettingsTable();
+
+// 獲取網站設定
+app.get('/api/admin/site-settings', ensureAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT setting_key, setting_value, setting_type 
+      FROM site_settings 
+      ORDER BY setting_key
+    `);
+    
+    const settings = {};
+    result.rows.forEach(row => {
+      const key = row.setting_key;
+      let value = row.setting_value;
+      
+      // 處理JSON類型的設定
+      if (row.setting_type === 'json' && value) {
+        try {
+          value = JSON.parse(value);
+        } catch (e) {
+          value = {};
+        }
+      }
+      
+      // 轉換為駝峰命名
+      const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+      settings[camelKey] = value;
+    });
+    
+    res.json({ 
+      success: true, 
+      settings: settings 
+    });
+  } catch (error) {
+    console.error('獲取網站設定錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取網站設定失敗: ' + error.message 
+    });
+  }
+});
+
+// 儲存基本資訊
+app.post('/api/admin/site-settings/basic', ensureAdmin, async (req, res) => {
+  const { siteName, contactPhone, siteDescription, serviceArea } = req.body;
+  
+  try {
+    const updates = [
+      { key: 'site_name', value: siteName },
+      { key: 'contact_phone', value: contactPhone },
+      { key: 'site_description', value: siteDescription },
+      { key: 'service_area', value: serviceArea }
+    ];
+    
+    for (const update of updates) {
+      await pool.query(`
+        UPDATE site_settings 
+        SET setting_value = $1, updated_at = NOW() 
+        WHERE setting_key = $2
+      `, [update.value || '', update.key]);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '基本資訊儲存成功' 
+    });
+  } catch (error) {
+    console.error('儲存基本資訊錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '儲存基本資訊失敗: ' + error.message 
+    });
+  }
+});
+
+// 儲存營業時間
+app.post('/api/admin/site-settings/hours', ensureAdmin, async (req, res) => {
+  const { businessHours } = req.body;
+  
+  try {
+    await pool.query(`
+      UPDATE site_settings 
+      SET setting_value = $1, updated_at = NOW() 
+      WHERE setting_key = 'business_hours'
+    `, [JSON.stringify(businessHours)]);
+    
+    res.json({ 
+      success: true, 
+      message: '營業時間儲存成功' 
+    });
+  } catch (error) {
+    console.error('儲存營業時間錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '儲存營業時間失敗: ' + error.message 
+    });
+  }
+});
+
+// 上傳橫排圖檔
+const multer = require('multer');
+const path = require('path');
+
+// 設定檔案儲存
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../public/uploads/banners');
+    
+    // 確保目錄存在
+    const fs = require('fs');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `banner_${timestamp}${ext}`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB限制
+  },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('只允許上傳圖片檔案'));
+    }
+  }
+});
+
+app.post('/api/admin/upload-banner', ensureAdmin, upload.single('banner'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '沒有選擇檔案' 
+      });
+    }
+    
+    const imageUrl = `/uploads/banners/${req.file.filename}`;
+    
+    // 更新資料庫
+    await pool.query(`
+      UPDATE site_settings 
+      SET setting_value = $1, updated_at = NOW() 
+      WHERE setting_key = 'banner_image'
+    `, [imageUrl]);
+    
+    res.json({ 
+      success: true, 
+      message: '橫排圖檔上傳成功',
+      imageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('上傳橫排圖檔錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '上傳失敗: ' + error.message 
+    });
+  }
+});
+
+// 移除橫排圖檔
+app.delete('/api/admin/remove-banner', ensureAdmin, async (req, res) => {
+  try {
+    // 獲取目前的圖檔路径
+    const result = await pool.query(`
+      SELECT setting_value FROM site_settings 
+      WHERE setting_key = 'banner_image'
+    `);
+    
+    if (result.rows.length > 0 && result.rows[0].setting_value) {
+      const imagePath = result.rows[0].setting_value;
+      const fullPath = path.join(__dirname, '../public', imagePath);
+      
+      // 刪除檔案
+      const fs = require('fs');
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    }
+    
+    // 清空資料庫記錄
+    await pool.query(`
+      UPDATE site_settings 
+      SET setting_value = '', updated_at = NOW() 
+      WHERE setting_key = 'banner_image'
+    `);
+    
+    res.json({ 
+      success: true, 
+      message: '橫排圖檔已移除' 
+    });
+  } catch (error) {
+    console.error('移除橫排圖檔錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '移除失敗: ' + error.message 
+    });
+  }
+});
+
+// 404處理 (必須放在所有路由的最後)
+app.use(notFoundHandler);
 
 // 監聽關閉信號
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

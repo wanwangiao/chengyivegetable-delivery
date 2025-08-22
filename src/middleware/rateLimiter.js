@@ -5,17 +5,26 @@ const rateLimit = require('express-rate-limit');
 const isProduction = process.env.NODE_ENV === 'production';
 const isVercel = process.env.VERCEL === '1';
 
-// 基礎配置，適用於 Vercel 環境
+// 基礎配置，適用於不同環境
 const baseConfig = {
   standardHeaders: true,
   legacyHeaders: false,
-  // 在 Vercel 中使用更安全的 IP 提取策略
-  ...(isVercel && {
-    keyGenerator: (req) => {
-      return req.ip || req.connection.remoteAddress || 'unknown';
-    },
-    skip: () => !isProduction, // 開發環境跳過限制
-  })
+  // 開發環境跳過限制
+  skip: () => !isProduction,
+  // 安全的 IP 提取策略
+  keyGenerator: (req) => {
+    // 優先使用 X-Forwarded-For (代理環境)
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      return forwarded.split(',')[0].trim();
+    }
+    // 其次使用 req.ip
+    if (req.ip) {
+      return req.ip;
+    }
+    // 最後使用連接地址
+    return req.connection?.remoteAddress || 'unknown';
+  }
 };
 
 // 一般API限制

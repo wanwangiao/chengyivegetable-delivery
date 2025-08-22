@@ -44,11 +44,11 @@ class LineBotService {
     if (!order.line_user_id) {
       console.warn(`⚠️ 訂單 #${order.id} 的客戶未綁定LINE ID，改用模擬通知`);
       // 改用模擬通知（實際可接入SMS API）
-      return this.simulatePackagingNotification(order, orderItems);
+      return await this.simulatePackagingNotification(order, orderItems);
     }
     
     try {
-      const message = this.createPackagingCompleteMessage(order, orderItems);
+      const message = await this.createPackagingCompleteMessage(order, orderItems);
       
       await this.client.pushMessage(order.line_user_id, message);
       
@@ -117,7 +117,7 @@ class LineBotService {
    * @param {Object} order - 訂單資訊
    * @param {Array} orderItems - 訂單商品明細
    */
-  createPackagingCompleteMessage(order, orderItems) {
+  async createPackagingCompleteMessage(order, orderItems) {
     // 建立商品明細文字
     let itemsText = '';
     orderItems.forEach(item => {
@@ -131,7 +131,7 @@ class LineBotService {
     }
     
     // 根據付款方式生成不同訊息
-    let paymentInfo = this.getPaymentMessage(order.payment_method, order.total_amount);
+    let paymentInfo = await this.getPaymentMessage(order.payment_method, order.total_amount, order.id);
     
     const messageText = `🎉 ${order.contact_name} 您好！
 
@@ -160,26 +160,109 @@ ${paymentInfo}
    * @param {string} paymentMethod - 付款方式
    * @param {number} amount - 金額
    */
-  getPaymentMessage(paymentMethod, amount) {
+  async getPaymentMessage(paymentMethod, amount, orderId) {
     switch (paymentMethod) {
       case 'cash':
         return '💰 付款方式：現金付款\n✅ 送達時請準備現金';
         
       case 'linepay':
-        const linePayLink = process.env.LINE_PAY_LINK || 'https://pay.line.me/payments/request';
+        const linePayLink = await this.generateLinePayLink(orderId, amount);
         return `📱 付款方式：LINE Pay
-👆 請點擊連結完成付款：
-${linePayLink}`;
+💳 請點選連結完成付款：
+${linePayLink}
+⏰ 請於 30 分鐘內完成付款`;
         
       case 'bank_transfer':
-        const bankInfo = process.env.BANK_TRANSFER_INFO || 
-          '🏦 匯款帳號：123-456-789\n💳 戶名：誠憶鮮蔬\n🏪 銀行：第一銀行';
-        return `🏦 付款方式：銀行轉帳
-💰 請轉帳 NT$ ${amount} 至以下帳戶：
-${bankInfo}`;
+        const bankAccounts = await this.getActiveBankAccounts();
+        let bankInfo = '🏦 付款方式：銀行轉帳\n';
+        
+        if (bankAccounts && bankAccounts.length > 0) {
+          bankInfo += '💰 請轉帳至以下帳戶：\n\n';
+          bankAccounts.forEach((account, index) => {
+            bankInfo += `▶️ ${account.bank_name}`;
+            if (account.branch_name) {
+              bankInfo += ` ${account.branch_name}`;
+            }
+            bankInfo += `\n👤 戶名：${account.account_name}\n📱 帳號：${account.account_number}\n`;
+            if (index < bankAccounts.length - 1) {
+              bankInfo += '\n';
+            }
+          });
+          bankInfo += `\n💰 轉帳金額：NT$ ${amount}\n📝 請轉帳後來電確認或截圖給我們`;
+        } else {
+          bankInfo += '📞 請來電詢問轉帳資訊';
+        }
+        
+        return bankInfo;
         
       default:
         return '💳 請依照訂單確認時選擇的付款方式付款';
+    }
+  }
+  
+  /**
+   * 獲取啟用的銀行帳戶資訊
+   */
+  async getActiveBankAccounts() {
+    try {
+      // 如果是示範模式，返回模擬資料
+      if (this.demoMode) {
+        return [
+          {
+            bank_name: '中國信託商業銀行',
+            branch_name: '三峽分行',
+            account_name: '誠意鮮蔬有限公司',
+            account_number: '123-456-789012'
+          }
+        ];
+      }
+      
+      // 實際從API獲取銀行帳戶資訊
+      const response = await fetch('/api/bank-accounts/active');
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.accounts;
+      } else {
+        console.error('❌ 獲取銀行帳戶失敗:', data.message);
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ 獲取銀行帳戶錯誤:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * 生成 LINE Pay 付款連結
+   * @param {number} orderId - 訂單ID
+   * @param {number} amount - 金額
+   */
+  async generateLinePayLink(orderId, amount) {
+    try {
+      // 如果是示範模式，返回模擬連結
+      if (this.demoMode) {
+        return `https://pay.line.me/demo?orderId=${orderId}&amount=${amount}`;
+      }
+      
+      // 實際的 LINE Pay 整合（需要 LINE Pay 商戶設定）
+      // TODO: 整合真實的 LINE Pay API
+      const merchantId = process.env.LINE_PAY_MERCHANT_ID;
+      const redirectUrl = `${process.env.BASE_URL}/payment/linepay/callback`;
+      
+      if (!merchantId) {
+        console.warn('⚠️ LINE Pay 商戶ID未設定，使用示範連結');
+        return `https://pay.line.me/demo?orderId=${orderId}&amount=${amount}`;
+      }
+      
+      // 實際應該調用 LINE Pay API 創建付款請求
+      const linePayUrl = `https://pay.line.me/payments/request?merchantId=${merchantId}&orderId=${orderId}&amount=${amount}&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+      
+      return linePayUrl;
+      
+    } catch (error) {
+      console.error('❌ 生成 LINE Pay 連結錯誤:', error);
+      return `https://pay.line.me/demo?orderId=${orderId}&amount=${amount}`;
     }
   }
 
@@ -188,14 +271,14 @@ ${bankInfo}`;
    * @param {Object} order - 訂單資訊
    * @param {Array} orderItems - 訂單商品明細
    */
-  simulatePackagingNotification(order, orderItems) {
+  async simulatePackagingNotification(order, orderItems) {
     console.log('🔔 ===== 模擬包裝完成通知 =====');
     console.log(`收件人: ${order.contact_name} (${order.contact_phone})`);
     console.log(`訂單編號: #${order.id}`);
     console.log(`訂單金額: NT$ ${order.total_amount}`);
     console.log(`付款方式: ${this.getPaymentMethodName(order.payment_method)}`);
     
-    const paymentMessage = this.getPaymentMessage(order.payment_method, order.total_amount);
+    const paymentMessage = await this.getPaymentMessage(order.payment_method, order.total_amount, order.id);
     console.log(`付款資訊: ${paymentMessage.replace(/\n/g, ' | ')}`);
     console.log('============================');
     
