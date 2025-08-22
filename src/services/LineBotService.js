@@ -217,9 +217,11 @@ ${linePayLink}
         ];
       }
       
-      // 實際從API獲取銀行帳戶資訊
-      const response = await fetch('/api/bank-accounts/active');
-      const data = await response.json();
+      // 實際從API獲取銀行帳戶資訊  
+      const axios = require('axios');
+      const baseUrl = process.env.BASE_URL || 'http://localhost:3003';
+      const response = await axios.get(`${baseUrl}/api/bank-accounts/active`);
+      const data = response.data;
       
       if (data.success) {
         return data.accounts;
