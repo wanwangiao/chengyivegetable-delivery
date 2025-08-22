@@ -4067,7 +4067,6 @@ app.post('/api/admin/site-settings/hours', ensureAdmin, async (req, res) => {
 
 // 上傳橫排圖檔
 const multer = require('multer');
-const path = require('path');
 
 // 設定檔案儲存
 const storage = multer.diskStorage({
