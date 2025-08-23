@@ -2050,17 +2050,21 @@ app.post('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
 app.get('/admin/products', ensureAdmin, async (req, res, next) => {
   console.log('🔍 商品管理頁面請求 - demoMode:', demoMode, 'pool exists:', !!pool);
   
-  // 強制使用示範資料，避免空白頁面
-  if (demoMode || !pool) {
-    console.log('📝 使用示範商品資料，共', demoProducts.length, '個商品');
-    return res.render('admin_products', { products: demoProducts });
-  }
-  
   try {
-    const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
-    res.render('admin_products', { products });
+    // 優先嘗試從資料庫獲取真實資料
+    if (pool) {
+      const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
+      console.log('✅ 從資料庫獲取', products.length, '個商品');
+      return res.render('admin_products', { products });
+    }
+    
+    // 只有在沒有 pool 時才使用示範資料
+    console.log('📝 資料庫連線不可用，使用示範商品資料，共', demoProducts.length, '個商品');
+    res.render('admin_products', { products: demoProducts });
+    
   } catch (err) {
-    next(err);
+    console.log('❌ 資料庫查詢失敗，使用示範資料:', err.message);
+    res.render('admin_products', { products: demoProducts });
   }
 });
 
@@ -2219,9 +2223,36 @@ app.get('/admin/inventory', ensureAdmin, async (req, res, next) => {
     console.log('🔍 庫存管理頁面請求 - demoMode:', demoMode, 'pool exists:', !!pool);
     let inventoryData = [];
     
-    // 強制使用示範資料，確保有內容顯示
-    if (demoMode || !pool) {
-      // Demo模式數據
+    // 優先嘗試從資料庫獲取真實資料
+    if (pool) {
+      try {
+        const query = `
+          SELECT 
+            p.id,
+            p.name,
+            p.price,
+            p.unit_hint,
+            COALESCE(i.current_stock, 0) as current_stock,
+            COALESCE(i.min_stock_alert, 10) as min_stock_alert,
+            COALESCE(i.max_stock_capacity, 1000) as max_stock_capacity,
+            COALESCE(i.unit_cost, 0) as unit_cost,
+            i.supplier_name,
+            i.last_updated
+          FROM products p
+          LEFT JOIN inventory i ON p.id = i.product_id
+          ORDER BY p.name
+        `;
+        const result = await pool.query(query);
+        inventoryData = result.rows;
+        console.log('✅ 從資料庫獲取', inventoryData.length, '個庫存記錄');
+      } catch (dbErr) {
+        console.log('❌ 資料庫查詢失敗，使用示範資料:', dbErr.message);
+        throw dbErr;
+      }
+    }
+    
+    // 只有在資料庫查詢失敗時才使用示範資料
+    if (inventoryData.length === 0) {
       inventoryData = [
         { id: 1, name: '🥬 有機高麗菜', current_stock: 45, min_stock_alert: 10, unit_cost: 25.00, supplier_name: '新鮮農場', price: 80 },
         { id: 2, name: '🍅 新鮮番茄', current_stock: 8, min_stock_alert: 15, unit_cost: 18.00, supplier_name: '陽光果園', price: null },
@@ -2231,26 +2262,6 @@ app.get('/admin/inventory', ensureAdmin, async (req, res, next) => {
         { id: 6, name: '🧅 洋蔥', current_stock: 6, min_stock_alert: 10, unit_cost: 12.00, supplier_name: '陽光農場', price: null }
       ];
       console.log('📝 使用示範庫存資料，共', inventoryData.length, '個商品');
-    } else {
-      // 從資料庫獲取庫存資料
-      const query = `
-        SELECT 
-          p.id,
-          p.name,
-          p.price,
-          p.unit_hint,
-          COALESCE(i.current_stock, 0) as current_stock,
-          COALESCE(i.min_stock_alert, 10) as min_stock_alert,
-          COALESCE(i.max_stock_capacity, 1000) as max_stock_capacity,
-          COALESCE(i.unit_cost, 0) as unit_cost,
-          i.supplier_name,
-          i.last_updated
-        FROM products p
-        LEFT JOIN inventory i ON p.id = i.product_id
-        ORDER BY p.name
-      `;
-      const result = await pool.query(query);
-      inventoryData = result.rows;
     }
     
     res.render('admin_inventory', { 
