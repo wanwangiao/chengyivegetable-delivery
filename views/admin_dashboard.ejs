@@ -99,12 +99,15 @@
     <main class="main-content">
         <!-- 頂部導航 -->
         <header class="top-nav">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
             <div class="breadcrumb">
                 <span>首頁</span> > <span class="current">儀表板</span>
             </div>
             <div class="top-nav-actions">
-                <button class="reconnect-btn" onclick="reconnectDatabase()" style="background: #f39c12; margin-right: 10px;">🔧 重連資料庫</button>
-                <button class="deploy-btn" onclick="deployUpdates()" style="background: #e74c3c; margin-right: 10px;">🚀 部署更新</button>
                 <button class="refresh-btn" onclick="refreshData()">🔄 重新整理</button>
                 <div class="datetime">
                     <span id="current-datetime"></span>
@@ -679,147 +682,29 @@
             initDashboard();
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            loadSidebarState();
         });
 
-        // 部署更新功能
-        async function deployUpdates() {
-            const deployBtn = document.querySelector('.deploy-btn');
-            const originalText = deployBtn.innerHTML;
-            
-            try {
-                deployBtn.innerHTML = '⏳ 部署中...';
-                deployBtn.disabled = true;
-                
-                const response = await fetch('/api/admin/deploy-updates', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    deployBtn.innerHTML = '✅ 部署完成';
-                    deployBtn.style.background = '#27ae60';
-                    
-                    // 顯示部署結果
-                    let message = '🎉 部署更新完成！\n\n';
-                    if (result.results.created.length > 0) {
-                        message += '✅ 新增商品：\n' + result.results.created.join('\n') + '\n\n';
-                    }
-                    if (result.results.existing.length > 0) {
-                        message += '⏭️ 已存在商品：\n' + result.results.existing.join('\n') + '\n\n';
-                    }
-                    message += '🌽 水果玉米選項功能已啟用：\n';
-                    message += '• 撥皮服務 → 要撥皮 (+5元) / 不撥皮 (免費)\n';
-                    message += '• 切片服務 → 要切片 (+3元) / 不切片 (免費)\n\n';
-                    message += '請刷新前台頁面查看新商品！';
-                    
-                    alert(message);
-                    
-                    // 3秒後恢復按鈕
-                    setTimeout(() => {
-                        deployBtn.innerHTML = originalText;
-                        deployBtn.style.background = '#e74c3c';
-                        deployBtn.disabled = false;
-                    }, 3000);
-                    
-                } else {
-                    deployBtn.innerHTML = '❌ 部署失敗';
-                    deployBtn.style.background = '#e74c3c';
-                    alert('部署失敗：' + result.message);
-                    
-                    // 3秒後恢復按鈕
-                    setTimeout(() => {
-                        deployBtn.innerHTML = originalText;
-                        deployBtn.disabled = false;
-                    }, 3000);
-                }
-                
-            } catch (error) {
-                deployBtn.innerHTML = '❌ 連線失敗';
-                deployBtn.style.background = '#e74c3c';
-                alert('連線失敗：' + error.message);
-                
-                // 3秒後恢復按鈕
-                setTimeout(() => {
-                    deployBtn.innerHTML = originalText;
-                    deployBtn.disabled = false;
-                }, 3000);
-            }
-        }
 
-        // 重新連接資料庫功能
-        async function reconnectDatabase() {
-            const reconnectBtn = document.querySelector('.reconnect-btn');
-            const originalText = reconnectBtn.innerHTML;
+        // 側邊欄開關功能
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
             
-            try {
-                reconnectBtn.innerHTML = '⏳ 連線中...';
-                reconnectBtn.disabled = true;
-                
-                const response = await fetch('/api/admin/reconnect-database', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    reconnectBtn.innerHTML = '✅ 連線成功';
-                    reconnectBtn.style.background = '#27ae60';
-                    
-                    alert('🎉 資料庫重新連線成功！\n\n' +
-                          '📊 連線時間：' + new Date(result.connectionTime).toLocaleString() + '\n' +
-                          '🗄️ 資料庫版本：' + result.databaseVersion + '\n\n' +
-                          '現在可以執行部署更新了！');
-                    
-                    // 3秒後恢復按鈕
-                    setTimeout(() => {
-                        reconnectBtn.innerHTML = originalText;
-                        reconnectBtn.style.background = '#f39c12';
-                        reconnectBtn.disabled = false;
-                    }, 3000);
-                    
-                } else {
-                    reconnectBtn.innerHTML = '❌ 連線失敗';
-                    reconnectBtn.style.background = '#e74c3c';
-                    
-                    let message = '連線失敗：' + result.message;
-                    if (result.demoMode) {
-                        message += '\n\n🔧 可能原因：\n';
-                        message += '• Supabase 資料庫服務暫時不可用\n';
-                        message += '• 網路連線問題\n';
-                        message += '• 資料庫憑證過期\n\n';
-                        message += '💡 建議：\n';
-                        message += '• 檢查 Supabase 儀表板狀態\n';
-                        message += '• 稍後再試重新連線\n';
-                        message += '• 聯繫技術支援';
-                    }
-                    alert(message);
-                    
-                    // 3秒後恢復按鈕
-                    setTimeout(() => {
-                        reconnectBtn.innerHTML = originalText;
-                        reconnectBtn.style.background = '#f39c12';
-                        reconnectBtn.disabled = false;
-                    }, 3000);
-                }
-                
-            } catch (error) {
-                reconnectBtn.innerHTML = '❌ 網路錯誤';
-                reconnectBtn.style.background = '#e74c3c';
-                alert('網路錯誤：' + error.message);
-                
-                // 3秒後恢復按鈕
-                setTimeout(() => {
-                    reconnectBtn.innerHTML = originalText;
-                    reconnectBtn.style.background = '#f39c12';
-                    reconnectBtn.disabled = false;
-                }, 3000);
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            // 儲存狀態到 localStorage
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        }
+        
+        // 載入側邊欄狀態
+        function loadSidebarState() {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                document.querySelector('.sidebar').classList.add('collapsed');
+                document.querySelector('.main-content').classList.add('expanded');
             }
         }
 
