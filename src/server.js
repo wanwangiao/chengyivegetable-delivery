@@ -32,12 +32,14 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       WebSocketManager = require('./services/WebSocketManager'),
       SmartRouteService = require('./services/SmartRouteService'),
       RouteOptimizationService = require('./services/RouteOptimizationService'),
+      OrderStatusListener = require('./services/OrderStatusListener'),
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService');
 
 let agentSystem = null;
 let smartRouteService = null;
 let routeOptimizationService = null;
+let orderStatusListener = null;
 let webSocketManager = null;
 let lineNotificationService = null;
 let lineBotService = null;
@@ -278,8 +280,17 @@ createDatabasePool().then(async () => {
   try {
     routeOptimizationService = new RouteOptimizationService(pool);
     console.log('🚀 RouteOptimizationService 已初始化');
+    
+    // 🚀 初始化訂單狀態監聽器
+    orderStatusListener = new OrderStatusListener(pool, routeOptimizationService, webSocketManager);
+    console.log('📡 OrderStatusListener 已初始化');
+    
+    // 將服務設置為全局可用
+    global.routeOptimizationService = routeOptimizationService;
+    global.orderStatusListener = orderStatusListener;
+    
   } catch (error) {
-    console.error('❌ RouteOptimizationService 初始化失敗:', error);
+    console.error('❌ 路線優化服務初始化失敗:', error);
   }
 }).catch(console.error);
 
@@ -1821,6 +1832,116 @@ app.get('/admin/route-optimization', ensureAdmin, async (req, res, next) => {
     res.render('admin_route_optimization');
   } catch (err) {
     next(err);
+  }
+});
+
+// 🚀 新增：智能配送管理中心（整合路線優化+地圖）
+app.get('/admin/delivery', ensureAdmin, async (req, res, next) => {
+  try {
+    res.render('admin_delivery_management', {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 🚀 新增：現代化外送員工作台
+app.get('/driver/modern', async (req, res, next) => {
+  try {
+    res.render('driver_dashboard_modern', {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 🚀 新增：外送員訂單 API
+app.get('/api/driver/orders', async (req, res) => {
+  try {
+    const driverId = req.query.driverId || req.session.driverId;
+    
+    let query = `
+      SELECT id, contact_name, contact_phone, address, 
+             total_amount, status, created_at, lat, lng,
+             delivery_notes, estimated_delivery_time
+      FROM orders 
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (driverId) {
+      query += ` AND (driver_id = $${params.length + 1} OR status IN ('ready', 'assigned'))`;
+      params.push(driverId);
+    } else {
+      // 顯示所有待分派和進行中的訂單
+      query += ` AND status IN ('ready', 'assigned', 'delivering')`;
+    }
+    
+    query += ` ORDER BY 
+      CASE 
+        WHEN status = 'delivering' THEN 1
+        WHEN status = 'assigned' THEN 2
+        WHEN status = 'ready' THEN 3
+        ELSE 4
+      END,
+      created_at DESC
+    `;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      orders: result.rows,
+      count: result.rows.length
+    });
+    
+  } catch (error) {
+    console.error('❌ 取得外送員訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '取得訂單資料失敗: ' + error.message
+    });
+  }
+});
+
+// 🚀 新增：配送管理API - 獲取待配送訂單
+app.get('/api/admin/delivery/orders', ensureAdmin, async (req, res) => {
+  try {
+    const status = req.query.status || 'all';
+    
+    let query = `
+      SELECT id, contact_name, contact_phone, address, total_amount, 
+             status, created_at, lat, lng
+      FROM orders 
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (status !== 'all') {
+      query += ` AND status = $${params.length + 1}`;
+      params.push(status);
+    } else {
+      // 只顯示相關狀態的訂單
+      query += ` AND status IN ('paid', 'ready', 'delivering')`;
+    }
+    
+    query += ` ORDER BY created_at DESC`;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      orders: result.rows
+    });
+    
+  } catch (error) {
+    console.error('獲取配送訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單資料失敗'
+    });
   }
 });
 
@@ -3836,6 +3957,21 @@ app.put('/api/orders/:orderId/status', async (req, res) => {
     
     // 觸發通知Hook
     await orderNotificationHook.handleOrderStatusChange(orderId, oldStatus, status);
+    
+    // 🚀 觸發自動路線優化 (新增功能)
+    if (orderStatusListener) {
+      try {
+        await orderStatusListener.onOrderStatusChange(
+          orderId, 
+          oldStatus, 
+          status, 
+          { notes, apiTriggered: true }
+        );
+      } catch (error) {
+        console.error('⚠️ 自動路線優化觸發失敗:', error);
+        // 不影響主要的狀態更新流程
+      }
+    }
     
     res.json({
       success: true,

@@ -19,6 +19,19 @@ class RouteOptimizationService {
       name: '承億蔬菜配送中心',
       address: '台北市信義區'
     };
+    
+    // 🚀 自動優化配置
+    this.autoOptimizationConfig = {
+      enabled: true,
+      triggerStatuses: ['ready', 'paid'],
+      minOrdersForOptimization: 2,
+      optimizationInterval: 300000, // 5分鐘間隔
+      maxRetries: 3
+    };
+    
+    // 上次優化時間記錄
+    this.lastOptimizationTime = null;
+    this.isOptimizing = false;
   }
 
   /**
@@ -242,12 +255,227 @@ class RouteOptimizationService {
   }
 
   /**
+   * 🚀 自動路線優化 - 當訂單狀態變更時觸發
+   */
+  async autoOptimizeOnStatusChange(orderId, newStatus) {
+    if (!this.autoOptimizationConfig.enabled) {
+      return { success: false, message: '自動優化功能已停用' };
+    }
+
+    if (!this.autoOptimizationConfig.triggerStatuses.includes(newStatus)) {
+      return { success: false, message: '此狀態不觸發自動優化' };
+    }
+
+    // 防止重複優化
+    if (this.isOptimizing) {
+      console.log('⚠️ 路線優化進行中，略過本次觸發');
+      return { success: false, message: '優化進行中，請稍候' };
+    }
+
+    // 檢查時間間隔
+    if (this.lastOptimizationTime && 
+        Date.now() - this.lastOptimizationTime < this.autoOptimizationConfig.optimizationInterval) {
+      console.log('⏰ 優化間隔未到，略過本次觸發');
+      return { success: false, message: '優化間隔未到' };
+    }
+
+    try {
+      this.isOptimizing = true;
+      console.log(`🚀 訂單 ${orderId} 狀態變更為 ${newStatus}，開始自動路線優化...`);
+
+      // 檢查待優化訂單數量
+      const pendingOrders = await this.loadOrdersForDelivery(['ready', 'paid']);
+      
+      if (pendingOrders.length < this.autoOptimizationConfig.minOrdersForOptimization) {
+        console.log(`📦 待配送訂單數量不足 (${pendingOrders.length}/${this.autoOptimizationConfig.minOrdersForOptimization})，暫不優化`);
+        return { success: false, message: '待配送訂單數量不足' };
+      }
+
+      // 執行自動路線優化
+      const optimizationResult = await this.generateOptimizedRoutes({
+        includeStatuses: ['ready', 'paid'],
+        optimizationMethod: 'hybrid',
+        clusteringMethod: 'adaptive',
+        autoTriggered: true
+      });
+
+      if (optimizationResult.routes && optimizationResult.routes.length > 0) {
+        // 自動分派給可用的外送員
+        await this.autoAssignRoutesToDrivers(optimizationResult.routes);
+        
+        // 通知相關系統和外送員
+        await this.notifyOptimizationComplete(optimizationResult);
+      }
+
+      this.lastOptimizationTime = Date.now();
+      console.log('✅ 自動路線優化完成');
+
+      return {
+        success: true,
+        message: '自動路線優化完成',
+        result: optimizationResult
+      };
+
+    } catch (error) {
+      console.error('❌ 自動路線優化失敗:', error);
+      return {
+        success: false,
+        message: '自動路線優化失敗: ' + error.message
+      };
+    } finally {
+      this.isOptimizing = false;
+    }
+  }
+
+  /**
+   * 🚀 智慧分派路線給外送員
+   */
+  async autoAssignRoutesToDrivers(routes) {
+    try {
+      // 取得可用的外送員清單
+      const availableDrivers = await this.getAvailableDrivers();
+      
+      if (availableDrivers.length === 0) {
+        console.log('⚠️ 沒有可用的外送員，路線暫時保存待分派');
+        return;
+      }
+
+      for (let i = 0; i < routes.length && i < availableDrivers.length; i++) {
+        const route = routes[i];
+        const driver = availableDrivers[i];
+
+        try {
+          // 分派路線給外送員
+          await this.assignRouteToDriver(route, driver);
+          
+          // 更新訂單狀態為已分派
+          await this.updateOrdersStatus(route.orders.map(o => o.id), 'assigned', driver.id);
+          
+          console.log(`📲 路線 ${route.routeId} 已分派給外送員 ${driver.name} (${driver.phone})`);
+          
+        } catch (error) {
+          console.error(`❌ 分派路線給外送員 ${driver.name} 失敗:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ 自動分派路線失敗:', error);
+    }
+  }
+
+  /**
+   * 取得可用的外送員清單
+   */
+  async getAvailableDrivers() {
+    try {
+      const query = `
+        SELECT id, name, phone, current_location, 
+               COALESCE(current_orders, 0) as current_orders
+        FROM drivers 
+        WHERE status = 'active' 
+        AND (current_orders IS NULL OR current_orders < 5)
+        ORDER BY current_orders ASC, last_activity DESC
+        LIMIT 10
+      `;
+      
+      const result = await this.pool.query(query);
+      return result.rows;
+    } catch (error) {
+      console.error('❌ 取得可用外送員清單失敗:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 分派路線給特定外送員
+   */
+  async assignRouteToDriver(route, driver) {
+    try {
+      // 將路線資訊儲存到資料庫
+      const routeQuery = `
+        INSERT INTO delivery_routes (
+          route_id, driver_id, orders, total_distance, 
+          estimated_time, status, created_at
+        ) VALUES ($1, $2, $3, $4, $5, 'assigned', NOW())
+      `;
+      
+      await this.pool.query(routeQuery, [
+        route.routeId,
+        driver.id,
+        JSON.stringify(route.orders),
+        route.totalDistance,
+        route.estimatedTime.totalMinutes
+      ]);
+
+      // 更新外送員的當前訂單數量
+      const updateDriverQuery = `
+        UPDATE drivers 
+        SET current_orders = COALESCE(current_orders, 0) + $1,
+            last_assigned = NOW()
+        WHERE id = $2
+      `;
+      
+      await this.pool.query(updateDriverQuery, [route.orders.length, driver.id]);
+
+    } catch (error) {
+      console.error('❌ 分派路線給外送員失敗:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 批量更新訂單狀態
+   */
+  async updateOrdersStatus(orderIds, status, driverId = null) {
+    try {
+      const query = driverId 
+        ? `UPDATE orders SET status = $1, driver_id = $2, assigned_at = NOW() WHERE id = ANY($3)`
+        : `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = ANY($2)`;
+      
+      const params = driverId 
+        ? [status, driverId, orderIds]
+        : [status, orderIds];
+      
+      await this.pool.query(query, params);
+    } catch (error) {
+      console.error('❌ 批量更新訂單狀態失敗:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 通知優化完成
+   */
+  async notifyOptimizationComplete(result) {
+    try {
+      // 如果有 WebSocket 管理器，推送通知給管理員
+      if (global.webSocketManager) {
+        global.webSocketManager.broadcast('route-optimization-complete', {
+          routeCount: result.routes.length,
+          totalOrders: result.overallStats.totalOrders,
+          estimatedTime: result.overallStats.estimatedTotalTime,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      console.log('📢 路線優化完成通知已發送');
+    } catch (error) {
+      console.error('❌ 發送優化完成通知失敗:', error);
+    }
+  }
+
+  /**
    * 獲取服務狀態
    */
   getServiceStatus() {
     return {
       initialized: true,
       depot: this.defaultDepot,
+      autoOptimization: {
+        enabled: this.autoOptimizationConfig.enabled,
+        isOptimizing: this.isOptimizing,
+        lastOptimization: this.lastOptimizationTime,
+        triggerStatuses: this.autoOptimizationConfig.triggerStatuses
+      },
       algorithms: {
         clustering: ['kmeans', 'adaptive', 'density'],
         tsp: ['nearest', '2opt', 'annealing', 'genetic', 'hybrid']
