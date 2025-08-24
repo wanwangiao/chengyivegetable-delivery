@@ -6,7 +6,8 @@ const express = require('express'),
       helmet = require('helmet'),
       compression = require('compression'),
       cors = require('cors'),
-      dns = require('dns');
+      dns = require('dns'),
+      multer = require('multer');
 
 require('dotenv').config();
 
@@ -93,7 +94,7 @@ async function createDatabasePool() {
   // 方法2: 直接IP地址連線（專家建議）
   console.log('方法2: 使用直接IP地址連線...');
   try {
-    const directIP = SUPABASE_IPv4_MAPPING['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
+    const directIP = SUPABASE_IPv4_MAP['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
     console.log(`🔗 嘗試直接連線到 IP: ${directIP}`);
     
     pool = new Pool({
@@ -101,7 +102,7 @@ async function createDatabasePool() {
       port: 5432,
       database: 'postgres',
       user: 'postgres',
-      password: 'Chengyivegetable2025!',
+      password: 'Chengyi2025!Fresh',
       ssl: { 
         rejectUnauthorized: false,
         // 因為使用IP而非域名，需要指定servername
@@ -173,7 +174,7 @@ let deliveryEstimationService = null;
       port: 5432,
       database: 'postgres',
       user: 'postgres',
-      password: 'Chengyivegetable2025!',
+      password: 'Chengyi2025!Fresh',
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 60000,
       idleTimeoutMillis: 30000,
@@ -2082,6 +2083,217 @@ app.post('/admin/products/:id/update', ensureAdmin, async (req, res, next) => {
     res.redirect('/admin/products');
   } catch (err) {
     next(err);
+  }
+});
+
+// 後台：編輯產品表單
+app.get('/admin/products/:id/edit', ensureAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  
+  try {
+    if (!pool) {
+      return res.status(500).send('資料庫連線不可用');
+    }
+    
+    // 獲取商品詳細資料
+    const productQuery = `
+      SELECT 
+        p.id, 
+        p.name, 
+        p.price, 
+        p.is_priced_item, 
+        p.unit_hint, 
+        p.image_url
+      FROM products p 
+      WHERE p.id = $1
+    `;
+    const productResult = await pool.query(productQuery, [id]);
+    
+    if (productResult.rows.length === 0) {
+      return res.status(404).send('商品不存在');
+    }
+    
+    const product = productResult.rows[0];
+    
+    // 獲取商品選項群組和選項
+    const optionsQuery = `
+      SELECT 
+        og.id as group_id,
+        og.name as group_name,
+        og.description as group_description,
+        og.is_required,
+        og.selection_type,
+        og.sort_order as group_sort,
+        po.id as option_id,
+        po.name as option_name,
+        po.description as option_description,
+        po.price_modifier,
+        po.is_default,
+        po.sort_order as option_sort
+      FROM product_option_groups og
+      LEFT JOIN product_options po ON og.id = po.group_id
+      WHERE og.product_id = $1
+      ORDER BY og.sort_order, po.sort_order
+    `;
+    
+    const optionsResult = await pool.query(optionsQuery, [id]);
+    const optionGroups = [];
+    
+    // 整理選項資料結構
+    const groupMap = new Map();
+    optionsResult.rows.forEach(row => {
+      if (!groupMap.has(row.group_id)) {
+        groupMap.set(row.group_id, {
+          id: row.group_id,
+          name: row.group_name,
+          description: row.group_description,
+          is_required: row.is_required,
+          selection_type: row.selection_type,
+          sort_order: row.group_sort,
+          options: []
+        });
+      }
+      
+      if (row.option_id) {
+        groupMap.get(row.group_id).options.push({
+          id: row.option_id,
+          name: row.option_name,
+          description: row.option_description,
+          price: row.price_modifier,
+          is_default: row.is_default,
+          sort_order: row.option_sort
+        });
+      }
+    });
+    
+    product.options = Array.from(groupMap.values())
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(group => {
+        group.options.sort((a, b) => a.sort_order - b.sort_order);
+        return group.options;
+      })
+      .flat();
+    
+    console.log('✅ 商品編輯頁面資料載入:', product.name, '共', product.options?.length || 0, '個選項');
+    
+    res.render('admin_product_edit', { product });
+    
+  } catch (err) {
+    console.error('獲取商品編輯資料錯誤:', err);
+    next(err);
+  }
+});
+
+// 商品圖片上傳設定
+const productStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../public/uploads/products');
+    
+    // 確保目錄存在
+    const fs = require('fs');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `product_${timestamp}${ext}`);
+  }
+});
+
+const productUpload = multer({ 
+  storage: productStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB限制
+  },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('只允許上傳圖片檔案'));
+    }
+  }
+});
+
+// 後台：完整更新商品 (包含圖片和選項)
+app.post('/admin/products/:id/update-full', ensureAdmin, productUpload.single('productImage'), async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  const { name, price, isPricedItem, unitHint, options } = req.body;
+  
+  if (!pool) {
+    return res.status(500).send('資料庫連線不可用');
+  }
+  
+  try {
+    const priceVal = price === '' || price === null ? null : parseFloat(price);
+    const priced = isPricedItem === 'on' || isPricedItem === 'true';
+    
+    // 開始交易
+    await pool.query('BEGIN');
+    
+    try {
+      // 處理圖片上傳 (如果有新圖片)
+      let imageUrl = null;
+      if (req.file) {
+        imageUrl = `/uploads/products/${req.file.filename}`;
+        console.log(`📷 圖片已更新: ${imageUrl}`);
+      }
+      
+      // 更新商品基本資訊
+      const updateQuery = imageUrl 
+        ? 'UPDATE products SET name=$1, price=$2, is_priced_item=$3, unit_hint=$4, image_url=$5, image_uploaded_at=$6 WHERE id=$7'
+        : 'UPDATE products SET name=$1, price=$2, is_priced_item=$3, unit_hint=$4 WHERE id=$5';
+        
+      const updateParams = imageUrl 
+        ? [name, priceVal, priced, unitHint || null, imageUrl, new Date(), id]
+        : [name, priceVal, priced, unitHint || null, id];
+        
+      await pool.query(updateQuery, updateParams);
+      
+      // 刪除現有的選項群組和選項
+      await pool.query('DELETE FROM product_options WHERE group_id IN (SELECT id FROM product_option_groups WHERE product_id = $1)', [id]);
+      await pool.query('DELETE FROM product_option_groups WHERE product_id = $1', [id]);
+      
+      // 重新建立選項 (如果有)
+      if (options && typeof options === 'object') {
+        for (let i = 0; i < Object.keys(options).length; i++) {
+          const optionData = options[i];
+          if (optionData && optionData.name) {
+            // 建立簡單選項群組
+            const groupResult = await pool.query(
+              'INSERT INTO product_option_groups (product_id, name, is_required, selection_type, sort_order) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+              [id, `選項群組${i+1}`, false, 'single', i]
+            );
+            
+            const groupId = groupResult.rows[0].id;
+            
+            // 建立選項
+            await pool.query(
+              'INSERT INTO product_options (group_id, name, price_modifier, sort_order) VALUES ($1,$2,$3,$4)',
+              [groupId, optionData.name, parseFloat(optionData.price || 0), 0]
+            );
+          }
+        }
+      }
+      
+      // 提交交易
+      await pool.query('COMMIT');
+      console.log(`✅ 成功更新商品：${name}`);
+      
+      res.redirect('/admin/products');
+      
+    } catch (error) {
+      // 回滾交易
+      await pool.query('ROLLBACK');
+      throw error;
+    }
+    
+  } catch (err) {
+    console.error('更新商品錯誤:', err);
+    res.status(500).send('更新商品失敗：' + err.message);
   }
 });
 
@@ -4301,7 +4513,7 @@ app.post('/api/admin/site-settings/hours', ensureAdmin, async (req, res) => {
 });
 
 // 上傳橫排圖檔
-const multer = require('multer');
+// multer 已在頂部聲明
 
 // 設定檔案儲存
 const storage = multer.diskStorage({
