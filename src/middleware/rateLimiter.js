@@ -38,11 +38,11 @@ const apiLimiter = rateLimit({
   },
 });
 
-// 訂單提交限制（更嚴格）
+// 訂單提交限制（測試期間放寬）
 const orderLimiter = rateLimit({
   ...baseConfig,
   windowMs: 5 * 60 * 1000, // 5分鐘
-  max: 3, // 每個IP最多3個訂單
+  max: 20, // 每個IP最多20個訂單（測試用）
   message: {
     success: false,
     message: '訂單提交過於頻繁，請5分鐘後再試'
