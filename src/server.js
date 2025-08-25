@@ -625,7 +625,7 @@ async function fetchProducts() {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
-    res.render('index', { 
+    res.render('index_ultimate', { 
       products: products,
       sessionLine: req.session.line || null
     });
@@ -1864,6 +1864,169 @@ app.get('/driver/modern', async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+});
+
+// 🚀 新增：配送包管理介面
+app.get('/driver/delivery-package', async (req, res, next) => {
+  try {
+    res.render('driver_delivery_package', {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 🚀 新增：配送包數據 API
+app.get('/api/driver/delivery-package', async (req, res) => {
+  try {
+    const driverId = req.query.driverId || req.session.driverId;
+    
+    // 獲取已完成包裝的訂單（ready status）
+    const readyOrdersQuery = `
+      SELECT id, contact_name, contact_phone, address, 
+             total_amount, status, created_at, lat, lng,
+             delivery_notes, estimated_delivery_time
+      FROM orders 
+      WHERE status = 'ready'
+      ORDER BY created_at ASC
+    `;
+    
+    // 獲取正在包裝的訂單（confirmed status）
+    const packingOrdersQuery = `
+      SELECT id, contact_name, contact_phone, address, 
+             total_amount, status, created_at, lat, lng,
+             delivery_notes, estimated_delivery_time
+      FROM orders 
+      WHERE status = 'confirmed'
+      ORDER BY created_at ASC
+    `;
+    
+    // 獲取附近的新訂單建議（pending status，特別關注被移除的訂單）
+    const suggestionsQuery = `
+      SELECT id, contact_name, contact_phone, address, 
+             total_amount, status, created_at, lat, lng,
+             delivery_notes
+      FROM orders 
+      WHERE status = 'pending' AND (
+        delivery_notes LIKE '%已從配送包移除%' OR
+        delivery_notes LIKE '%等待重新優化分配%' OR
+        delivery_notes IS NULL
+      )
+      ORDER BY 
+        CASE WHEN delivery_notes LIKE '%已從配送包移除%' THEN 0 ELSE 1 END,
+        created_at DESC
+      LIMIT 5
+    `;
+    
+    const [readyOrders, packingOrders, suggestions] = await Promise.all([
+      pool.query(readyOrdersQuery),
+      pool.query(packingOrdersQuery),
+      pool.query(suggestionsQuery)
+    ]);
+
+    const packageData = {
+      ready: readyOrders.rows.map(order => ({
+        ...order,
+        estimated_pack_time: null // 已完成包裝
+      })),
+      packing: packingOrders.rows.map(order => ({
+        ...order,
+        estimated_pack_time: new Date(Date.now() + Math.random() * 30 * 60 * 1000) // 隨機0-30分鐘完成
+      })),
+      suggestions: suggestions.rows.map(order => ({
+        ...order,
+        distance: Math.round(Math.random() * 5000) + 500, // 模擬距離 500-5500m
+        similarity_score: Math.round(Math.random() * 30) + 70 // 70-100% 相似度
+      }))
+    };
+
+    res.json({
+      success: true,
+      data: packageData
+    });
+
+  } catch (error) {
+    console.error('獲取配送包數據錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取配送包數據失敗: ' + error.message
+    });
+  }
+});
+
+// 🚀 新增：添加訂單到配送包
+app.post('/api/driver/delivery-package/add', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單ID必填'
+      });
+    }
+
+    // 將訂單狀態更新為ready（加入配送包）
+    await pool.query(
+      'UPDATE orders SET status = $1 WHERE id = $2',
+      ['ready', orderId]
+    );
+
+    res.json({
+      success: true,
+      message: '訂單已添加到配送包'
+    });
+
+  } catch (error) {
+    console.error('添加訂單到配送包錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '添加訂單失敗: ' + error.message
+    });
+  }
+});
+
+// 🚀 新增：從配送包移除訂單
+app.post('/api/driver/delivery-package/remove', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單ID必填'
+      });
+    }
+
+    // 將訂單狀態回退為pending（從配送包移除），讓它重新進入路線優化
+    await pool.query(
+      'UPDATE orders SET status = $1, delivery_notes = $2 WHERE id = $3',
+      ['pending', '已從配送包移除，等待重新優化分配', orderId]
+    );
+
+    // 觸發路線重新優化（如果有路線優化服務的話）
+    if (routeOptimizationService) {
+      try {
+        await routeOptimizationService.autoOptimizeOnStatusChange(orderId, 'pending');
+        console.log(`訂單 ${orderId} 已觸發重新路線優化`);
+      } catch (optimizeError) {
+        console.warn('路線優化觸發失敗:', optimizeError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '訂單已從配送包移除，並重新進入智慧分配流程'
+    });
+
+  } catch (error) {
+    console.error('從配送包移除訂單錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '移除訂單失敗: ' + error.message
+    });
   }
 });
 

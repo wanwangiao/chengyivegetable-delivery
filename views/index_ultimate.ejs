@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>誠意鮮蔬 Ultimate｜現代 × 革命性購物體驗</title>
+  
+  <!-- PWA 設定 -->
+  <meta name="theme-color" content="#2d5a3d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- 預載入資源 -->
+  <link rel="preload" href="/api/products" as="fetch" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  
+  <style>
+    /* =================================================
+       🚀 SUB AGENT團隊 - 現代 × 革命性融合版
+       結合卡片式設計與3D動態效果的完美體驗
+       ================================================= */
+    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    :root {
+      /* 🎨 現代色彩系統 */
+      --primary-dark: #2d5a3d;
+      --primary-gradient: linear-gradient(135deg, #2d5a3d 0%, #1e3d2a 50%, #0f2318 100%);
+      --accent-gradient: linear-gradient(135deg, #7cb342 0%, #8bc34a 50%, #9ccc65 100%);
+      --surface-gradient: linear-gradient(135deg, #ffffff 0%, #f8fffe 50%, #f1f8f6 100%);
+      --glass-effect: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --border-light: rgba(124, 179, 66, 0.15);
+      
+      /* 🎯 觸控友好尺寸 */
+      --touch-target: 44px;
+      --touch-comfortable: 56px;
+      
+      /* 📏 間距系統 */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2rem;
+      
+      /* 🌊 流暢動畫 */
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background: var(--surface-gradient);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+    
+    /* =================================================
+       🏪 革命性玻璃頂部導航
+       ================================================= */
+    .revolutionary-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--glass-effect);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--glass-border);
+      transition: all 0.3s var(--ease-smooth);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-lg);
+      max-width: 430px;
+      margin: 0 auto;
+    }
+    
+    .brand-section {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .brand-logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+    
+    .brand-tagline {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(45, 90, 61, 0.7);
+      letter-spacing: 0.02em;
+      margin-top: -0.2rem;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: var(--space-sm);
+    }
+    
+    .action-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--glass-effect);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-bounce);
+      position: relative;
+      overflow: hidden;
+      color: var(--text-primary);
+    }
+    
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--accent-gradient);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .action-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 25px rgba(124, 179, 66, 0.3);
+    }
+    
+    .action-btn:hover::before {
+      opacity: 1;
+    }
+    
+    .action-btn span {
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* =================================================
+       🔍 智能搜尋系統
+       ================================================= */
+    .smart-search-container {
+      position: fixed;
+      top: 80px;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      padding: 0 var(--space-lg);
+      max-width: 430px;
+      margin: 0 auto;
+    }
+    
+    .smart-search-wrapper {
+      position: relative;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 25px;
+      border: 1px solid rgba(124, 179, 66, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      transition: all 0.3s var(--ease-smooth);
+    }
+    
+    .smart-search-wrapper.focused {
+      transform: scale(1.02);
+      box-shadow: 0 12px 40px rgba(124, 179, 66, 0.2);
+      border-color: rgba(124, 179, 66, 0.4);
+    }
+    
+    .smart-search-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: var(--space-md) var(--space-lg);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      outline: none;
+      font-family: inherit;
+    }
+    
+    .smart-search-input::placeholder {
+      color: rgba(26, 26, 26, 0.5);
+      font-weight: 400;
+    }
+    
+    /* =================================================
+       🏷️ 流體分類標籤
+       ================================================= */
+    .fluid-categories {
+      position: fixed;
+      top: 140px;
+      left: 0;
+      right: 0;
+      z-index: 998;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .categories-container {
+      display: flex;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-lg);
+      max-width: 430px;
+      margin: 0 auto;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .categories-container::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .category-pill {
+      flex-shrink: 0;
+      padding: var(--space-sm) var(--space-lg);
+      border-radius: 20px;
+      border: 2px solid transparent;
+      background: rgba(124, 179, 66, 0.1);
+      color: rgba(45, 90, 61, 0.8);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-bounce);
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    
+    .category-pill::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--accent-gradient);
+      transition: left 0.4s var(--ease-smooth);
+      z-index: -1;
+    }
+    
+    .category-pill:hover::before,
+    .category-pill.active::before {
+      left: 0;
+    }
+    
+    .category-pill:hover,
+    .category-pill.active {
+      color: white;
+      transform: scale(1.05);
+      border-color: rgba(124, 179, 66, 0.3);
+      box-shadow: 0 4px 15px rgba(124, 179, 66, 0.3);
+    }
+    
+    /* =================================================
+       📢 現代服務公告
+       ================================================= */
+    .modern-announcement {
+      background: rgba(255, 255, 255, 0.98);
+      margin: 200px var(--space-lg) var(--space-lg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border-light);
+    }
+    
+    .announcement-header {
+      background: var(--primary-gradient);
+      color: white;
+      padding: var(--space-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .announcement-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    
+    .announcement-toggle {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+      min-width: var(--touch-target);
+      min-height: var(--touch-target);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .announcement-toggle:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .service-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+    }
+    
+    .service-card {
+      background: var(--surface-gradient);
+      padding: var(--space-md);
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      transition: all 0.3s ease;
+    }
+    
+    .service-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(124, 179, 66, 0.15);
+    }
+    
+    .service-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    
+    .service-text {
+      flex: 1;
+    }
+    
+    .service-text strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+    
+    .service-text span {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    
+    /* =================================================
+       🃏 3D 商品卡片宇宙
+       ================================================= */
+    .products-universe {
+      padding: var(--space-lg) 0 120px;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: var(--space-lg);
+      padding: 0 var(--space-lg);
+      max-width: 430px;
+      margin: 0 auto;
+      perspective: 1000px;
+    }
+    
+    .product-universe-card {
+      background: var(--surface-gradient);
+      border-radius: 20px;
+      border: 1px solid rgba(124, 179, 66, 0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.4s var(--ease-smooth);
+      position: relative;
+      min-height: 280px;
+      transform-style: preserve-3d;
+      will-change: transform;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .product-universe-card:hover {
+      transform: translateY(-8px) rotateX(5deg) rotateY(5deg);
+      box-shadow: 0 20px 50px rgba(124, 179, 66, 0.2);
+      border-color: rgba(124, 179, 66, 0.3);
+    }
+    
+    .product-universe-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, 
+        rgba(124, 179, 66, 0.1) 0%, 
+        transparent 50%, 
+        rgba(124, 179, 66, 0.05) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .product-universe-card:hover::before {
+      opacity: 1;
+    }
+    
+    .card-image-sphere {
+      height: 140px;
+      background: linear-gradient(135deg, #f8fffe 0%, #e8f5e8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card-image-sphere::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(124, 179, 66, 0.1) 0%, transparent 70%);
+      animation: pulseGlow 3s ease-in-out infinite alternate;
+    }
+    
+    @keyframes pulseGlow {
+      0% { opacity: 0.3; transform: scale(0.8); }
+      100% { opacity: 0.6; transform: scale(1.2); }
+    }
+    
+    .product-emoji {
+      font-size: 3.5rem;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+      transition: all 0.4s var(--ease-bounce);
+      position: relative;
+      z-index: 2;
+    }
+    
+    .product-universe-card:hover .product-emoji {
+      transform: scale(1.15) rotateY(15deg);
+      filter: drop-shadow(0 8px 16px rgba(124, 179, 66, 0.3));
+    }
+    
+    .product-emoji img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    
+    .card-content-matrix {
+      padding: var(--space-lg);
+      text-align: center;
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .product-name-glow {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+      line-height: 1.3;
+      transition: all 0.3s ease;
+    }
+    
+    .product-universe-card:hover .product-name-glow {
+      color: #2d5a3d;
+      text-shadow: 0 0 10px rgba(124, 179, 66, 0.3);
+    }
+    
+    .price-quantum {
+      font-size: 1.3rem;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-sm);
+    }
+    
+    .unit-dimension {
+      font-size: 0.85rem;
+      color: rgba(26, 26, 26, 0.6);
+      font-weight: 500;
+      margin-bottom: var(--space-md);
+    }
+    
+    .product-badge {
+      background: linear-gradient(135deg, rgba(255, 138, 101, 0.15), rgba(255, 138, 101, 0.05));
+      color: #ff6b35;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid rgba(255, 138, 101, 0.2);
+      display: inline-block;
+      margin-bottom: var(--space-sm);
+    }
+    
+    .card-actions {
+      margin-top: auto;
+      display: flex;
+      gap: var(--space-sm);
+    }
+    
+    .quick-add-btn {
+      flex: 1;
+      background: var(--accent-gradient);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: var(--space-sm) var(--space-md);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-bounce);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      min-height: var(--touch-target);
+    }
+    
+    .quick-add-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(124, 179, 66, 0.3);
+    }
+    
+    .detail-btn {
+      background: rgba(124, 179, 66, 0.1);
+      color: #7cb342;
+      border: 1px solid rgba(124, 179, 66, 0.2);
+      border-radius: 12px;
+      padding: var(--space-sm);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: var(--touch-target);
+      min-height: var(--touch-target);
+    }
+    
+    .detail-btn:hover {
+      background: #7cb342;
+      color: white;
+      transform: scale(1.05);
+    }
+    
+    /* =================================================
+       🛒 量子購物車 - 現代化
+       ================================================= */
+    .quantum-cart {
+      position: fixed;
+      bottom: var(--space-lg);
+      left: var(--space-lg);
+      right: var(--space-lg);
+      z-index: 1001;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      padding: var(--space-lg);
+      box-shadow: 0 10px 40px rgba(45, 90, 61, 0.4);
+      backdrop-filter: blur(20px);
+      transition: all 0.4s var(--ease-bounce);
+      cursor: pointer;
+      max-width: 400px;
+      margin: 0 auto;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transform: translateY(100px);
+    }
+    
+    .quantum-cart.visible {
+      transform: translateY(0);
+    }
+    
+    .quantum-cart:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 50px rgba(45, 90, 61, 0.5);
+    }
+    
+    .cart-quantum-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    
+    .cart-info-matrix {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    
+    .cart-total-glow {
+      font-size: 1.4rem;
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    
+    .cart-items-count {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    
+    .cart-portal-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      transition: all 0.3s var(--ease-bounce);
+      backdrop-filter: blur(10px);
+      color: white;
+    }
+    
+    .cart-portal-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1) rotate(10deg);
+    }
+    
+    /* =================================================
+       🎭 現代化彈窗系統
+       ================================================= */
+    .experience-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(20px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-lg);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s var(--ease-smooth);
+    }
+    
+    .experience-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-universe {
+      background: var(--surface-gradient);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90vh;
+      overflow: hidden;
+      transform: scale(0.8) translateY(50px);
+      transition: transform 0.4s var(--ease-bounce);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(124, 179, 66, 0.2);
+    }
+    
+    .experience-modal.active .modal-universe {
+      transform: scale(1) translateY(0);
+    }
+    
+    .modal-header-matrix {
+      background: var(--primary-gradient);
+      color: white;
+      padding: var(--space-xl);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .modal-title-glow {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin: 0;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+      position: relative;
+      z-index: 2;
+    }
+    
+    .modal-close-portal {
+      position: absolute;
+      top: var(--space-lg);
+      right: var(--space-lg);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-bounce);
+      backdrop-filter: blur(10px);
+      z-index: 3;
+      font-size: 1.2rem;
+    }
+    
+    .modal-close-portal:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1) rotate(90deg);
+    }
+    
+    .modal-content-matrix {
+      padding: var(--space-xl);
+      overflow-y: auto;
+      max-height: calc(90vh - 140px);
+    }
+    
+    /* =================================================
+       📱 響應式優化
+       ================================================= */
+    @media (max-width: 400px) {
+      .header-content {
+        padding: var(--space-md);
+      }
+      
+      .brand-logo {
+        font-size: 1.6rem;
+      }
+      
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-md);
+      }
+      
+      .product-universe-card {
+        min-height: 240px;
+      }
+      
+      .card-image-sphere {
+        height: 120px;
+      }
+      
+      .product-emoji {
+        font-size: 2.8rem;
+      }
+      
+      .service-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (min-width: 768px) {
+      .header-content,
+      .smart-search-container,
+      .categories-container,
+      .products-grid {
+        max-width: 600px;
+      }
+      
+      .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-xl);
+      }
+    }
+    
+    /* =================================================
+       🎨 動畫效果
+       ================================================= */
+    @keyframes cardSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .product-universe-card {
+      animation: cardSlideIn 0.4s ease forwards;
+    }
+    
+    .product-universe-card:nth-child(1) { animation-delay: 0.1s; }
+    .product-universe-card:nth-child(2) { animation-delay: 0.2s; }
+    .product-universe-card:nth-child(3) { animation-delay: 0.3s; }
+    .product-universe-card:nth-child(4) { animation-delay: 0.4s; }
+    .product-universe-card:nth-child(5) { animation-delay: 0.5s; }
+    .product-universe-card:nth-child(6) { animation-delay: 0.6s; }
+    
+    /* 波紋效果 */
+    .product-universe-card::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(124, 179, 66, 0.1);
+      transform: translate(-50%, -50%);
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+    
+    .product-universe-card:active::after {
+      width: 300px;
+      height: 300px;
+    }
+    
+    /* =================================================
+       🌙 深色模式支援
+       ================================================= */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --surface-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+        --glass-effect: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --text-primary: #ffffff;
+        --text-secondary: #b3b3b3;
+      }
+      
+      .product-name-glow {
+        color: #ffffff;
+      }
+    }
+    
+    /* =================================================
+       ♿ 無障礙優化
+       ================================================= */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    .action-btn:focus,
+    .category-pill:focus,
+    .product-universe-card:focus,
+    .quick-add-btn:focus,
+    .detail-btn:focus {
+      outline: 3px solid #7cb342;
+      outline-offset: 2px;
+    }
+
+    /* =================================================
+       🎯 購物車商品細項編輯彈窗
+       ================================================= */
+    .cart-item-detail-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 3000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .cart-item-detail-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 點擊背景關閉 */
+    .cart-item-detail-overlay.active {
+      cursor: pointer;
+    }
+
+    .cart-item-detail-card {
+      cursor: default;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 420px;
+      max-height: 85vh;
+      overflow: hidden;
+      transform: translateY(20px) scale(0.9);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-item-detail-overlay.active .cart-item-detail-card {
+      transform: translateY(0) scale(1);
+    }
+
+    /* 標題區域 */
+    .detail-header {
+      background: var(--accent-gradient);
+      color: white;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .detail-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .detail-close-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.2s ease;
+    }
+
+    .detail-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    /* 商品基本資訊 */
+    .detail-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-product-info {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .detail-product-image {
+      flex-shrink: 0;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f8fffe, #f1f8f6);
+      border-radius: 12px;
+      font-size: 3rem;
+      border: 1px solid var(--border-light);
+    }
+
+    .detail-product-text {
+      flex: 1;
+    }
+
+    .detail-product-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem 0;
+      line-height: 1.3;
+    }
+
+    .detail-product-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #7cb342;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .detail-current-quantity {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      background: rgba(124, 179, 66, 0.1);
+      padding: 0.3rem 0.6rem;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    /* 數量調整區域 */
+    .detail-quantity-section {
+      padding: 1.5rem;
+      border-top: 1px solid var(--border-light);
+      background: rgba(124, 179, 66, 0.05);
+    }
+
+    .quantity-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 1rem 0;
+      text-align: center;
+    }
+
+    .detail-quantity-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .detail-qty-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #7cb342;
+      background: white;
+      color: #7cb342;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .detail-qty-btn:hover {
+      background: #7cb342;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .detail-qty-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .detail-qty-display {
+      min-width: 60px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: 12px;
+      padding: 0.5rem;
+    }
+
+    /* 價格預覽和操作按鈕 */
+    .detail-footer {
+      background: white;
+      border-top: 2px solid var(--border-light);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .detail-price-preview {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem;
+      background: rgba(124, 179, 66, 0.1);
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+    }
+
+    .price-preview-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .price-preview-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #7cb342;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .detail-update-btn {
+      flex: 2;
+      background: #7cb342;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .detail-update-btn:hover {
+      background: #6da632;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(124, 179, 66, 0.3);
+    }
+
+    .detail-remove-btn {
+      flex: 1;
+      background: rgba(255, 87, 34, 0.1);
+      color: #ff5722;
+      border: 2px solid rgba(255, 87, 34, 0.3);
+      border-radius: 16px;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .detail-remove-btn:hover {
+      background: #ff5722;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* 響應式優化 */
+    @media (max-width: 400px) {
+      .cart-item-detail-card {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+      }
+      
+      .detail-header {
+        padding: 1.2rem;
+      }
+      
+      .detail-product-info {
+        padding: 1.2rem;
+        gap: 0.8rem;
+      }
+      
+      .detail-product-image {
+        width: 70px;
+        height: 70px;
+        font-size: 2.5rem;
+      }
+      
+      .detail-quantity-controls {
+        gap: 0.8rem;
+      }
+      
+      .detail-qty-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.3rem;
+      }
+      
+      .detail-qty-display {
+        min-width: 50px;
+        font-size: 1.3rem;
+        padding: 0.4rem;
+      }
+      
+      .detail-actions {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      
+      .detail-update-btn,
+      .detail-remove-btn {
+        padding: 0.8rem;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 🚀 革命性玻璃導航 -->
+  <header class="revolutionary-header">
+    <div class="header-content">
+      <div class="brand-section">
+        <h1 class="brand-logo">誠意鮮蔬 Ultimate</h1>
+        <div class="brand-tagline">現代 × 革命性購物體驗</div>
+      </div>
+      
+      <div class="header-actions">
+        <% if (sessionLine) { %>
+          <button class="action-btn" title="LINE 已綁定">
+            <span>✅</span>
+          </button>
+        <% } else { %>
+          <a href="/auth/line/login" class="action-btn" title="綁定 LINE">
+            <span>📱</span>
+          </a>
+        <% } %>
+        
+        <button class="action-btn" onclick="toggleNotifications()" title="通知">
+          <span>🔔</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 🔍 智能搜尋 -->
+  <div class="smart-search-container">
+    <div class="smart-search-wrapper">
+      <input 
+        type="text" 
+        class="smart-search-input" 
+        placeholder="🤖 智能搜尋新鮮蔬果..."
+        id="smart-search"
+        autocomplete="off">
+    </div>
+  </div>
+
+  <!-- 🏷️ 流體分類 -->
+  <div class="fluid-categories">
+    <div class="categories-container">
+      <button class="category-pill active" data-category="all">🌟 精選推薦</button>
+      <button class="category-pill" data-category="leafy">🥬 葉菜類</button>
+      <button class="category-pill" data-category="root">🥕 根莖類</button>
+      <button class="category-pill" data-category="fruits">🍎 新鮮水果</button>
+      <button class="category-pill" data-category="herbs">🌿 香草調料</button>
+      <button class="category-pill" data-category="proxy">📦 代購商品</button>
+    </div>
+  </div>
+
+  <!-- 📢 現代服務公告 -->
+  <div class="modern-announcement" id="announcement">
+    <div class="announcement-header" onclick="toggleAnnouncement()">
+      <h2 class="announcement-title">📢 服務資訊</h2>
+      <button class="announcement-toggle" id="announcement-toggle">▼</button>
+    </div>
+    
+    <div class="service-grid" id="service-content">
+      <div class="service-card">
+        <div class="service-icon">🚚</div>
+        <div class="service-text">
+          <strong>配送範圍</strong>
+          <span>三峽、北大特區、鶯歌、樹林、土城</span>
+        </div>
+      </div>
+      
+      <div class="service-card">
+        <div class="service-icon">💰</div>
+        <div class="service-text">
+          <strong>免運門檻</strong>
+          <span>滿200元享免費外送</span>
+        </div>
+      </div>
+      
+      <div class="service-card">
+        <div class="service-icon">💳</div>
+        <div class="service-text">
+          <strong>付款方式</strong>
+          <span>現金、LINE Pay、轉帳</span>
+        </div>
+      </div>
+      
+      <div class="service-card">
+        <div class="service-icon">⏰</div>
+        <div class="service-text">
+          <strong>配送時間</strong>
+          <span>11點前下單當天送達</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🃏 3D商品宇宙 -->
+  <main class="products-universe">
+    <div class="products-grid" id="products-grid">
+      <% if (products && products.length > 0) { %>
+        <% products.forEach(function(product, index) { %>
+          <div class="product-universe-card" 
+               data-category="<%= product.is_priced_item ? 'proxy' : 'leafy' %>"
+               onclick="openProductExperience(<%= product.id %>)"
+               tabindex="0"
+               style="animation-delay: <%= index * 0.1 %>s">
+            
+            <div class="card-image-sphere">
+              <div class="product-emoji">
+                <% if (product.image_url && product.image_url.startsWith('/uploads/')) { %>
+                  <img src="<%= product.image_url %>" alt="<%= product.name %>" loading="lazy">
+                <% } else if (product.image_url) { %>
+                  <%= product.image_url %>
+                <% } else { %>
+                  🥬
+                <% } %>
+              </div>
+            </div>
+            
+            <div class="card-content-matrix">
+              <h3 class="product-name-glow"><%= product.name %></h3>
+              
+              <% if (product.is_priced_item) { %>
+                <div class="product-badge">計價商品</div>
+                <div class="price-quantum">時價 ⚡</div>
+                <div class="unit-dimension">依重量計算</div>
+              <% } else { %>
+                <div class="price-quantum">$<%= product.price %></div>
+                <div class="unit-dimension">/ <%= product.unit || '份' %></div>
+              <% } %>
+              
+              <div class="card-actions">
+                <button class="quick-add-btn" 
+                        onclick="quickAddToCart(event, <%= product.id %>)"
+                        <%= product.is_priced_item ? 'disabled' : '' %>>
+                  <span>🛒</span>
+                  <span>加入</span>
+                </button>
+                
+                <button class="detail-btn" 
+                        onclick="openProductDetail(event, <%= product.id %>)"
+                        title="查看詳情">
+                  ℹ️
+                </button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem;">
+          <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.6;">🌌</div>
+          <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">商品宇宙載入中...</h3>
+          <p style="color: var(--text-secondary);">精彩商品即將到來</p>
+        </div>
+      <% } %>
+    </div>
+  </main>
+
+  <!-- 🛒 量子購物車 -->
+  <div class="quantum-cart" id="quantum-cart" onclick="openCartExperience()">
+    <div class="cart-quantum-display">
+      <div class="cart-info-matrix">
+        <div class="cart-total-glow">總計 $<span id="cart-total">0</span></div>
+        <div class="cart-items-count"><span id="cart-count">0</span> 樣商品</div>
+      </div>
+      
+      <div class="cart-portal-btn">
+        🛒
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎭 產品體驗彈窗 -->
+  <div class="experience-modal" id="product-experience">
+    <div class="modal-universe">
+      <div class="modal-header-matrix">
+        <h2 class="modal-title-glow" id="experience-title">產品詳情</h2>
+        <button class="modal-close-portal" onclick="closeProductExperience()">✕</button>
+      </div>
+      
+      <div class="modal-content-matrix" id="experience-content">
+        <!-- 動態內容 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 🛒 購物車體驗彈窗 -->
+  <div class="experience-modal" id="cart-experience">
+    <div class="modal-universe">
+      <div class="modal-header-matrix">
+        <h2 class="modal-title-glow">購物車</h2>
+        <button class="modal-close-portal" onclick="closeCartExperience()">✕</button>
+      </div>
+      
+      <div class="modal-content-matrix" id="cart-content">
+        <!-- 購物車內容 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎯 購物車商品細項編輯彈窗 -->
+  <div class="cart-item-detail-overlay" id="cart-item-detail-overlay">
+    <div class="cart-item-detail-card">
+      <div class="detail-header">
+        <h3 class="detail-title">編輯商品細項</h3>
+        <button class="detail-close-btn" onclick="closeCartItemDetail()">✖</button>
+      </div>
+      
+      <div class="detail-content">
+        <!-- 商品基本資訊 -->
+        <div class="detail-product-info">
+          <div class="detail-product-image">
+            <span id="detail-product-emoji">🥬</span>
+          </div>
+          <div class="detail-product-text">
+            <h4 class="detail-product-name" id="detail-product-name">商品名稱</h4>
+            <div class="detail-product-price" id="detail-product-price">NT$ 0</div>
+            <div class="detail-current-quantity">目前數量: <span id="detail-current-qty">1</span></div>
+          </div>
+        </div>
+
+        <!-- 數量調整區域 -->
+        <div class="detail-quantity-section">
+          <h4 class="quantity-section-title">調整數量</h4>
+          <div class="detail-quantity-controls">
+            <button class="detail-qty-btn" onclick="adjustDetailQuantity(-1)">−</button>
+            <div class="detail-qty-display" id="detail-qty-display">1</div>
+            <button class="detail-qty-btn" onclick="adjustDetailQuantity(1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 價格預覽和操作按鈕 -->
+      <div class="detail-footer">
+        <div class="detail-price-preview">
+          <span class="price-preview-label">預估總價</span>
+          <span class="price-preview-value" id="detail-preview-total">NT$ 0</span>
+        </div>
+        
+        <div class="detail-actions">
+          <button class="detail-update-btn" onclick="updateCartItem()">
+            更新商品
+          </button>
+          <button class="detail-remove-btn" onclick="removeCartItem()">
+            移除
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =================================================
+    // 🚀 現代 × 革命性 JavaScript 融合版
+    // =================================================
+    
+    // 全域變數
+    const products = <%- JSON.stringify(products || []) %>;
+    let cart = JSON.parse(localStorage.getItem('ultimateCart') || '[]');
+    let currentProduct = null;
+    let currentQuantity = 1;
+    let isAnnouncementExpanded = false;
+    
+    // 頁面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 啟動 Ultimate 購物體驗...');
+      
+      updateCartDisplay();
+      initializeSearch();
+      initializeCategories();
+      initializeCardAnimations();
+      initializeGestures();
+    });
+    
+    // 🔍 智能搜尋
+    function initializeSearch() {
+      const searchInput = document.getElementById('smart-search');
+      const wrapper = searchInput.parentElement;
+      let searchTimeout;
+      
+      searchInput.addEventListener('focus', function() {
+        wrapper.classList.add('focused');
+      });
+      
+      searchInput.addEventListener('blur', function() {
+        wrapper.classList.remove('focused');
+      });
+      
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performSearch(this.value);
+        }, 300);
+      });
+    }
+    
+    function performSearch(query) {
+      const cards = document.querySelectorAll('.product-universe-card');
+      
+      cards.forEach(card => {
+        const name = card.querySelector('.product-name-glow').textContent.toLowerCase();
+        const shouldShow = !query || name.includes(query.toLowerCase());
+        
+        if (shouldShow) {
+          card.style.display = 'flex';
+          card.style.animation = 'cardSlideIn 0.4s ease forwards';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+    
+    // 🏷️ 分類系統
+    function initializeCategories() {
+      const categories = document.querySelectorAll('.category-pill');
+      
+      categories.forEach(category => {
+        category.addEventListener('click', function() {
+          categories.forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+          filterByCategory(this.dataset.category);
+        });
+      });
+    }
+    
+    function filterByCategory(category) {
+      const cards = document.querySelectorAll('.product-universe-card');
+      
+      cards.forEach((card, index) => {
+        const cardCategory = card.dataset.category;
+        const shouldShow = category === 'all' || cardCategory === category;
+        
+        if (shouldShow) {
+          card.style.display = 'flex';
+          card.style.animationDelay = (index * 0.05) + 's';
+          card.style.animation = 'cardSlideIn 0.4s ease forwards';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+    
+    // 🎨 卡片動畫
+    function initializeCardAnimations() {
+      const cards = document.querySelectorAll('.product-universe-card');
+      
+      cards.forEach((card, index) => {
+        card.style.animationDelay = (index * 0.1) + 's';
+      });
+    }
+    
+    // 👆 手勢控制
+    function initializeGestures() {
+      let startY = 0;
+      
+      document.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+      });
+      
+      document.addEventListener('touchend', (e) => {
+        const endY = e.changedTouches[0].clientY;
+        const diff = startY - endY;
+        
+        // 上滑開啟購物車
+        if (diff > 100) {
+          openCartExperience();
+        }
+      });
+    }
+    
+    // 📢 公告切換
+    function toggleAnnouncement() {
+      const content = document.getElementById('service-content');
+      const toggle = document.getElementById('announcement-toggle');
+      
+      isAnnouncementExpanded = !isAnnouncementExpanded;
+      
+      if (isAnnouncementExpanded) {
+        content.style.display = 'grid';
+        toggle.textContent = '▲';
+      } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+    
+    // 🛍️ 商品功能
+    function quickAddToCart(event, productId) {
+      event.stopPropagation();
+      
+      const product = products.find(p => p.id === productId);
+      if (!product || product.is_priced_item) return;
+      
+      addToCart(product, 1);
+      showFeedback('🎉 已加入購物車！');
+      
+      // 視覺回饋
+      const button = event.target.closest('.quick-add-btn');
+      const originalContent = button.innerHTML;
+      button.innerHTML = '<span>✓</span><span>已加入</span>';
+      button.style.background = '#4caf50';
+      
+      setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.style.background = '';
+      }, 1500);
+    }
+    
+    function openProductDetail(event, productId) {
+      event.stopPropagation();
+      openProductExperience(productId);
+    }
+    
+    function openProductExperience(productId) {
+      currentProduct = products.find(p => p.id === productId);
+      if (!currentProduct) return;
+      
+      const modal = document.getElementById('product-experience');
+      const title = document.getElementById('experience-title');
+      const content = document.getElementById('experience-content');
+      
+      title.textContent = currentProduct.name;
+      
+      content.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 5rem; margin-bottom: 1.5rem;">
+            ${currentProduct.image_url || '🥬'}
+          </div>
+          
+          <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #2d5a3d;">
+            ${currentProduct.name}
+          </h3>
+          
+          <div style="background: linear-gradient(135deg, rgba(124, 179, 66, 0.1), rgba(124, 179, 66, 0.05)); 
+                      padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left; font-size: 0.9rem;">
+              <div><strong>🌱 產地:</strong> 台灣在地</div>
+              <div><strong>📦 包裝:</strong> 環保包材</div>
+              <div><strong>🚚 配送:</strong> 當日新鮮</div>
+              <div><strong>❄️ 保存:</strong> 冷藏保鮮</div>
+            </div>
+          </div>
+          
+          <div style="font-size: 2.2rem; font-weight: 800; 
+                      background: var(--accent-gradient); 
+                      -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+                      margin-bottom: 2rem;">
+            ${currentProduct.is_priced_item ? '時價 ⚡' : '$' + currentProduct.price + ' / ' + (currentProduct.unit || '份')}
+          </div>
+          
+          ${!currentProduct.is_priced_item ? `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1.2rem; margin-bottom: 2rem;">
+              <button onclick="adjustQuantity(-1)" 
+                      style="width: 50px; height: 50px; border-radius: 50%; 
+                             background: var(--accent-gradient); color: white; border: none; 
+                             font-size: 1.5rem; font-weight: bold; cursor: pointer; 
+                             transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(124, 179, 66, 0.3);">−</button>
+              
+              <div id="quantity-display" 
+                   style="font-size: 1.8rem; font-weight: 700; min-width: 80px; text-align: center; 
+                          padding: 0.8rem; background: rgba(124, 179, 66, 0.1); border-radius: 16px; 
+                          border: 2px solid rgba(124, 179, 66, 0.2);">1</div>
+              
+              <button onclick="adjustQuantity(1)" 
+                      style="width: 50px; height: 50px; border-radius: 50%; 
+                             background: var(--accent-gradient); color: white; border: none; 
+                             font-size: 1.5rem; font-weight: bold; cursor: pointer; 
+                             transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(124, 179, 66, 0.3);">+</button>
+            </div>
+            
+            <button onclick="addToCartFromModal()" 
+                    style="width: 100%; padding: 1.2rem; background: var(--primary-gradient); 
+                           color: white; border: none; border-radius: 16px; font-size: 1.2rem; 
+                           font-weight: 700; cursor: pointer; transition: all 0.3s ease; 
+                           box-shadow: 0 8px 25px rgba(45, 90, 61, 0.3);">
+              🚀 加入宇宙購物車
+            </button>
+          ` : `
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1rem; line-height: 1.6;">
+              此商品為計價商品，實際價格依重量計算<br>請聯絡客服了解詳情
+            </p>
+            <button onclick="contactService()" 
+                    style="width: 100%; padding: 1.2rem; background: var(--accent-gradient); 
+                           color: white; border: none; border-radius: 16px; font-size: 1.2rem; 
+                           font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+              📞 聯絡客服詢價
+            </button>
+          `}
+        </div>
+      `;
+      
+      showModal(modal);
+      currentQuantity = 1; // 重置數量
+    }
+    
+    function adjustQuantity(change) {
+      currentQuantity = Math.max(1, currentQuantity + change);
+      document.getElementById('quantity-display').textContent = currentQuantity;
+      
+      // 數量動畫
+      const display = document.getElementById('quantity-display');
+      display.style.transform = 'scale(1.1)';
+      setTimeout(() => {
+        display.style.transform = 'scale(1)';
+      }, 200);
+    }
+    
+    function addToCartFromModal() {
+      if (!currentProduct) return;
+      
+      addToCart(currentProduct, currentQuantity);
+      showFeedback(`🎉 已加入 ${currentQuantity} 個 ${currentProduct.name}！`);
+      
+      setTimeout(() => {
+        closeProductExperience();
+      }, 1000);
+    }
+    
+    // 🛒 購物車功能
+    function addToCart(product, quantity) {
+      const existingItem = cart.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        existingItem.quantity += quantity;
+      } else {
+        cart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: quantity,
+          unit: product.unit || '份',
+          is_priced_item: product.is_priced_item || false,
+          image: product.image_url || '🥬'
+        });
+      }
+      
+      localStorage.setItem('ultimateCart', JSON.stringify(cart));
+      updateCartDisplay();
+    }
+    
+    function updateCartDisplay() {
+      const cartElement = document.getElementById('quantum-cart');
+      const totalElement = document.getElementById('cart-total');
+      const countElement = document.getElementById('cart-count');
+      
+      let total = 0;
+      let count = 0;
+      
+      cart.forEach(item => {
+        if (!item.is_priced_item) {
+          total += item.price * item.quantity;
+        }
+        count += item.quantity;
+      });
+      
+      totalElement.textContent = total;
+      countElement.textContent = count;
+      
+      if (count > 0) {
+        cartElement.classList.add('visible');
+      } else {
+        cartElement.classList.remove('visible');
+      }
+    }
+    
+    function openCartExperience() {
+      const modal = document.getElementById('cart-experience');
+      const content = document.getElementById('cart-content');
+      
+      if (cart.length === 0) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: 3rem 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.6;">🛒</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 0.8rem;">購物宇宙是空的</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1rem;">開始探索新鮮蔬果吧！</p>
+            <button onclick="closeCartExperience()" 
+                    style="padding: 1rem 2rem; background: var(--accent-gradient); color: white; 
+                           border: none; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 1rem;">
+              繼續探索 🚀
+            </button>
+          </div>
+        `;
+      } else {
+        renderCartContent(content);
+      }
+      
+      showModal(modal);
+    }
+    
+    function renderCartContent(container) {
+      let subtotal = 0;
+      
+      const cartHTML = cart.map((item, index) => {
+        const itemTotal = item.is_priced_item ? 0 : item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        return `
+          <div style="display: flex; align-items: center; gap: 1.2rem; padding: 1.2rem; 
+                      background: rgba(124, 179, 66, 0.05); border-radius: 16px; margin-bottom: 1rem; 
+                      border: 1px solid rgba(124, 179, 66, 0.1);">
+            
+            <div style="font-size: 2.5rem; flex-shrink: 0; width: 60px; text-align: center;">
+              ${typeof item.image === 'string' && item.image.startsWith('/uploads/') ? 
+                `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 10px;">` : 
+                item.image}
+            </div>
+            
+            <div style="flex: 1; cursor: pointer;" onclick="openCartItemDetail(${index})">
+              <h4 style="margin: 0 0 0.5rem 0; font-weight: 600; font-size: 1.1rem;">${item.name}</h4>
+              <div style="font-size: 1.2rem; font-weight: 700; color: #7cb342;">
+                ${item.is_priced_item ? '時價' : '$' + itemTotal}
+              </div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                ${item.is_priced_item ? '依重量計算' : '$' + item.price + ' × ' + item.quantity + ' ' + item.unit}
+              </div>
+              <div style="font-size: 0.8rem; color: #7cb342; margin-top: 0.3rem; font-weight: 500;">
+                ✏️ 點擊編輯細項
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              <button onclick="updateCartQuantity(${index}, -1)" 
+                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(124, 179, 66, 0.1); 
+                             border: 2px solid rgba(124, 179, 66, 0.2); color: #7cb342; cursor: pointer; 
+                             font-weight: bold; transition: all 0.3s ease;"
+                      ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+              
+              <span style="min-width: 35px; text-align: center; font-weight: 700; font-size: 1.1rem;">${item.quantity}</span>
+              
+              <button onclick="updateCartQuantity(${index}, 1)" 
+                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(124, 179, 66, 0.1); 
+                             border: 2px solid rgba(124, 179, 66, 0.2); color: #7cb342; cursor: pointer; 
+                             font-weight: bold; transition: all 0.3s ease;">+</button>
+              
+              <button onclick="removeFromCart(${index})" 
+                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(244, 67, 54, 0.1); 
+                             border: 2px solid rgba(244, 67, 54, 0.2); color: #f44336; cursor: pointer; 
+                             font-weight: bold; transition: all 0.3s ease;">×</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      const deliveryFee = subtotal >= 200 ? 0 : 50;
+      const total = subtotal + deliveryFee;
+      
+      container.innerHTML = `
+        <div style="padding: 2rem;">
+          ${cartHTML}
+          
+          <div style="border-top: 2px solid rgba(124, 179, 66, 0.2); padding-top: 1.5rem; margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; font-size: 1rem;">
+              <span>商品小計:</span>
+              <span style="font-weight: 600;">$${subtotal}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; font-size: 1rem;">
+              <span>外送費:</span>
+              <span style="font-weight: 600; color: ${deliveryFee === 0 ? '#4caf50' : 'var(--text-primary)'};">
+                ${deliveryFee === 0 ? '免費 🎉' : '$' + deliveryFee}
+              </span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: 700; 
+                        color: #2d5a3d; border-top: 1px solid rgba(124, 179, 66, 0.2); padding-top: 0.8rem;">
+              <span>總計:</span>
+              <span>$${total}</span>
+            </div>
+          </div>
+          
+          ${subtotal < 200 ? `
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); 
+                        color: #f57f17; padding: 1.2rem; border-radius: 12px; margin: 1.5rem 0; text-align: center; font-size: 0.95rem;">
+              ⚠️ 還差 $${200 - subtotal} 即可享免費外送
+            </div>
+          ` : ''}
+          
+          <button onclick="proceedToCheckout()" 
+                  style="width: 100%; padding: 1.4rem; margin-top: 1.5rem;
+                         background: var(--primary-gradient); color: white; border: none; border-radius: 16px; 
+                         font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+                         box-shadow: 0 8px 25px rgba(45, 90, 61, 0.3);">
+            🚀 前往宇宙結帳 ($${total})
+          </button>
+        </div>
+      `;
+    }
+    
+    function updateCartQuantity(index, change) {
+      if (cart[index]) {
+        cart[index].quantity = Math.max(1, cart[index].quantity + change);
+        localStorage.setItem('ultimateCart', JSON.stringify(cart));
+        updateCartDisplay();
+        
+        // 重新渲染購物車
+        const content = document.getElementById('cart-content');
+        renderCartContent(content);
+      }
+    }
+    
+    function removeFromCart(index) {
+      if (cart[index] && confirm('確定要移除 ' + cart[index].name + ' 嗎？')) {
+        cart.splice(index, 1);
+        localStorage.setItem('ultimateCart', JSON.stringify(cart));
+        updateCartDisplay();
+        
+        // 重新渲染購物車
+        if (cart.length === 0) {
+          closeCartExperience();
+          openCartExperience();
+        } else {
+          const content = document.getElementById('cart-content');
+          renderCartContent(content);
+        }
+      }
+    }
+    
+    function proceedToCheckout() {
+      showFeedback('🚀 準備進入宇宙結帳...');
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1500);
+    }
+    
+    // 🎭 彈窗管理
+    function showModal(modal) {
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal(modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+    
+    function closeProductExperience() {
+      closeModal(document.getElementById('product-experience'));
+    }
+    
+    function closeCartExperience() {
+      closeModal(document.getElementById('cart-experience'));
+    }
+    
+    // 💬 回饋系統
+    function showFeedback(message) {
+      // 創建臨時通知
+      const notification = document.createElement('div');
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
+        background: var(--primary-gradient); color: white; padding: 1rem 1.5rem;
+        border-radius: 25px; font-weight: 600; z-index: 3000;
+        box-shadow: 0 8px 30px rgba(45, 90, 61, 0.4);
+        animation: slideInDown 0.4s ease, slideOutUp 0.4s ease 2s forwards;
+      `;
+      
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 2500);
+    }
+    
+    // 🔧 輔助功能
+    function contactService() {
+      showFeedback('正在為您轉接客服...');
+      setTimeout(() => {
+        alert('客服電話：02-2345-6789\n或加入官方 LINE：@chengyi-veg');
+      }, 1000);
+    }
+    
+    function toggleNotifications() {
+      showFeedback('🔔 通知功能開發中...');
+    }
+    
+    // 點擊背景關閉彈窗
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('experience-modal')) {
+        closeModal(e.target);
+      }
+    });
+    
+    // 鍵盤支援
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.experience-modal.active');
+        modals.forEach(modal => closeModal(modal));
+      }
+    });
+    
+    // 動態樣式注入
+    const dynamicStyles = document.createElement('style');
+    dynamicStyles.textContent = `
+      @keyframes slideInDown {
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+      }
+      
+      @keyframes slideOutUp {
+        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+        to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      }
+    `;
+    document.head.appendChild(dynamicStyles);
+    
+    console.log('🎉 Ultimate 購物體驗已載入完成！');
+
+    // =================================================
+    // 🎯 購物車商品細項編輯功能
+    // =================================================
+    
+    let currentEditingItemIndex = -1;
+    let tempQuantity = 1;
+    
+    function openCartItemDetail(index) {
+      currentEditingItemIndex = index;
+      const item = cart[index];
+      
+      if (!item) return;
+      
+      const overlay = document.getElementById('cart-item-detail-overlay');
+      const productEmoji = document.getElementById('detail-product-emoji');
+      const productName = document.getElementById('detail-product-name');
+      const productPrice = document.getElementById('detail-product-price');
+      const currentQty = document.getElementById('detail-current-qty');
+      const qtyDisplay = document.getElementById('detail-qty-display');
+      const previewTotal = document.getElementById('detail-preview-total');
+      
+      // 設置商品資訊
+      productEmoji.textContent = typeof item.image === 'string' && item.image.startsWith('/uploads/') ? '🥬' : item.image;
+      productName.textContent = item.name;
+      productPrice.textContent = item.is_priced_item ? '時價 ⚡' : 'NT$ ' + item.price + ' / ' + item.unit;
+      currentQty.textContent = item.quantity;
+      
+      // 初始化編輯數量
+      tempQuantity = item.quantity;
+      qtyDisplay.textContent = tempQuantity;
+      
+      // 更新價格預覽
+      updateDetailPreview();
+      
+      // 顯示彈窗
+      overlay.classList.add('active');
+      
+      // 防止背景滾動
+      document.body.style.overflow = 'hidden';
+      
+      // 點擊背景關閉
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+          closeCartItemDetail();
+        }
+      });
+    }
+    
+    function closeCartItemDetail() {
+      const overlay = document.getElementById('cart-item-detail-overlay');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      
+      // 重置狀態
+      currentEditingItemIndex = -1;
+      tempQuantity = 1;
+    }
+    
+    function adjustDetailQuantity(change) {
+      const item = cart[currentEditingItemIndex];
+      if (!item) return;
+      
+      tempQuantity = Math.max(1, tempQuantity + change);
+      
+      const qtyDisplay = document.getElementById('detail-qty-display');
+      qtyDisplay.textContent = tempQuantity;
+      
+      // 數量變化動畫
+      qtyDisplay.classList.add('changing');
+      setTimeout(() => {
+        qtyDisplay.classList.remove('changing');
+      }, 300);
+      
+      // 更新價格預覽
+      updateDetailPreview();
+      
+      // 更新按鈕狀態
+      const minusBtn = document.querySelector('.detail-qty-btn:first-of-type');
+      minusBtn.disabled = tempQuantity <= 1;
+    }
+    
+    function updateDetailPreview() {
+      const item = cart[currentEditingItemIndex];
+      if (!item) return;
+      
+      const previewTotal = document.getElementById('detail-preview-total');
+      
+      if (item.is_priced_item) {
+        previewTotal.textContent = '時價商品';
+      } else {
+        const total = item.price * tempQuantity;
+        previewTotal.textContent = 'NT$ ' + total;
+      }
+    }
+    
+    function updateCartItem() {
+      const item = cart[currentEditingItemIndex];
+      if (!item) return;
+      
+      // 更新購物車中的數量
+      item.quantity = tempQuantity;
+      
+      // 保存到本地存儲
+      localStorage.setItem('ultimateCart', JSON.stringify(cart));
+      
+      // 更新顯示
+      updateCartDisplay();
+      
+      // 如果購物車模態窗口開啟中，更新其內容
+      const cartModal = document.getElementById('cart-experience');
+      if (cartModal.classList.contains('active')) {
+        const content = document.getElementById('cart-content');
+        renderCartContent(content);
+      }
+      
+      // 顯示成功反饋
+      showFeedback('✅ 商品已更新！');
+      
+      // 關閉編輯窗口
+      closeCartItemDetail();
+    }
+    
+    function removeCartItem() {
+      const item = cart[currentEditingItemIndex];
+      if (!item) return;
+      
+      // 確認刪除
+      if (!confirm(`確定要移除「${item.name}」嗎？`)) {
+        return;
+      }
+      
+      // 從購物車移除
+      cart.splice(currentEditingItemIndex, 1);
+      
+      // 保存到本地存儲
+      localStorage.setItem('ultimateCart', JSON.stringify(cart));
+      
+      // 更新顯示
+      updateCartDisplay();
+      
+      // 如果購物車模態窗口開啟中，更新其內容
+      const cartModal = document.getElementById('cart-experience');
+      if (cartModal.classList.contains('active')) {
+        const content = document.getElementById('cart-content');
+        if (cart.length === 0) {
+          content.innerHTML = `
+            <div style="text-align: center; padding: 3rem 2rem;">
+              <div style="font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.6;">🛒</div>
+              <h3 style="font-size: 1.5rem; margin-bottom: 0.8rem;">購物宇宙是空的</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1rem;">開始探索新鮮蔬果吧！</p>
+              <button onclick="closeCartExperience()" 
+                      style="padding: 1rem 2rem; background: var(--accent-gradient); color: white; 
+                             border: none; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 1rem;">
+                繼續探索 🚀
+              </button>
+            </div>
+          `;
+        } else {
+          renderCartContent(content);
+        }
+      }
+      
+      // 顯示成功反饋
+      showFeedback('🗑️ 商品已移除');
+      
+      // 關閉編輯窗口
+      closeCartItemDetail();
+    }
+    
+    // 添加動畫效果的CSS
+    const cartDetailStyles = document.createElement('style');
+    cartDetailStyles.textContent = `
+      .detail-qty-display.changing {
+        animation: quantityChange 0.3s ease;
+      }
+      
+      @keyframes quantityChange {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+      }
+    `;
+    document.head.appendChild(cartDetailStyles);
+    
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://vegdeliverydbupdated-667yp22m0-shi-jia-huangs-projects.vercel.app';
+const BASE_URL = 'https://vegdeliverydbupdated-amx6l91gn-shi-jia-huangs-projects.vercel.app';
 
 async function testSingleOrder() {
   try {
@@ -9,8 +9,8 @@ async function testSingleOrder() {
       phone: '0912345678',
       address: '新北市三峽區中山路100號',
       items: [
-        { id: 3, quantity: 2, price: 40 }, // 青江菜
-        { id: 5, quantity: 1, price: 60 }  // 小黃瓜
+        { productId: 3, quantity: 2, price: 40 }, // 青江菜
+        { productId: 5, quantity: 1, price: 60 }  // 小黃瓜
       ],
       paymentMethod: 'cash',
       notes: '測試訂單 - 王小明'

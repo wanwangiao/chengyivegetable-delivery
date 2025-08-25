@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://vegdeliverydbupdated-667yp22m0-shi-jia-huangs-projects.vercel.app';
+const BASE_URL = 'https://vegdeliverydbupdated-amx6l91gn-shi-jia-huangs-projects.vercel.app';
 
 // 測試訂單資料 - 集中在三峽、樹林、鶯歌、土城、北大區域
 const testOrders = [
@@ -12,8 +12,8 @@ const testOrders = [
     lat: 24.9345,
     lng: 121.3688,
     items: [
-      { id: 3, quantity: 2, price: 40 }, // 青江菜
-      { id: 5, quantity: 1, price: 60 }  // 小黃瓜
+      { productId: 3, quantity: 2, price: 40 }, // 青江菜
+      { productId: 5, quantity: 1, price: 60 }  // 小黃瓜
     ]
   },
   {
@@ -23,8 +23,8 @@ const testOrders = [
     lat: 24.9378,
     lng: 121.3712,
     items: [
-      { id: 7, quantity: 3, price: 50 }, // 空心菜
-      { id: 9, quantity: 2, price: 80 }  // 水果玉米
+      { productId: 7, quantity: 3, price: 50 }, // 空心菜
+      { productId: 9, quantity: 2, price: 80 }  // 水果玉米
     ]
   },
   {
@@ -34,9 +34,9 @@ const testOrders = [
     lat: 24.9322,
     lng: 121.3665,
     items: [
-      { id: 3, quantity: 1, price: 40 },
-      { id: 7, quantity: 2, price: 50 },
-      { id: 12, quantity: 1, price: 28 }
+      { productId: 3, quantity: 1, price: 40 },
+      { productId: 7, quantity: 2, price: 50 },
+      { productId: 12, quantity: 1, price: 28 }
     ]
   },
   // 樹林區域
@@ -47,8 +47,8 @@ const testOrders = [
     lat: 24.9924,
     lng: 121.4244,
     items: [
-      { id: 5, quantity: 2, price: 60 },
-      { id: 9, quantity: 1, price: 80 }
+      { productId: 5, quantity: 2, price: 60 },
+      { productId: 9, quantity: 1, price: 80 }
     ]
   },
   {
@@ -58,8 +58,8 @@ const testOrders = [
     lat: 24.9889,
     lng: 121.4289,
     items: [
-      { id: 3, quantity: 3, price: 40 },
-      { id: 7, quantity: 1, price: 50 }
+      { productId: 3, quantity: 3, price: 40 },
+      { productId: 7, quantity: 1, price: 50 }
     ]
   },
   {
@@ -69,8 +69,8 @@ const testOrders = [
     lat: 24.9856,
     lng: 121.4156,
     items: [
-      { id: 12, quantity: 3, price: 28 },
-      { id: 5, quantity: 1, price: 60 }
+      { productId: 12, quantity: 3, price: 28 },
+      { productId: 5, quantity: 1, price: 60 }
     ]
   },
   // 鶯歌區域
@@ -81,8 +81,8 @@ const testOrders = [
     lat: 24.9565,
     lng: 121.3514,
     items: [
-      { id: 9, quantity: 2, price: 80 },
-      { id: 7, quantity: 2, price: 50 }
+      { productId: 9, quantity: 2, price: 80 },
+      { productId: 7, quantity: 2, price: 50 }
     ]
   },
   {
@@ -92,8 +92,8 @@ const testOrders = [
     lat: 24.9587,
     lng: 121.3576,
     items: [
-      { id: 3, quantity: 2, price: 40 },
-      { id: 12, quantity: 2, price: 28 }
+      { productId: 3, quantity: 2, price: 40 },
+      { productId: 12, quantity: 2, price: 28 }
     ]
   },
   {
@@ -103,8 +103,8 @@ const testOrders = [
     lat: 24.9534,
     lng: 121.3498,
     items: [
-      { id: 5, quantity: 3, price: 60 },
-      { id: 9, quantity: 1, price: 80 }
+      { productId: 5, quantity: 3, price: 60 },
+      { productId: 9, quantity: 1, price: 80 }
     ]
   },
   // 土城區域
@@ -115,8 +115,8 @@ const testOrders = [
     lat: 24.9823,
     lng: 121.4567,
     items: [
-      { id: 7, quantity: 4, price: 50 },
-      { id: 3, quantity: 1, price: 40 }
+      { productId: 7, quantity: 4, price: 50 },
+      { productId: 3, quantity: 1, price: 40 }
     ]
   },
   {
@@ -126,8 +126,8 @@ const testOrders = [
     lat: 24.9756,
     lng: 121.4623,
     items: [
-      { id: 12, quantity: 2, price: 28 },
-      { id: 5, quantity: 2, price: 60 }
+      { productId: 12, quantity: 2, price: 28 },
+      { productId: 5, quantity: 2, price: 60 }
     ]
   },
   {
@@ -137,8 +137,8 @@ const testOrders = [
     lat: 24.9689,
     lng: 121.4445,
     items: [
-      { id: 9, quantity: 3, price: 80 },
-      { id: 7, quantity: 1, price: 50 }
+      { productId: 9, quantity: 3, price: 80 },
+      { productId: 7, quantity: 1, price: 50 }
     ]
   },
   // 北大特區（三峽）
@@ -149,8 +149,8 @@ const testOrders = [
     lat: 24.9412,
     lng: 121.3745,
     items: [
-      { id: 3, quantity: 4, price: 40 },
-      { id: 12, quantity: 1, price: 28 }
+      { productId: 3, quantity: 4, price: 40 },
+      { productId: 12, quantity: 1, price: 28 }
     ]
   },
   {
@@ -160,9 +160,9 @@ const testOrders = [
     lat: 24.9445,
     lng: 121.3789,
     items: [
-      { id: 5, quantity: 1, price: 60 },
-      { id: 9, quantity: 2, price: 80 },
-      { id: 7, quantity: 1, price: 50 }
+      { productId: 5, quantity: 1, price: 60 },
+      { productId: 9, quantity: 2, price: 80 },
+      { productId: 7, quantity: 1, price: 50 }
     ]
   },
   {
@@ -172,8 +172,8 @@ const testOrders = [
     lat: 24.9398,
     lng: 121.3723,
     items: [
-      { id: 12, quantity: 5, price: 28 },
-      { id: 3, quantity: 2, price: 40 }
+      { productId: 12, quantity: 5, price: 28 },
+      { productId: 3, quantity: 2, price: 40 }
     ]
   }
 ];
@@ -201,8 +201,9 @@ async function createOrder(orderData) {
       timeout: 10000
     });
 
-    console.log(`✅ 訂單成功 - ${orderData.contact_name}: ${response.data.order_id}`);
-    return response.data.order_id;
+    const orderId = response.data.orderId || response.data.order_id;
+    console.log(`✅ 訂單成功 - ${orderData.contact_name}: ${orderId}`);
+    return orderId;
   } catch (error) {
     console.error(`❌ 訂單失敗 - ${orderData.contact_name}:`, error.message);
     return null;
