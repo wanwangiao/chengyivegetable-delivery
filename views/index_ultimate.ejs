@@ -1452,12 +1452,193 @@
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🚀 啟動 Ultimate 購物體驗...');
       
+      loadSystemSettings();
       updateCartDisplay();
       initializeSearch();
       initializeCategories();
       initializeCardAnimations();
       initializeGestures();
     });
+    
+    // 🎨 載入系統設定
+    async function loadSystemSettings() {
+      try {
+        const response = await fetch('/api/system-settings');
+        const data = await response.json();
+        
+        if (data.success) {
+          const settings = data.settings;
+          console.log('✅ 系統設定載入成功:', settings);
+          
+          // 應用色彩設定
+          applyColorSettings(settings);
+          
+          // 應用商店資訊
+          applyStoreInfo(settings);
+          
+          // 應用營業設定
+          applyBusinessSettings(settings);
+          
+          // 應用移動端設定
+          applyMobileSettings(settings);
+          
+          // 應用內容設定
+          applyContentSettings(settings);
+          
+        } else {
+          console.warn('⚠️ 系統設定載入失敗，使用預設值');
+        }
+      } catch (error) {
+        console.error('❌ 載入系統設定錯誤:', error);
+      }
+    }
+    
+    // 🎨 應用色彩設定
+    function applyColorSettings(settings) {
+      const root = document.documentElement;
+      
+      // 更新CSS變數
+      if (settings.primary_color) {
+        root.style.setProperty('--primary-dark', settings.primary_color);
+        root.style.setProperty('--text-primary', settings.text_primary_color || '#1a1a1a');
+        
+        // 生成漸層色
+        const primaryRgb = hexToRgb(settings.primary_color);
+        if (primaryRgb) {
+          const darkerColor = `rgb(${Math.max(0, primaryRgb.r - 30)}, ${Math.max(0, primaryRgb.g - 30)}, ${Math.max(0, primaryRgb.b - 30)})`;
+          root.style.setProperty('--primary-gradient', `linear-gradient(135deg, ${settings.primary_color} 0%, ${darkerColor} 100%)`);
+        }
+      }
+      
+      if (settings.accent_color) {
+        root.style.setProperty('--accent-green', settings.accent_color);
+        
+        // 生成強調色漸層
+        const accentRgb = hexToRgb(settings.accent_color);
+        if (accentRgb) {
+          const lighterColor = `rgb(${Math.min(255, accentRgb.r + 20)}, ${Math.min(255, accentRgb.g + 20)}, ${Math.min(255, accentRgb.b + 20)})`;
+          root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${settings.accent_color} 0%, ${lighterColor} 100%)`);
+        }
+      }
+      
+      if (settings.text_secondary_color) {
+        root.style.setProperty('--text-secondary', settings.text_secondary_color);
+      }
+      
+      if (settings.background_color) {
+        root.style.setProperty('--surface-gradient', `linear-gradient(135deg, ${settings.background_color} 0%, #f8fffe 50%, #f1f8f6 100%)`);
+      }
+    }
+    
+    // 🏪 應用商店資訊
+    function applyStoreInfo(settings) {
+      // 更新品牌名稱
+      const brandLogo = document.querySelector('.brand-logo');
+      if (brandLogo && settings.store_name) {
+        brandLogo.textContent = settings.store_name;
+      }
+      
+      // 更新標語
+      const brandTagline = document.querySelector('.brand-tagline');
+      if (brandTagline && settings.store_slogan) {
+        brandTagline.textContent = settings.store_slogan;
+      }
+      
+      // 更新頁面標題
+      if (settings.store_name) {
+        document.title = `${settings.store_name} Ultimate｜現代 × 革命性購物體驗`;
+      }
+    }
+    
+    // 💰 應用營業設定
+    function applyBusinessSettings(settings) {
+      // 儲存營業設定到全域變數供其他功能使用
+      window.businessSettings = {
+        freeShippingThreshold: settings.free_shipping_threshold || 300,
+        deliveryFee: settings.delivery_fee || 50,
+        minimumOrderAmount: settings.minimum_order_amount || 100,
+        serviceHoursStart: settings.service_hours_start || '08:00',
+        serviceHoursEnd: settings.service_hours_end || '20:00',
+        serviceAreas: settings.service_areas || '三峽區,樹林區,鶯歌區,土城區,板橋區',
+        deliveryNote: settings.delivery_note || '當日新鮮配送，保證品質'
+      };
+    }
+    
+    // 📱 應用移動端設定
+    function applyMobileSettings(settings) {
+      const cartElement = document.querySelector('.quantum-cart');
+      if (cartElement && settings.mobile_cart_position) {
+        cartElement.style.bottom = settings.mobile_cart_position + 'px';
+      }
+      
+      if (settings.mobile_header_blur) {
+        const header = document.querySelector('.revolutionary-header');
+        if (header) {
+          header.style.backdropFilter = `blur(${settings.mobile_header_blur}px) saturate(180%)`;
+          header.style.webkitBackdropFilter = `blur(${settings.mobile_header_blur}px) saturate(180%)`;
+        }
+      }
+    }
+    
+    // 📋 應用內容設定
+    function applyContentSettings(settings) {
+      // 更新公告內容
+      const announcementTitle = document.querySelector('.announcement-title');
+      if (announcementTitle && settings.announcement_title) {
+        announcementTitle.textContent = settings.announcement_title;
+      }
+      
+      const announcementContent = document.getElementById('service-content');
+      if (announcementContent && settings.announcement_content) {
+        // 保留原有的服務網格結構，但更新內容
+        announcementContent.innerHTML = `
+          <div class="service-card">
+            <div class="service-icon">🌱</div>
+            <div class="service-text">
+              <strong>特色服務</strong>
+              <span>${settings.announcement_content}</span>
+            </div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">🚚</div>
+            <div class="service-text">
+              <strong>配送範圍</strong>
+              <span>${window.businessSettings?.serviceAreas || '三峽、北大特區、鶯歌、樹林、土城'}</span>
+            </div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">📞</div>
+            <div class="service-text">
+              <strong>客服專線</strong>
+              <span>${settings.contact_phone || '02-12345678'}</span>
+            </div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon">💰</div>
+            <div class="service-text">
+              <strong>免運門檻</strong>
+              <span>滿 NT$ ${window.businessSettings?.freeShippingThreshold || 300} 免運費</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      // 控制公告顯示/隱藏
+      const announcementSection = document.querySelector('.modern-announcement');
+      if (announcementSection) {
+        announcementSection.style.display = settings.show_announcement ? 'block' : 'none';
+      }
+    }
+    
+    // 🎨 輔助函數：HEX轉RGB
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
     
     // 🔍 智能搜尋
     function initializeSearch() {

@@ -1567,6 +1567,85 @@ app.get('/api/products', asyncWrapper(async (req, res) => {
     });
   }
 }));
+
+// 🎨 公開API：獲取前台設定
+app.get('/api/system-settings', asyncWrapper(async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT setting_key, setting_value, setting_type
+      FROM system_settings 
+      WHERE is_active = true
+      ORDER BY setting_key
+    `);
+    
+    const settings = {};
+    result.rows.forEach(row => {
+      const key = row.setting_key;
+      let value = row.setting_value;
+      
+      // 處理不同類型的設定值
+      switch (row.setting_type) {
+        case 'json':
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            value = {};
+          }
+          break;
+        case 'number':
+          value = parseFloat(value) || 0;
+          break;
+        case 'boolean':
+          value = value === 'true' || value === true;
+          break;
+        default:
+          // string, color, text, textarea, time 等保持字符串
+          break;
+      }
+      
+      settings[key] = value;
+    });
+    
+    res.json({ 
+      success: true,
+      settings: settings
+    });
+  } catch (error) {
+    console.error('獲取系統設定錯誤:', error);
+    
+    // 如果資料庫查詢失敗，返回預設設定
+    const defaultSettings = {
+      primary_color: '#2d5a3d',
+      accent_color: '#7cb342',
+      background_color: '#ffffff',
+      text_primary_color: '#1a1a1a',
+      text_secondary_color: '#666666',
+      free_shipping_threshold: 300,
+      minimum_order_amount: 100,
+      delivery_fee: 50,
+      service_hours_start: '08:00',
+      service_hours_end: '20:00',
+      service_areas: '三峽區,樹林區,鶯歌區,土城區,板橋區',
+      delivery_note: '當日新鮮配送，保證品質',
+      store_name: '誠意鮮蔬',
+      store_slogan: '新鮮 × 健康 × 便利',
+      contact_phone: '02-12345678',
+      contact_address: '新北市三峽區復興路100號',
+      announcement_title: '🌱 每日新鮮直送',
+      announcement_content: '嚴選當季新鮮蔬果，產地直送到府，確保您享用最優質的食材',
+      show_announcement: true,
+      mobile_cart_position: 80,
+      mobile_header_blur: 20
+    };
+    
+    res.json({ 
+      success: true,
+      settings: defaultSettings,
+      mode: 'default'
+    });
+  }
+}));
+
 // 前台：訂單成功頁（供外部連結使用）
 app.get('/order-success', async (req, res) => {
   const id = parseInt(req.query.id, 10);
@@ -4261,8 +4340,14 @@ app.get('/admin/bank-settings', ensureAdmin, (req, res) => {
 });
 
 // 網站設定頁面
+// 🎨 基本資料管理 - 升級版
+app.get('/admin/basic-settings', ensureAdmin, (req, res) => {
+  res.render('admin_basic_settings');
+});
+
+// 保持舊路由的兼容性
 app.get('/admin/site-settings', ensureAdmin, (req, res) => {
-  res.render('admin_site_settings');
+  res.redirect('/admin/basic-settings');
 });
 
 // 獲取訂單列表 (支援搜尋和篩選)
@@ -4841,6 +4926,200 @@ const storage = multer.diskStorage({
     const timestamp = Date.now();
     const ext = path.extname(file.originalname);
     cb(null, `banner_${timestamp}${ext}`);
+  }
+});
+
+// 🎨 基本資料管理API - 新增強版
+// 獲取所有系統設定
+app.get('/api/admin/basic-settings', ensureAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT setting_key, setting_value, setting_type, category, description, display_name, is_active
+      FROM system_settings 
+      WHERE is_active = true
+      ORDER BY category, setting_key
+    `);
+    
+    const settings = {};
+    const categories = {};
+    
+    result.rows.forEach(row => {
+      const key = row.setting_key;
+      let value = row.setting_value;
+      
+      // 處理不同類型的設定值
+      switch (row.setting_type) {
+        case 'json':
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            value = {};
+          }
+          break;
+        case 'number':
+          value = parseFloat(value) || 0;
+          break;
+        case 'boolean':
+          value = value === 'true' || value === true;
+          break;
+        default:
+          // string, color, text, textarea, time 等保持字符串
+          break;
+      }
+      
+      settings[key] = value;
+      
+      // 按分類組織設定
+      if (!categories[row.category]) {
+        categories[row.category] = [];
+      }
+      
+      categories[row.category].push({
+        key: key,
+        value: value,
+        type: row.setting_type,
+        description: row.description,
+        display_name: row.display_name
+      });
+    });
+    
+    res.json({ 
+      success: true, 
+      settings: settings,
+      categories: categories
+    });
+  } catch (error) {
+    console.error('獲取基本設定錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取設定失敗: ' + error.message 
+    });
+  }
+});
+
+// 更新系統設定
+app.post('/api/admin/basic-settings/update', ensureAdmin, async (req, res) => {
+  try {
+    const { settings } = req.body;
+    
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: '無效的設定數據'
+      });
+    }
+    
+    // 開始事務
+    await pool.query('BEGIN');
+    
+    try {
+      for (const [key, value] of Object.entries(settings)) {
+        // 獲取設定的類型
+        const typeResult = await pool.query(
+          'SELECT setting_type FROM system_settings WHERE setting_key = $1',
+          [key]
+        );
+        
+        if (typeResult.rows.length === 0) {
+          console.warn(`設定項目不存在: ${key}`);
+          continue;
+        }
+        
+        const settingType = typeResult.rows[0].setting_type;
+        let finalValue = value;
+        
+        // 根據類型處理值
+        if (settingType === 'json') {
+          finalValue = JSON.stringify(value);
+        } else if (settingType === 'boolean') {
+          finalValue = Boolean(value).toString();
+        } else {
+          finalValue = String(value);
+        }
+        
+        // 更新設定
+        await pool.query(`
+          UPDATE system_settings 
+          SET setting_value = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE setting_key = $2
+        `, [finalValue, key]);
+      }
+      
+      // 提交事務
+      await pool.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: '設定更新成功'
+      });
+      
+    } catch (error) {
+      // 回滾事務
+      await pool.query('ROLLBACK');
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('更新系統設定錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新設定失敗: ' + error.message
+    });
+  }
+});
+
+// 重設設定為預設值
+app.post('/api/admin/basic-settings/reset', ensureAdmin, async (req, res) => {
+  try {
+    const { keys } = req.body;
+    
+    if (!Array.isArray(keys) || keys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '請提供要重設的設定項目'
+      });
+    }
+    
+    // 這裡可以定義預設值，或者從初始SQL中讀取
+    const defaultValues = {
+      primary_color: '#2d5a3d',
+      accent_color: '#7cb342',
+      free_shipping_threshold: '300',
+      delivery_fee: '50',
+      // ... 更多預設值
+    };
+    
+    await pool.query('BEGIN');
+    
+    try {
+      for (const key of keys) {
+        if (defaultValues[key]) {
+          await pool.query(`
+            UPDATE system_settings 
+            SET setting_value = $1, updated_at = CURRENT_TIMESTAMP
+            WHERE setting_key = $2
+          `, [defaultValues[key], key]);
+        }
+      }
+      
+      await pool.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: '設定重設成功'
+      });
+      
+    } catch (error) {
+      await pool.query('ROLLBACK');
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('重設設定錯誤:', error);
+    res.status(500).json({
+      success: false,
+      message: '重設設定失敗: ' + error.message
+    });
   }
 });
 
