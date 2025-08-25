@@ -4806,4 +4806,4 @@ const server = app.listen(port, () => {
   } catch (error) {
     console.error('❌ LINE Bot服務初始化失敗:', error);
   }
-});
+});// Force Vercel redeploy 西元2025年08月25日 (星期一) 12時13分22秒    
