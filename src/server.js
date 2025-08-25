@@ -361,14 +361,21 @@ app.use((req, res, next) => {
 });
 
 // Session配置
+// 🔧 Vercel優化的Session設定
 app.use(session({
   secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Vercel環境需要true
+  saveUninitialized: true, // Vercel環境需要true
+  rolling: true, // 每次請求重新設定過期時間
   cookie: {
-    secure: false, // 暫時關閉 secure 要求，以便排查問題
+    secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24小時
+    maxAge: 4 * 60 * 60 * 1000, // 4小時
+    sameSite: 'lax' // 確保跨頁面session持續
+  },
+  name: 'chengyi.session', // 自定義session名稱
+  genid: function(req) {
+    return require('crypto').randomUUID();
   }
 }));
 
@@ -1693,33 +1700,81 @@ app.post('/admin/login', validateAdminPassword, (req, res) => {
   const { password } = req.body;
   const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
   
-  console.log('登入嘗試 - 輸入密碼:', password);
-  console.log('期望密碼:', adminPassword);
+  console.log('🔐 登入嘗試:', {
+    inputPassword: password?.substring(0, 3) + '***',
+    expectedPassword: adminPassword?.substring(0, 3) + '***',
+    sessionExists: !!req.session
+  });
   
   if (password === adminPassword) {
-    req.session.isAdmin = true;
-    req.session.loginTime = new Date();
-    console.log('登入成功，重導向到 dashboard');
-    return res.redirect('/admin/dashboard');
+    // 確保session正確設定
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('❌ Session regeneration failed:', err);
+        return res.render('admin_login', { error: '登錄系統錯誤' });
+      }
+      
+      // 設定管理員session
+      req.session.isAdmin = true;
+      req.session.loginTime = new Date().toISOString();
+      req.session.userType = 'admin';
+      
+      // 強制保存session
+      req.session.save((err) => {
+        if (err) {
+          console.error('❌ Session save failed:', err);
+          return res.render('admin_login', { error: '登錄保存失敗' });
+        }
+        
+        console.log('✅ 登入成功，Session已保存:', {
+          sessionID: req.sessionID,
+          isAdmin: req.session.isAdmin,
+          loginTime: req.session.loginTime
+        });
+        
+        return res.redirect('/admin/dashboard');
+      });
+    });
+  } else {
+    console.log('❌ 密碼錯誤');
+    res.render('admin_login', { error: '密碼錯誤' });
   }
-  
-  console.log('密碼錯誤');
-  res.render('admin_login', { error: '密碼錯誤' });
 });
 
-// 登出
+// 🚪 管理員登出
 app.get('/admin/logout', (req, res) => {
-  req.session.isAdmin = false;
-  req.session.destroy(() => {
+  console.log('🚪 管理員登出:', req.sessionID);
+  
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('❌ Session destroy failed:', err);
+      }
+      res.clearCookie('chengyi.session');
+      res.redirect('/admin/login');
+    });
+  } else {
     res.redirect('/admin/login');
-  });
+  }
 });
 
 // 管理員驗證中介
 function ensureAdmin(req, res, next) {
+  console.log('🔐 認證檢查:', {
+    path: req.path,
+    hasSession: !!req.session,
+    isAdmin: req.session?.isAdmin,
+    loginTime: req.session?.loginTime,
+    sessionID: req.sessionID,
+    userAgent: req.headers['user-agent']
+  });
+  
   if (req.session && req.session.isAdmin) {
+    console.log('✅ 認證通過 - 允許訪問:', req.path);
     return next();
   }
+  
+  console.log('❌ 認證失敗，重導向到登入頁面');
   return res.redirect('/admin/login');
 }
 
