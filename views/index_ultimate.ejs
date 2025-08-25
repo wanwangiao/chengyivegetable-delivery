@@ -416,6 +416,12 @@
       border-color: rgba(124, 179, 66, 0.3);
     }
     
+    .product-universe-card:hover .click-hint {
+      color: #7cb342;
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    
     .product-universe-card::before {
       content: '';
       position: absolute;
@@ -537,59 +543,26 @@
     .card-actions {
       margin-top: auto;
       display: flex;
-      gap: var(--space-sm);
-    }
-    
-    .quick-add-btn {
-      flex: 1;
-      background: var(--accent-gradient);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: var(--space-sm) var(--space-md);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s var(--ease-bounce);
-      display: flex;
-      align-items: center;
       justify-content: center;
-      gap: var(--space-xs);
-      min-height: var(--touch-target);
-    }
-    
-    .quick-add-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(124, 179, 66, 0.3);
-    }
-    
-    .detail-btn {
-      background: rgba(124, 179, 66, 0.1);
-      color: #7cb342;
-      border: 1px solid rgba(124, 179, 66, 0.2);
-      border-radius: 12px;
       padding: var(--space-sm);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: var(--touch-target);
-      min-height: var(--touch-target);
     }
     
-    .detail-btn:hover {
-      background: #7cb342;
-      color: white;
-      transform: scale(1.05);
+    .click-hint {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
+      opacity: 0.8;
+      transition: all 0.3s ease;
     }
+    
     
     /* =================================================
        🛒 量子購物車 - 現代化
        ================================================= */
     .quantum-cart {
       position: fixed;
-      bottom: var(--space-lg);
+      bottom: 80px;
       left: var(--space-lg);
       right: var(--space-lg);
       z-index: 1001;
@@ -598,21 +571,24 @@
       padding: var(--space-lg);
       box-shadow: 0 10px 40px rgba(45, 90, 61, 0.4);
       backdrop-filter: blur(20px);
-      transition: all 0.4s var(--ease-bounce);
+      transition: all 0.3s ease;
       cursor: pointer;
       max-width: 400px;
       margin: 0 auto;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      transform: translateY(100px);
+      transform: translateY(0);
+      opacity: 1;
     }
     
     .quantum-cart.visible {
       transform: translateY(0);
+      opacity: 1;
     }
     
-    .quantum-cart:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 50px rgba(45, 90, 61, 0.5);
+    .quantum-cart.hidden {
+      transform: translateY(100px);
+      opacity: 0;
+      pointer-events: none;
     }
     
     .cart-quantum-display {
@@ -749,7 +725,16 @@
     .modal-content-matrix {
       padding: var(--space-xl);
       overflow-y: auto;
+      overflow-x: hidden;
       max-height: calc(90vh - 140px);
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .modal-content-matrix::-webkit-scrollbar {
+      display: none;
     }
     
     /* =================================================
@@ -875,9 +860,7 @@
     
     .action-btn:focus,
     .category-pill:focus,
-    .product-universe-card:focus,
-    .quick-add-btn:focus,
-    .detail-btn:focus {
+    .product-universe-card:focus {
       outline: 3px solid #7cb342;
       outline-offset: 2px;
     }
@@ -1343,18 +1326,9 @@
               <% } %>
               
               <div class="card-actions">
-                <button class="quick-add-btn" 
-                        onclick="quickAddToCart(event, <%= product.id %>)"
-                        <%= product.is_priced_item ? 'disabled' : '' %>>
-                  <span>🛒</span>
-                  <span>加入</span>
-                </button>
-                
-                <button class="detail-btn" 
-                        onclick="openProductDetail(event, <%= product.id %>)"
-                        title="查看詳情">
-                  ℹ️
-                </button>
+                <div class="click-hint">
+                  🛒 點擊查看詳情
+                </div>
               </div>
             </div>
           </div>
@@ -1598,31 +1572,6 @@
     }
     
     // 🛍️ 商品功能
-    function quickAddToCart(event, productId) {
-      event.stopPropagation();
-      
-      const product = products.find(p => p.id === productId);
-      if (!product || product.is_priced_item) return;
-      
-      addToCart(product, 1);
-      showFeedback('🎉 已加入購物車！');
-      
-      // 視覺回饋
-      const button = event.target.closest('.quick-add-btn');
-      const originalContent = button.innerHTML;
-      button.innerHTML = '<span>✓</span><span>已加入</span>';
-      button.style.background = '#4caf50';
-      
-      setTimeout(() => {
-        button.innerHTML = originalContent;
-        button.style.background = '';
-      }, 1500);
-    }
-    
-    function openProductDetail(event, productId) {
-      event.stopPropagation();
-      openProductExperience(productId);
-    }
     
     function openProductExperience(productId) {
       currentProduct = products.find(p => p.id === productId);
@@ -1771,8 +1720,10 @@
       
       if (count > 0) {
         cartElement.classList.add('visible');
+        cartElement.classList.remove('hidden');
       } else {
         cartElement.classList.remove('visible');
+        cartElement.classList.add('hidden');
       }
     }
     
