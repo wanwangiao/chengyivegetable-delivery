@@ -1644,6 +1644,16 @@ function ensureAdmin(req, res, next) {
   return res.redirect('/admin/login');
 }
 
+// 🧪 測試路由 - 簡化dashboard
+app.get('/admin/test', ensureAdmin, (req, res) => {
+  res.send(`
+    <h1>🧪 Admin Test Route Working!</h1>
+    <p>Session isAdmin: ${req.session.isAdmin}</p>
+    <p>Time: ${new Date().toISOString()}</p>
+    <a href="/admin/dashboard">Go to Dashboard</a>
+  `);
+});
+
 // ---------------- LINE 登入與綁定 ----------------
 // 產生登入 URL
 app.get('/auth/line/login', (req, res) => {
