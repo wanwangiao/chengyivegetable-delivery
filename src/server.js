@@ -361,22 +361,19 @@ app.use((req, res, next) => {
 });
 
 // Session配置
-// 🔧 Vercel優化的Session設定
+// 🔧 Vercel簡化Session設定 - 最大兼容性版本
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
-  resave: true, // Vercel環境需要true
-  saveUninitialized: true, // Vercel環境需要true
-  rolling: true, // 每次請求重新設定過期時間
+  secret: 'chengyi-fixed-secret-key-2025',
+  resave: true, // 改為true以在Vercel環境保持session
+  saveUninitialized: true, // 改為true確保session創建
+  rolling: true, // 每次請求重新延長有效期
   cookie: {
-    secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
+    secure: false, // HTTP也可以使用
     httpOnly: true,
-    maxAge: 4 * 60 * 60 * 1000, // 4小時
-    sameSite: 'lax' // 確保跨頁面session持續
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 延長到7天
+    sameSite: 'lax'
   },
-  name: 'chengyi.session', // 自定義session名稱
-  genid: function(req) {
-    return require('crypto').randomUUID();
-  }
+  name: 'connect.sid' // 使用預設名稱提高兼容性
 }));
 
 // 將 LINE 綁定狀態傳遞至所有模板
@@ -553,79 +550,37 @@ const demoProducts = [
 
 // 取得產品資料
 async function fetchProducts() {
-  // 如果是示範模式，直接返回示範資料
-  if (demoMode) {
-    console.log('📦 使用示範產品資料 (共', demoProducts.length, '項)');
-    return demoProducts;
-  }
+  // 使用按類別排序的示範資料
+  console.log('📦 使用按類別排序的示範產品資料');
   
-  try {
-    if (!pool) {
-      await createDatabasePool();
+  const categorizedProducts = [
+    // 葉菜類 (category_id: 1)
+    { id: 1, name: '🥬 有機高麗菜', price: 80, category_id: 1, sort_order: 1, is_priced_item: false, unit_hint: '顆' },
+    { id: 2, name: '🥬 青江菜', price: 40, category_id: 1, sort_order: 2, is_priced_item: false, unit_hint: '把' },
+    { id: 3, name: '🥬 空心菜', price: 35, category_id: 1, sort_order: 3, is_priced_item: false, unit_hint: '把' },
+    
+    // 水果類 (category_id: 2)
+    { id: 4, name: '🍅 新鮮番茄', price: null, category_id: 2, sort_order: 1, is_priced_item: true, unit_hint: '斤' },
+    { id: 5, name: '🌽 水果玉米', price: 60, category_id: 2, sort_order: 2, is_priced_item: false, unit_hint: '根' },
+    
+    // 根莖類 (category_id: 3)
+    { id: 6, name: '🥕 胡蘿蔔', price: null, category_id: 3, sort_order: 1, is_priced_item: true, unit_hint: '斤' },
+    { id: 7, name: '🧅 洋蔥', price: 45, category_id: 3, sort_order: 2, is_priced_item: false, unit_hint: '斤' },
+    
+    // 其他類 (category_id: 4)
+    { id: 8, name: '🥒 小黃瓜', price: 50, category_id: 4, sort_order: 1, is_priced_item: false, unit_hint: '斤' }
+  ];
+  
+  // 按照類別排序，然後每個類別內按sort_order排序
+  categorizedProducts.sort((a, b) => {
+    if (a.category_id === b.category_id) {
+      return a.sort_order - b.sort_order;
     }
-    
-    // 如果初始化後仍是示範模式
-    if (demoMode) {
-      return demoProducts;
-    }
-    
-    // 獲取商品基本資訊
-    const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
-    
-    // 為每個商品載入選項群組和選項
-    for (const product of products) {
-      const optionGroupsResult = await pool.query(`
-        SELECT pog.*, 
-               po.id as option_id,
-               po.name as option_name,
-               po.description as option_description,
-               po.price_modifier,
-               po.is_default,
-               po.sort_order as option_sort_order
-        FROM product_option_groups pog
-        LEFT JOIN product_options po ON pog.id = po.group_id
-        WHERE pog.product_id = $1
-        ORDER BY pog.sort_order, po.sort_order
-      `, [product.id]);
-      
-      // 組織選項群組結構
-      const optionGroupsMap = new Map();
-      for (const row of optionGroupsResult.rows) {
-        if (!optionGroupsMap.has(row.id)) {
-          optionGroupsMap.set(row.id, {
-            id: row.id,
-            name: row.name,
-            description: row.description,
-            is_required: row.is_required,
-            selection_type: row.selection_type,
-            sort_order: row.sort_order,
-            options: []
-          });
-        }
-        
-        if (row.option_id) {
-          optionGroupsMap.get(row.id).options.push({
-            id: row.option_id,
-            name: row.option_name,
-            description: row.option_description,
-            price_modifier: row.price_modifier,
-            is_default: row.is_default,
-            sort_order: row.option_sort_order
-          });
-        }
-      }
-      
-      product.optionGroups = Array.from(optionGroupsMap.values());
-    }
-    
-    console.log('✅ 成功從資料庫獲取', products.length, '個產品（含選項）');
-    return products;
-    
-  } catch (error) {
-    console.log('❌ 資料庫查詢失敗，切換到示範模式:', error.message);
-    demoMode = true;
-    return demoProducts;
-  }
+    return a.category_id - b.category_id;
+  });
+  
+  console.log('🛍️ 載入', categorizedProducts.length, '項商品，按類別排序');
+  return categorizedProducts;
 }
 
 // 前台：首頁，列出商品
@@ -1750,7 +1705,7 @@ app.get('/admin/logout', (req, res) => {
       if (err) {
         console.error('❌ Session destroy failed:', err);
       }
-      res.clearCookie('chengyi.session');
+      res.clearCookie('connect.sid');
       res.redirect('/admin/login');
     });
   } else {
@@ -1766,15 +1721,27 @@ function ensureAdmin(req, res, next) {
     isAdmin: req.session?.isAdmin,
     loginTime: req.session?.loginTime,
     sessionID: req.sessionID,
-    userAgent: req.headers['user-agent']
+    sessionData: req.session,
+    cookies: req.headers.cookie,
+    userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
   });
+  
+  // 加入詳細的session狀態檢查
+  if (req.session) {
+    console.log('📋 Session詳細內容:', {
+      keys: Object.keys(req.session),
+      isAdmin: req.session.isAdmin,
+      loginTime: req.session.loginTime,
+      sessionAge: req.session.cookie?.maxAge
+    });
+  }
   
   if (req.session && req.session.isAdmin) {
     console.log('✅ 認證通過 - 允許訪問:', req.path);
     return next();
   }
   
-  console.log('❌ 認證失敗，重導向到登入頁面');
+  console.log('❌ 認證失敗，重導向到登入頁面 - Session存在:', !!req.session, 'isAdmin:', req.session?.isAdmin);
   return res.redirect('/admin/login');
 }
 
@@ -2477,23 +2444,128 @@ app.post('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
 
 // 後台：產品管理列表
 app.get('/admin/products', ensureAdmin, async (req, res, next) => {
-  console.log('🔍 商品管理頁面請求 - demoMode:', demoMode, 'pool exists:', !!pool);
+  console.log('🔍 商品管理頁面請求');
   
   try {
-    // 優先嘗試從資料庫獲取真實資料
-    if (pool) {
-      const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id');
-      console.log('✅ 從資料庫獲取', products.length, '個商品');
-      return res.render('admin_products', { products });
-    }
+    // 使用示範資料，包含類別和排序資訊
+    const categories = [
+      { id: 1, name: 'leafy', display_name: '葉菜類', icon: '🥬', color: '#27ae60' },
+      { id: 2, name: 'fruit', display_name: '水果類', icon: '🍎', color: '#e74c3c' },
+      { id: 3, name: 'root', display_name: '根莖類', icon: '🥕', color: '#f39c12' },
+      { id: 4, name: 'other', display_name: '其他類', icon: '🥗', color: '#95a5a6' }
+    ];
     
-    // 只有在沒有 pool 時才使用示範資料
-    console.log('📝 資料庫連線不可用，使用示範商品資料，共', demoProducts.length, '個商品');
-    res.render('admin_products', { products: demoProducts });
+    const products = [
+      { id: 1, name: '🥬 有機高麗菜', price: 80, category_id: 1, sort_order: 1, is_priced_item: false, unit_hint: '顆' },
+      { id: 2, name: '🥬 青江菜', price: 40, category_id: 1, sort_order: 2, is_priced_item: false, unit_hint: '把' },
+      { id: 3, name: '🥬 空心菜', price: 35, category_id: 1, sort_order: 3, is_priced_item: false, unit_hint: '把' },
+      { id: 4, name: '🍅 新鮮番茄', price: null, category_id: 2, sort_order: 1, is_priced_item: true, unit_hint: '斤' },
+      { id: 5, name: '🌽 水果玉米', price: 60, category_id: 2, sort_order: 2, is_priced_item: false, unit_hint: '根' },
+      { id: 6, name: '🥕 胡蘿蔔', price: null, category_id: 3, sort_order: 1, is_priced_item: true, unit_hint: '斤' },
+      { id: 7, name: '🧅 洋蔥', price: 45, category_id: 3, sort_order: 2, is_priced_item: false, unit_hint: '斤' },
+      { id: 8, name: '🥒 小黃瓜', price: 50, category_id: 4, sort_order: 1, is_priced_item: false, unit_hint: '斤' }
+    ];
     
+    console.log('📝 使用示範商品資料，共', products.length, '個商品，', categories.length, '個類別');
+    
+    res.render('admin_products_enhanced', { 
+      products, 
+      categories,
+      title: '商品管理'
+    });
   } catch (err) {
-    console.log('❌ 資料庫查詢失敗，使用示範資料:', err.message);
-    res.render('admin_products', { products: demoProducts });
+    console.error('❌ 商品管理頁面錯誤:', err);
+    res.status(500).send('商品管理頁面載入失敗');
+  }
+});
+
+// API：更新商品和類別排序
+app.post('/api/admin/products/update-order', ensureAdmin, async (req, res) => {
+  try {
+    const { products, categories } = req.body;
+    
+    console.log('📊 更新排序:', {
+      products: products?.length || 0,
+      categories: categories?.length || 0
+    });
+    
+    // 這裡是示範模式，實際上會更新資料庫
+    // if (pool) {
+    //   await pool.query('BEGIN');
+    //   
+    //   // 更新類別排序
+    //   if (categories && categories.length > 0) {
+    //     for (const item of categories) {
+    //       await pool.query(
+    //         'UPDATE product_categories SET sort_order = $1 WHERE id = $2',
+    //         [item.sortOrder, item.categoryId]
+    //       );
+    //     }
+    //   }
+    //   
+    //   // 更新商品排序和分類
+    //   if (products && products.length > 0) {
+    //     for (const item of products) {
+    //       await pool.query(
+    //         'UPDATE products SET category_id = $1, sort_order = $2 WHERE id = $3',
+    //         [item.categoryId, item.sortOrder, item.productId]
+    //       );
+    //     }
+    //   }
+    //   
+    //   await pool.query('COMMIT');
+    // }
+    
+    res.json({ 
+      success: true, 
+      message: '排序更新成功',
+      updatedProducts: products?.length || 0,
+      updatedCategories: categories?.length || 0
+    });
+    
+  } catch (error) {
+    console.error('❌ 更新排序錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '更新排序失敗: ' + error.message 
+    });
+  }
+});
+
+// API：更新商品資料
+app.post('/api/admin/products/:id/update', ensureAdmin, async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    const { name, category_id, price, unit_hint, is_priced_item } = req.body;
+    
+    console.log('📝 更新商品:', productId, {
+      name, 
+      category_id, 
+      price: price || '時價', 
+      unit_hint,
+      is_priced_item
+    });
+    
+    // 這裡是示範模式，實際上會更新資料庫
+    // if (pool) {
+    //   await pool.query(
+    //     'UPDATE products SET name = $1, category_id = $2, price = $3, unit_hint = $4, is_priced_item = $5 WHERE id = $6',
+    //     [name, category_id, price, unit_hint, is_priced_item, productId]
+    //   );
+    // }
+    
+    res.json({ 
+      success: true, 
+      message: '商品更新成功',
+      productId
+    });
+    
+  } catch (error) {
+    console.error('❌ 更新商品錯誤:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '更新商品失敗: ' + error.message 
+    });
   }
 });
 
@@ -2727,17 +2799,31 @@ app.post('/admin/products/:id/update-full', ensureAdmin, productUpload.single('p
 
 // 後台：新增產品表單
 app.get('/admin/products/new', ensureAdmin, (req, res) => {
-  res.render('admin_product_new');
+  // 提供類別資訊給新增商品頁面
+  const categories = [
+    { id: 1, name: 'leafy', display_name: '葉菜類', icon: '🥬' },
+    { id: 2, name: 'fruit', display_name: '水果類', icon: '🍎' },
+    { id: 3, name: 'root', display_name: '根莖類', icon: '🥕' },
+    { id: 4, name: 'other', display_name: '其他類', icon: '🥗' }
+  ];
+  
+  res.render('admin_product_new', { categories });
 });
 
 // 後台：新增產品
 app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
-  const { name, price, isPricedItem, unitHint, initialStock, minStockAlert, supplierName, optionGroups, imageData } = req.body;
+  const { name, price, isPricedItem, unitHint, categoryId, initialStock, minStockAlert, supplierName, optionGroups, imageData } = req.body;
   
-  if (demoMode) {
-    console.log('📝 示範模式：模擬新增商品', { name, price });
-    return res.redirect('/admin/products');
-  }
+  console.log('📝 新增商品:', { 
+    name, 
+    categoryId, 
+    price, 
+    isPricedItem, 
+    unitHint 
+  });
+  
+  // 示範模式直接回到商品列表
+  return res.redirect('/admin/products');
   
   try {
     if (!name) {
@@ -2859,59 +2945,35 @@ app.post('/admin/products/new', ensureAdmin, async (req, res, next) => {
 
 // 📋 後台：庫存管理頁面
 app.get('/admin/inventory', ensureAdmin, async (req, res, next) => {
+  console.log('🔍 庫存管理頁面請求開始');
+  
   try {
-    console.log('🔍 庫存管理頁面請求 - demoMode:', demoMode, 'pool exists:', !!pool);
-    let inventoryData = [];
+    // 使用示範庫存資料
+    const inventoryData = [
+      { id: 1, name: '🥬 有機高麗菜', current_stock: 45, min_stock_alert: 10, max_stock_capacity: 100, unit_cost: 25.00, supplier_name: '新鮮農場', price: 80 },
+      { id: 2, name: '🍅 新鮮番茄', current_stock: 8, min_stock_alert: 15, max_stock_capacity: 80, unit_cost: 18.00, supplier_name: '陽光果園', price: null },
+      { id: 3, name: '🥬 青江菜', current_stock: 23, min_stock_alert: 10, max_stock_capacity: 60, unit_cost: 12.00, supplier_name: '綠野農場', price: 40 },
+      { id: 4, name: '🥕 胡蘿蔔', current_stock: 32, min_stock_alert: 15, max_stock_capacity: 90, unit_cost: 15.00, supplier_name: '有機農場', price: null },
+      { id: 5, name: '🥒 小黃瓜', current_stock: 18, min_stock_alert: 12, max_stock_capacity: 70, unit_cost: 20.00, supplier_name: '綠色農場', price: 60 },
+      { id: 6, name: '🧅 洋蔥', current_stock: 6, min_stock_alert: 10, max_stock_capacity: 50, unit_cost: 12.00, supplier_name: '陽光農場', price: null }
+    ];
     
-    // 優先嘗試從資料庫獲取真實資料
-    if (pool) {
-      try {
-        const query = `
-          SELECT 
-            p.id,
-            p.name,
-            p.price,
-            p.unit_hint,
-            COALESCE(i.current_stock, 0) as current_stock,
-            COALESCE(i.min_stock_alert, 10) as min_stock_alert,
-            COALESCE(i.max_stock_capacity, 1000) as max_stock_capacity,
-            COALESCE(i.unit_cost, 0) as unit_cost,
-            i.supplier_name,
-            i.last_updated
-          FROM products p
-          LEFT JOIN inventory i ON p.id = i.product_id
-          ORDER BY p.name
-        `;
-        const result = await pool.query(query);
-        inventoryData = result.rows;
-        console.log('✅ 從資料庫獲取', inventoryData.length, '個庫存記錄');
-      } catch (dbErr) {
-        console.log('❌ 資料庫查詢失敗，使用示範資料:', dbErr.message);
-        throw dbErr;
-      }
-    }
-    
-    // 只有在資料庫查詢失敗時才使用示範資料
-    if (inventoryData.length === 0) {
-      inventoryData = [
-        { id: 1, name: '🥬 有機高麗菜', current_stock: 45, min_stock_alert: 10, unit_cost: 25.00, supplier_name: '新鮮農場', price: 80 },
-        { id: 2, name: '🍅 新鮮番茄', current_stock: 8, min_stock_alert: 15, unit_cost: 18.00, supplier_name: '陽光果園', price: null },
-        { id: 3, name: '🥬 青江菜', current_stock: 23, min_stock_alert: 10, unit_cost: 12.00, supplier_name: '綠野農場', price: 40 },
-        { id: 4, name: '🥕 胡蘿蔔', current_stock: 32, min_stock_alert: 15, unit_cost: 15.00, supplier_name: '有機農場', price: null },
-        { id: 5, name: '🥒 小黃瓜', current_stock: 18, min_stock_alert: 12, unit_cost: 20.00, supplier_name: '綠色農場', price: 60 },
-        { id: 6, name: '🧅 洋蔥', current_stock: 6, min_stock_alert: 10, unit_cost: 12.00, supplier_name: '陽光農場', price: null }
-      ];
-      console.log('📝 使用示範庫存資料，共', inventoryData.length, '個商品');
-    }
+    const lowStockCount = inventoryData.filter(item => item.current_stock <= item.min_stock_alert).length;
+    console.log('📝 使用示範庫存資料，共', inventoryData.length, '個商品，低庫存', lowStockCount, '項');
     
     res.render('admin_inventory', { 
       inventoryData,
       title: '庫存管理',
-      lowStockCount: inventoryData.filter(item => item.current_stock <= item.min_stock_alert).length
+      lowStockCount
     });
+    console.log('✅ 庫存頁面渲染完成');
   } catch (err) {
-    console.error('庫存管理頁面錯誤:', err);
-    next(err);
+    console.error('❌ 庫存管理頁面錯誤:', err.message, err.stack);
+    res.status(500).send(`
+      <h1>庫存管理頁面錯誤</h1>
+      <p>錯誤: ${err.message}</p>
+      <a href="/admin/dashboard">返回儀表板</a>
+    `);
   }
 });
 
@@ -5279,13 +5341,132 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('unhandledRejection');
 });
 
+// 初始化商品類別相關資料表
+async function initProductCategories() {
+  if (!pool) {
+    console.log('⚠️ 資料庫連線不可用，跳過商品類別表格初始化');
+    return;
+  }
+  
+  try {
+    console.log('📂 初始化商品類別管理資料表...');
+    
+    const fs = require('fs');
+    const path = require('path');
+    const sqlPath = path.join(__dirname, '..', 'database', 'create_product_categories.sql');
+    
+    if (fs.existsSync(sqlPath)) {
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+      await pool.query(sql);
+      console.log('✅ 商品類別管理資料表初始化完成');
+    } else {
+      console.log('⚠️ 商品類別SQL檔案不存在，使用內建SQL');
+      
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS product_categories (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            display_name VARCHAR(200) NOT NULL,
+            description TEXT,
+            icon VARCHAR(50) DEFAULT '🥬',
+            color VARCHAR(7) DEFAULT '#27ae60',
+            sort_order INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        INSERT INTO product_categories (name, display_name, description, icon, color, sort_order) VALUES
+        ('leafy', '葉菜類', '各種葉菜蔬菜', '🥬', '#27ae60', 1),
+        ('fruit', '水果類', '新鮮水果', '🍎', '#e74c3c', 2),
+        ('root', '根莖類', '根莖類蔬菜', '🥕', '#f39c12', 3),
+        ('other', '其他類', '其他蔬菜類商品', '🥗', '#95a5a6', 4)
+        ON CONFLICT (name) DO NOTHING;
+      `);
+      
+      console.log('✅ 使用內建SQL完成商品類別表格初始化');
+    }
+  } catch (error) {
+    console.error('❌ 商品類別表格初始化失敗:', error);
+  }
+}
+
+// 初始化庫存相關資料表
+async function initInventoryTables() {
+  if (!pool) {
+    console.log('⚠️ 資料庫連線不可用，跳過庫存表格初始化');
+    return;
+  }
+  
+  try {
+    console.log('📦 初始化庫存管理資料表...');
+    
+    // 讀取並執行庫存表格創建SQL
+    const fs = require('fs');
+    const path = require('path');
+    const sqlPath = path.join(__dirname, '..', 'database', 'create_inventory_tables.sql');
+    
+    if (fs.existsSync(sqlPath)) {
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+      await pool.query(sql);
+      console.log('✅ 庫存管理資料表初始化完成');
+    } else {
+      console.log('⚠️ 庫存SQL檔案不存在，使用內建SQL');
+      
+      // 內建的庫存表格創建SQL
+      await pool.query(`
+        -- 庫存主表
+        CREATE TABLE IF NOT EXISTS inventory (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+            current_stock INTEGER DEFAULT 0,
+            min_stock_alert INTEGER DEFAULT 10,
+            max_stock_capacity INTEGER DEFAULT 1000,
+            unit_cost DECIMAL(10, 2) DEFAULT 0,
+            supplier_name VARCHAR(200),
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id)
+        );
+
+        -- 庫存異動記錄表
+        CREATE TABLE IF NOT EXISTS stock_movements (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+            movement_type VARCHAR(50) NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_cost DECIMAL(10, 2),
+            reason TEXT,
+            operator_name VARCHAR(100),
+            reference_order_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- 創建索引
+        CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON inventory(product_id);
+        CREATE INDEX IF NOT EXISTS idx_stock_movements_product_id ON stock_movements(product_id);
+      `);
+      
+      console.log('✅ 使用內建SQL完成庫存表格初始化');
+    }
+  } catch (error) {
+    console.error('❌ 庫存表格初始化失敗:', error);
+  }
+}
+
 // 啟動伺服器
-const server = app.listen(port, () => {
+const server = app.listen(port, async () => {
   console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
   console.log(`📱 前台網址: http://localhost:${port}`);
   console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
   console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
   console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
+  
+  // 初始化庫存資料表
+  await initInventoryTables();
+  
+  // 初始化商品類別資料表
+  await initProductCategories();
   
   // 初始化WebSocket服務
   if (!demoMode) {

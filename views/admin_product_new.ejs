@@ -400,11 +400,32 @@
                             <div class="help-text">請輸入商品的完整名稱，建議加上emoji表情</div>
                         </div>
                         <div class="form-group">
+                            <label for="categoryId">商品類別 *</label>
+                            <select id="categoryId" name="categoryId" required>
+                                <option value="">請選擇類別</option>
+                                <% if (typeof categories !== 'undefined') { %>
+                                    <% categories.forEach(category => { %>
+                                        <option value="<%= category.id %>" 
+                                                <%= typeof formData !== 'undefined' && formData.categoryId == category.id ? 'selected' : '' %>>
+                                            <%= category.icon %> <%= category.display_name %>
+                                        </option>
+                                    <% }) %>
+                                <% } %>
+                            </select>
+                            <div class="help-text">選擇商品所屬的類別</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="unitHint">單位說明</label>
                             <input type="text" id="unitHint" name="unitHint" 
                                    placeholder="例如: 每顆、每包、每公斤"
                                    value="<%= typeof formData !== 'undefined' && formData.unitHint ? formData.unitHint : '' %>">
                             <div class="help-text">說明商品的銷售單位</div>
+                        </div>
+                        <div class="form-group">
+                            <!-- 預留空間 -->
                         </div>
                     </div>
                     
