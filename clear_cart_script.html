@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧹 清除購物車資料工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
+            color: #2d4a3a;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(45, 90, 61, 0.15);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2d5a3d;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffcc02;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 179, 66, 0.4);
+        }
+        
+        .button.danger {
+            background: linear-gradient(135deg, #ff5722 0%, #f44336 100%);
+        }
+        
+        .cart-data {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: left;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #7cb342;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧹 購物車資料清除工具</h1>
+        
+        <div class="status info" id="current-status">
+            🔍 檢查中...
+        </div>
+        
+        <div id="cart-info">
+            <!-- 購物車信息將顯示在這裡 -->
+        </div>
+        
+        <div id="cart-data-display" class="cart-data" style="display: none;">
+            <!-- 購物車原始資料 -->
+        </div>
+        
+        <div>
+            <button class="button" onclick="checkCartData()">🔍 檢查購物車資料</button>
+            <button class="button danger" onclick="clearAllCartData()">🧹 清除所有購物車資料</button>
+            <button class="button" onclick="refreshPage()">🔄 重新整理頁面</button>
+        </div>
+        
+        <div class="status warning">
+            ⚠️ 此工具將清除瀏覽器中儲存的所有購物車資料，操作後無法復原
+        </div>
+        
+        <a href="https://chengyivegetable.vercel.app" class="back-link">
+            ← 返回承億蔬果外送網站
+        </a>
+    </div>
+
+    <script>
+        function getCart() {
+            try {
+                return JSON.parse(localStorage.getItem('cart') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function checkCartData() {
+            const cart = getCart();
+            const status = document.getElementById('current-status');
+            const cartInfo = document.getElementById('cart-info');
+            const cartDataDisplay = document.getElementById('cart-data-display');
+            
+            if (cart.length === 0) {
+                status.className = 'status success';
+                status.innerHTML = '✅ 購物車是空的，沒有需要清除的資料';
+                cartInfo.innerHTML = '';
+                cartDataDisplay.style.display = 'none';
+            } else {
+                status.className = 'status warning';
+                status.innerHTML = `⚠️ 發現 ${cart.length} 筆購物車資料`;
+                
+                let infoHtml = '<h3>購物車內容：</h3><ul>';
+                cart.forEach((item, index) => {
+                    infoHtml += `<li>商品 ${index + 1}: ID ${item.productId}, 數量 ${item.quantity}`;
+                    if (item.selectedUnit) {
+                        infoHtml += `, 選項: ${item.selectedUnit}`;
+                    }
+                    infoHtml += '</li>';
+                });
+                infoHtml += '</ul>';
+                
+                cartInfo.innerHTML = infoHtml;
+                cartDataDisplay.style.display = 'block';
+                cartDataDisplay.innerHTML = JSON.stringify(cart, null, 2);
+            }
+        }
+
+        function clearAllCartData() {
+            if (confirm('確定要清除所有購物車資料嗎？此操作無法復原！')) {
+                try {
+                    // 清除購物車資料
+                    localStorage.removeItem('cart');
+                    
+                    // 清除可能的其他相關資料
+                    localStorage.removeItem('cartTimestamp');
+                    localStorage.removeItem('cartBackup');
+                    
+                    // 清除所有網站相關的 localStorage
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.includes('cart') || key.includes('chengyivegetable')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    
+                    const status = document.getElementById('current-status');
+                    status.className = 'status success';
+                    status.innerHTML = '✅ 所有購物車資料已清除！';
+                    
+                    document.getElementById('cart-info').innerHTML = '';
+                    document.getElementById('cart-data-display').style.display = 'none';
+                    
+                    // 3秒後自動檢查
+                    setTimeout(checkCartData, 3000);
+                    
+                } catch (e) {
+                    alert('清除資料時發生錯誤：' + e.message);
+                }
+            }
+        }
+
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        // 頁面載入時自動檢查
+        window.onload = function() {
+            checkCartData();
+            
+            // 每5秒自動檢查一次
+            setInterval(checkCartData, 5000);
+        };
+
+        // 監聽localStorage變化
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'cart') {
+                checkCartData();
+            }
+        });
+    </script>
+</body>
+</html>

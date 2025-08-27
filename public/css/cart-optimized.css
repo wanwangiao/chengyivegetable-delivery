@@ -66,22 +66,42 @@
   gap: 0.5rem;
 }
 
-.cart-close {
+.cart-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-clear-btn,
+.cart-close-btn {
   background: none;
   border: none;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 36px;
+  min-height: 36px;
   transition: background-color 0.2s ease;
 }
 
+.cart-clear-btn {
+  font-size: 1rem;
+}
+
+.cart-close-btn {
+  font-size: 1.5rem;
+}
+
+.cart-clear-btn:hover {
+  background: rgba(255, 193, 7, 0.2);
+}
+
+.cart-close-btn:hover,
 .cart-close:hover {
   background: rgba(255, 255, 255, 0.1);
 }

@@ -179,7 +179,10 @@
           🛒 購物車
           <span class="cart-item-count" id="cart-item-count">0</span>
         </h3>
-        <button class="cart-close-btn" onclick="closeCartModal()">✕</button>
+        <div class="cart-header-buttons">
+          <button class="cart-clear-btn" onclick="clearCartData()" title="清空購物車">🧹</button>
+          <button class="cart-close-btn" onclick="closeCartModal()">✕</button>
+        </div>
       </div>
       
       <div class="cart-content" id="cart-content">
@@ -496,16 +499,35 @@
         }
       `;
       document.head.appendChild(style);
+      // 🛒 清除購物車資料（除錯用）
+      function clearCartData() {
+        localStorage.removeItem('cart');
+        updateCartModal();
+        updateCartSummary();
+        showNotification('🧹 購物車已清空', 'success');
+      }
+      
       // 🛒 更新購物車模態框內容
       function updateCartModal() {
         const cart = getCart();
         const cartContent = document.getElementById('cart-content');
         const cartItemCount = document.getElementById('cart-item-count');
         
-        // 更新商品計數
-        cartItemCount.textContent = cart.length;
+        // 檢查並清理異常資料
+        let cleanedCart = cart.filter(item => {
+          return item && item.productId && item.quantity > 0;
+        });
         
-        if (cart.length === 0) {
+        // 如果有異常資料被清理，更新儲存
+        if (cleanedCart.length !== cart.length) {
+          saveCart(cleanedCart);
+          console.log('🧹 清理了異常的購物車資料');
+        }
+        
+        // 更新商品計數
+        cartItemCount.textContent = cleanedCart.length;
+        
+        if (cleanedCart.length === 0) {
           cartContent.innerHTML = `
             <div class="cart-empty">
               <div class="cart-empty-icon">🛒</div>
@@ -517,7 +539,7 @@
         }
         
         let html = '';
-        cart.forEach((item, index) => {
+        cleanedCart.forEach((item, index) => {
           const product = products.find(p => p.id === item.productId);
           if (!product) return;
           
