@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>誠意鮮蔬｜新鮮蔬果外送 - 手機版</title>
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/cart-modal.css">
+    <link rel="stylesheet" href="/css/cart-optimized.css">
     <link rel="stylesheet" href="/css/mobile-enhanced.css">
   </head>
   <body>
@@ -521,32 +521,13 @@
           const product = products.find(p => p.id === item.productId);
           if (!product) return;
           
-          // 獲取商品圖片
-          let productImage = '🥬'; // 預設emoji
-          if (product.image_url && product.image_url.startsWith('/uploads/')) {
-            productImage = `<img src="${product.image_url}" alt="${product.name}">`;
-          } else if (product.image_url) {
-            productImage = product.image_url;
-          } else if (product.name.includes('番茄')) {
-            productImage = '🍅';
-          } else if (product.name.includes('胡蘿蔔')) {
-            productImage = '🥕';
-          } else if (product.name.includes('小黃瓜')) {
-            productImage = '🥒';
-          } else if (product.name.includes('洋蔥')) {
-            productImage = '🧅';
-          } else if (product.name.includes('玉米')) {
-            productImage = '🌽';
-          } else if (product.name.includes('馬鈴薯')) {
-            productImage = '🥔';
-          }
-          
           // 計算價格
           let priceDisplay = '';
           let itemSubtotal = 0;
           
           if (product.is_priced_item) {
             priceDisplay = '待秤重確認';
+            itemSubtotal = '待確認';
           } else {
             let basePrice = Number(product.price);
             if (item.priceModifier) {
@@ -556,25 +537,43 @@
             priceDisplay = `$${basePrice}`;
           }
           
+          // 格式化選項顯示
+          let optionDisplay = '';
+          if (item.selectedUnit) {
+            optionDisplay = item.selectedUnit;
+          } else if (item.selectedOptionName) {
+            optionDisplay = item.selectedOptionName;
+          }
+          
           html += `
             <div class="cart-item-card" data-cart-index="${index}" data-product-id="${item.productId}">
-              <div class="cart-item-image">${productImage}</div>
-              
-              <div class="cart-item-info">
-                <div class="cart-item-name">${product.name}</div>
-                <div class="cart-item-price">${priceDisplay}</div>
-                ${item.selectedUnit ? `<div class="cart-item-unit">${item.selectedUnit}</div>` : ''}
-                ${product.is_priced_item ? '<div class="cart-item-badge">計價商品</div>' : ''}
-              </div>
-              
-              <div class="cart-item-controls">
-                <div class="cart-quantity-controls">
-                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
-                  <div class="cart-qty-display">${item.quantity}</div>
-                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity + 1})">+</button>
+              <div class="cart-item-main">
+                <div class="cart-item-header">
+                  <div class="cart-item-name">${product.name}</div>
+                  <button class="cart-remove-btn" onclick="removeFromCart(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}')">
+                    <span class="remove-icon">×</span>
+                  </button>
                 </div>
-                ${!product.is_priced_item ? `<div class="cart-item-subtotal">$${itemSubtotal}</div>` : ''}
-                <button class="cart-remove-btn" onclick="removeFromCart(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}')">🗑</button>
+                
+                <div class="cart-item-details">
+                  ${optionDisplay ? `<div class="cart-item-option">${optionDisplay}</div>` : ''}
+                  <div class="cart-item-price-info">
+                    <span class="unit-price">${priceDisplay}</span>
+                    ${product.is_priced_item ? '<span class="price-badge">計價商品</span>' : ''}
+                  </div>
+                </div>
+                
+                <div class="cart-item-bottom">
+                  <div class="cart-quantity-controls">
+                    <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
+                    <span class="cart-qty-display">${item.quantity}</span>
+                    <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity + 1})">+</button>
+                  </div>
+                  
+                  <div class="cart-item-subtotal">
+                    ${typeof itemSubtotal === 'number' ? `$${itemSubtotal}` : itemSubtotal}
+                  </div>
+                </div>
               </div>
             </div>
           `;

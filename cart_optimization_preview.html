@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 購物車優化預覽 - 承億蔬果外送</title>
+    <link rel="stylesheet" href="/css/cart-optimized.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
+            color: #2d4a3a;
+        }
+
+        .preview-container {
+            max-width: 400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(45, 90, 61, 0.15);
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background: #2d5a3d;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .comparison-section {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comparison-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d5a3d;
+        }
+
+        .before-after {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .before, .after {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+
+        .before {
+            border-color: #ff5722;
+            background: #ffeee6;
+        }
+
+        .after {
+            border-color: #4caf50;
+            background: #e8f5e8;
+        }
+
+        .status-label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .before .status-label {
+            color: #ff5722;
+        }
+
+        .after .status-label {
+            color: #4caf50;
+        }
+
+        .feature-list {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .feature-list li {
+            margin-bottom: 4px;
+        }
+
+        .demo-button {
+            background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 179, 66, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            🛒 購物車界面優化對比
+        </div>
+
+        <div class="comparison-section">
+            <div class="comparison-title">📊 設計改進對比</div>
+            
+            <div class="before-after">
+                <div class="before">
+                    <div class="status-label">❌ 優化前</div>
+                    <ul class="feature-list">
+                        <li>顯示商品圖片佔用空間</li>
+                        <li>信息層次不清楚</li>
+                        <li>佈局較為雜亂</li>
+                        <li>刪除按鈕不明顯</li>
+                        <li>價格信息不突出</li>
+                    </ul>
+                </div>
+                
+                <div class="after">
+                    <div class="status-label">✅ 優化後</div>
+                    <ul class="feature-list">
+                        <li>移除圖片，空間利用更好</li>
+                        <li>清晰的信息層次結構</li>
+                        <li>簡潔明瞭的佈局</li>
+                        <li>明顯的刪除按鈕</li>
+                        <li>突出顯示價格和小計</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-section">
+            <div class="comparison-title">🎯 核心改進功能</div>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                <li><strong>商品名稱:</strong> 清晰顯示在頂部</li>
+                <li><strong>選擇選項:</strong> 用標籤形式展示</li>
+                <li><strong>單價:</strong> 綠色突出顯示</li>
+                <li><strong>數量控制:</strong> 直觀的 + - 按鈕</li>
+                <li><strong>小計金額:</strong> 右下角明確顯示</li>
+                <li><strong>刪除按鈕:</strong> 右上角 × 符號</li>
+                <li><strong>計價商品:</strong> 特殊標籤標示</li>
+            </ul>
+        </div>
+
+        <button class="demo-button" onclick="showCartDemo()">
+            🎮 查看購物車示例
+        </button>
+    </div>
+
+    <!-- 購物車演示 -->
+    <div class="cart-modal-overlay" id="cart-demo" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: none;">
+        <div class="cart-header">
+            <h3 class="cart-title">🛒 購物車 (3)</h3>
+            <button class="cart-close" onclick="hideCartDemo()">×</button>
+        </div>
+        
+        <div class="cart-content" id="demo-cart-content">
+            <!-- 示例商品 1 -->
+            <div class="cart-item-card">
+                <div class="cart-item-main">
+                    <div class="cart-item-header">
+                        <div class="cart-item-name">有機高麗菜</div>
+                        <button class="cart-remove-btn" onclick="alert('刪除商品')">
+                            <span class="remove-icon">×</span>
+                        </button>
+                    </div>
+                    
+                    <div class="cart-item-details">
+                        <div class="cart-item-option">每斤</div>
+                        <div class="cart-item-price-info">
+                            <span class="unit-price">$45</span>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-item-bottom">
+                        <div class="cart-quantity-controls">
+                            <button class="cart-qty-btn" onclick="alert('減少數量')">−</button>
+                            <span class="cart-qty-display">2</span>
+                            <button class="cart-qty-btn" onclick="alert('增加數量')">+</button>
+                        </div>
+                        
+                        <div class="cart-item-subtotal">$90</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 示例商品 2 -->
+            <div class="cart-item-card">
+                <div class="cart-item-main">
+                    <div class="cart-item-header">
+                        <div class="cart-item-name">新鮮番茄</div>
+                        <button class="cart-remove-btn" onclick="alert('刪除商品')">
+                            <span class="remove-icon">×</span>
+                        </button>
+                    </div>
+                    
+                    <div class="cart-item-details">
+                        <div class="cart-item-option">5顆裝</div>
+                        <div class="cart-item-price-info">
+                            <span class="unit-price">$35</span>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-item-bottom">
+                        <div class="cart-quantity-controls">
+                            <button class="cart-qty-btn" onclick="alert('減少數量')">−</button>
+                            <span class="cart-qty-display">1</span>
+                            <button class="cart-qty-btn" onclick="alert('增加數量')">+</button>
+                        </div>
+                        
+                        <div class="cart-item-subtotal">$35</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 示例商品 3 - 計價商品 -->
+            <div class="cart-item-card">
+                <div class="cart-item-main">
+                    <div class="cart-item-header">
+                        <div class="cart-item-name">當季水蜜桃</div>
+                        <button class="cart-remove-btn" onclick="alert('刪除商品')">
+                            <span class="remove-icon">×</span>
+                        </button>
+                    </div>
+                    
+                    <div class="cart-item-details">
+                        <div class="cart-item-option">約1斤</div>
+                        <div class="cart-item-price-info">
+                            <span class="unit-price">待秤重確認</span>
+                            <span class="price-badge">計價商品</span>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-item-bottom">
+                        <div class="cart-quantity-controls">
+                            <button class="cart-qty-btn" onclick="alert('減少數量')">−</button>
+                            <span class="cart-qty-display">1</span>
+                            <button class="cart-qty-btn" onclick="alert('增加數量')">+</button>
+                        </div>
+                        
+                        <div class="cart-item-subtotal">待確認</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cart-footer">
+            <div class="cart-summary">
+                <div class="cart-summary-row">
+                    <span class="cart-summary-label">小計</span>
+                    <span class="cart-summary-value">$125</span>
+                </div>
+                <div class="cart-summary-row">
+                    <span class="cart-summary-label">運費</span>
+                    <span class="cart-summary-value">免運費</span>
+                </div>
+                <div class="cart-summary-row">
+                    <span class="cart-summary-label">總計</span>
+                    <span class="cart-summary-value">$125+</span>
+                </div>
+            </div>
+            <button class="checkout-btn" onclick="alert('前往結帳')">
+                💳 前往結帳 ($125+)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function showCartDemo() {
+            document.getElementById('cart-demo').style.display = 'flex';
+            document.getElementById('cart-demo').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideCartDemo() {
+            document.getElementById('cart-demo').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('cart-demo').style.display = 'none';
+                document.body.style.overflow = '';
+            }, 400);
+        }
+
+        // ESC 鍵關閉
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideCartDemo();
+            }
+        });
+    </script>
+</body>
+</html>
