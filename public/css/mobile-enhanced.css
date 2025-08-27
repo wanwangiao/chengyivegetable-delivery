@@ -1,0 +1,439 @@
+/* =================================================
+   📱 承億蔬果外送 - 行動端體驗優化專用
+   by SUB AGENT團隊行動端優化專家
+   ================================================= */
+
+:root {
+  /* 🎯 觸控目標尺寸標準 */
+  --mobile-touch-target: 44px;        /* 最小觸控目標 */
+  --mobile-touch-comfortable: 48px;   /* 舒適觸控目標 */
+  --mobile-touch-spacious: 56px;      /* 寬鬆觸控目標 */
+  
+  /* 📏 字體可讀性標準 */
+  --mobile-text-min: 0.875rem;        /* 14px - 最小可讀 */
+  --mobile-text-comfortable: 1rem;     /* 16px - 舒適閱讀 */
+  --mobile-text-large: 1.125rem;      /* 18px - 重要內容 */
+  
+  /* 📐 響應式間距系統 */
+  --mobile-spacing-xs: 0.5rem;        /* 8px */
+  --mobile-spacing-sm: 0.75rem;       /* 12px */
+  --mobile-spacing-md: 1rem;          /* 16px */
+  --mobile-spacing-lg: 1.5rem;        /* 24px */
+  --mobile-spacing-xl: 2rem;          /* 32px */
+  
+  /* 🎨 觸控回饋顏色 */
+  --mobile-active-bg: rgba(124, 179, 66, 0.15);
+  --mobile-active-border: rgba(124, 179, 66, 0.4);
+}
+
+/* =================================================
+   📱 全域行動端優化
+   ================================================= */
+
+/* 觸控滾動優化 */
+body {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: none; /* 防止過度滾動 */
+}
+
+/* 防止iOS縮放 */
+input, textarea, select {
+  font-size: var(--mobile-text-comfortable); /* 防止iOS縮放 */
+  -webkit-appearance: none;
+  -webkit-border-radius: 0;
+}
+
+/* =================================================
+   🔍 搜尋功能行動端優化
+   ================================================= */
+
+.search-input-wrapper {
+  position: relative;
+  min-height: var(--mobile-touch-comfortable);
+}
+
+.search-input {
+  min-height: var(--mobile-touch-comfortable) !important;
+  padding: var(--mobile-spacing-sm) var(--mobile-spacing-md) !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  touch-action: manipulation;
+}
+
+.search-clear {
+  min-width: var(--mobile-touch-target) !important;
+  min-height: var(--mobile-touch-target) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--mobile-text-comfortable) !important;
+  touch-action: manipulation;
+}
+
+/* =================================================
+   🏷️ 分類標籤行動端優化
+   ================================================= */
+
+.category-nav {
+  padding: var(--mobile-spacing-md) 0;
+}
+
+.category-tabs {
+  display: flex;
+  gap: var(--mobile-spacing-sm);
+  padding: 0 var(--mobile-spacing-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  min-height: var(--mobile-touch-target) !important;
+  padding: var(--mobile-spacing-sm) var(--mobile-spacing-lg) !important;
+  font-size: var(--mobile-text-min) !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.category-tab:active {
+  transform: scale(0.98);
+  background-color: var(--mobile-active-bg);
+}
+
+/* =================================================
+   🛍️ 商品卡片行動端優化
+   ================================================= */
+
+.product-grid {
+  gap: var(--mobile-spacing-md) !important;
+  padding: var(--mobile-spacing-md) !important;
+}
+
+.product-card {
+  padding: var(--mobile-spacing-md) !important;
+  touch-action: manipulation;
+}
+
+.product-card:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+.product-name {
+  font-size: var(--mobile-text-comfortable) !important;
+  line-height: 1.4 !important;
+  margin-bottom: var(--mobile-spacing-sm) !important;
+}
+
+.product-price {
+  font-size: var(--mobile-text-large) !important;
+  margin-bottom: var(--mobile-spacing-sm) !important;
+}
+
+.product-unit {
+  font-size: var(--mobile-text-min) !important;
+}
+
+.add-to-cart-btn {
+  min-height: var(--mobile-touch-target) !important;
+  padding: var(--mobile-spacing-sm) var(--mobile-spacing-md) !important;
+  font-size: var(--mobile-text-min) !important;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.add-to-cart-btn:active {
+  transform: scale(0.95);
+  background-color: var(--mobile-active-bg);
+}
+
+/* =================================================
+   🛒 購物車按鈕行動端優化
+   ================================================= */
+
+.cart-button-container {
+  position: fixed;
+  bottom: var(--mobile-spacing-lg);
+  right: var(--mobile-spacing-lg);
+  z-index: 1000;
+}
+
+.cart-button {
+  min-width: var(--mobile-touch-spacious) !important;
+  min-height: var(--mobile-touch-spacious) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem !important;
+  box-shadow: 0 8px 24px rgba(45, 90, 61, 0.3) !important;
+  touch-action: manipulation;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cart-button:active {
+  transform: scale(0.9);
+}
+
+.cart-count {
+  min-width: 24px !important;
+  min-height: 24px !important;
+  font-size: var(--mobile-text-min) !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =================================================
+   🛒 購物車內容行動端優化
+   ================================================= */
+
+.cart-modal-overlay {
+  /* iOS安全區域支持 */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.cart-header {
+  padding: var(--mobile-spacing-lg) var(--mobile-spacing-md) !important;
+  min-height: calc(var(--mobile-touch-spacious) + var(--mobile-spacing-lg));
+}
+
+.cart-close {
+  min-width: var(--mobile-touch-target) !important;
+  min-height: var(--mobile-touch-target) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem !important;
+  touch-action: manipulation;
+}
+
+.cart-title {
+  font-size: var(--mobile-text-large) !important;
+}
+
+/* 購物車商品項目 */
+.cart-item {
+  padding: var(--mobile-spacing-md) !important;
+  margin-bottom: var(--mobile-spacing-sm) !important;
+}
+
+.cart-item-info h4 {
+  font-size: var(--mobile-text-comfortable) !important;
+  margin-bottom: var(--mobile-spacing-xs) !important;
+}
+
+.cart-item-price {
+  font-size: var(--mobile-text-min) !important;
+}
+
+/* 數量控制按鈕 */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-spacing-sm) !important;
+  margin-top: var(--mobile-spacing-sm);
+}
+
+.quantity-btn {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  font-weight: 600 !important;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.quantity-btn:active {
+  transform: scale(0.9);
+  background-color: var(--mobile-active-bg);
+}
+
+.quantity-display {
+  min-width: 40px;
+  text-align: center;
+  font-size: var(--mobile-text-min) !important;
+  font-weight: 600;
+}
+
+.remove-item {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  touch-action: manipulation;
+}
+
+/* =================================================
+   💳 結帳按鈕行動端優化
+   ================================================= */
+
+.cart-footer {
+  padding: var(--mobile-spacing-lg) var(--mobile-spacing-md) !important;
+  /* iOS安全區域 */
+  padding-bottom: calc(var(--mobile-spacing-lg) + env(safe-area-inset-bottom));
+}
+
+.cart-total {
+  font-size: var(--mobile-text-large) !important;
+  margin-bottom: var(--mobile-spacing-md) !important;
+}
+
+.checkout-btn {
+  width: 100% !important;
+  min-height: var(--mobile-touch-spacious) !important;
+  padding: var(--mobile-spacing-md) !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  touch-action: manipulation;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.checkout-btn:active {
+  transform: scale(0.98);
+}
+
+/* =================================================
+   📱 響應式斷點優化
+   ================================================= */
+
+/* 小螢幕 (iPhone SE等) */
+@media (max-width: 375px) {
+  .header-content {
+    padding: 0 var(--mobile-spacing-md) !important;
+  }
+  
+  .store-name {
+    font-size: 1.5rem !important;
+  }
+  
+  .product-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--mobile-spacing-sm) !important;
+  }
+  
+  .cart-button {
+    bottom: var(--mobile-spacing-md) !important;
+    right: var(--mobile-spacing-md) !important;
+  }
+}
+
+/* 中型螢幕 (iPhone 12等) */
+@media (min-width: 376px) and (max-width: 414px) {
+  .product-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  .category-tabs {
+    padding: 0 var(--mobile-spacing-lg);
+  }
+}
+
+/* 大螢幕 (iPhone 12 Pro Max等) */
+@media (min-width: 415px) {
+  .header-content {
+    max-width: 500px;
+  }
+  
+  .search-container {
+    max-width: 500px;
+  }
+}
+
+/* =================================================
+   🎯 觸控回饋動畫系統
+   ================================================= */
+
+.touch-active {
+  transform: scale(0.98) !important;
+  opacity: 0.8;
+  background-color: var(--mobile-active-bg) !important;
+  border-color: var(--mobile-active-border) !important;
+  transition: all 0.1s ease !important;
+}
+
+/* =================================================
+   ♿ 可訪問性增強
+   ================================================= */
+
+/* 高對比度支持 */
+@media (prefers-contrast: high) {
+  :root {
+    --mobile-active-bg: rgba(0, 0, 0, 0.1);
+    --mobile-active-border: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 動畫減少支持 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .cart-modal-overlay {
+    transition: none !important;
+  }
+}
+
+/* 大字體支持 */
+@media (prefers-font-size: large) {
+  :root {
+    --mobile-text-min: 1rem;
+    --mobile-text-comfortable: 1.125rem;
+    --mobile-text-large: 1.25rem;
+  }
+}
+
+/* =================================================
+   🔧 調試模式（開發時使用）
+   ================================================= */
+
+.mobile-debug * {
+  outline: 1px solid rgba(255, 0, 0, 0.3) !important;
+}
+
+.mobile-debug [role="button"],
+.mobile-debug button,
+.mobile-debug input[type="submit"],
+.mobile-debug input[type="button"] {
+  outline: 2px solid rgba(0, 255, 0, 0.5) !important;
+}
+
+/* 觸控目標大小檢查 */
+.mobile-debug .touch-target-check {
+  position: relative;
+}
+
+.mobile-debug .touch-target-check::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--mobile-touch-target);
+  height: var(--mobile-touch-target);
+  border: 1px dashed rgba(255, 165, 0, 0.8);
+  background: rgba(255, 165, 0, 0.1);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+}

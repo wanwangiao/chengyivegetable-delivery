@@ -1,0 +1,553 @@
+/* =================================================
+   💳 承億蔬果外送 - 結帳頁面行動端優化專用
+   by SUB AGENT團隊行動端體驗專家
+   ================================================= */
+
+:root {
+  /* 延續主要的行動端變數 */
+  --mobile-touch-target: 44px;
+  --mobile-touch-comfortable: 48px;
+  --mobile-touch-spacious: 56px;
+  --mobile-text-min: 0.875rem;
+  --mobile-text-comfortable: 1rem;
+  --mobile-text-large: 1.125rem;
+  --mobile-spacing-xs: 0.5rem;
+  --mobile-spacing-sm: 0.75rem;
+  --mobile-spacing-md: 1rem;
+  --mobile-spacing-lg: 1.5rem;
+  --mobile-spacing-xl: 2rem;
+  
+  /* 結帳頁面專用顏色 */
+  --checkout-input-focus: #7cb342;
+  --checkout-error: #ff5252;
+  --checkout-success: #4caf50;
+  --checkout-border: rgba(124, 179, 66, 0.2);
+}
+
+/* =================================================
+   📱 結帳頁面全域優化
+   ================================================= */
+
+.checkout-container {
+  max-width: 100% !important;
+  padding: var(--mobile-spacing-md) !important;
+  margin: 0 !important;
+}
+
+.checkout-header {
+  padding: var(--mobile-spacing-lg) var(--mobile-spacing-md) !important;
+  text-align: center;
+}
+
+.checkout-title {
+  font-size: var(--mobile-text-large) !important;
+  margin-bottom: var(--mobile-spacing-sm) !important;
+}
+
+/* =================================================
+   📋 訂單摘要行動端優化
+   ================================================= */
+
+.order-summary {
+  background: #ffffff;
+  border-radius: 12px !important;
+  padding: var(--mobile-spacing-lg) !important;
+  margin-bottom: var(--mobile-spacing-lg) !important;
+  border: 1px solid var(--checkout-border);
+  box-shadow: 0 2px 12px rgba(45, 90, 61, 0.08);
+}
+
+.order-summary h3 {
+  font-size: var(--mobile-text-comfortable) !important;
+  margin-bottom: var(--mobile-spacing-md) !important;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--mobile-spacing-sm) 0 !important;
+  border-bottom: 1px solid rgba(124, 179, 66, 0.1);
+  min-height: var(--mobile-touch-target);
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item-name {
+  font-size: var(--mobile-text-min) !important;
+  flex: 1;
+  padding-right: var(--mobile-spacing-sm);
+}
+
+.order-item-price {
+  font-size: var(--mobile-text-min) !important;
+  font-weight: 600;
+  color: #7cb342;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--mobile-spacing-md) 0 !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  font-weight: 700;
+  border-top: 2px solid var(--checkout-border);
+  margin-top: var(--mobile-spacing-md);
+  min-height: var(--mobile-touch-comfortable);
+}
+
+/* =================================================
+   📝 表單輸入優化
+   ================================================= */
+
+.form-group {
+  margin-bottom: var(--mobile-spacing-lg) !important;
+}
+
+.form-group label {
+  display: block;
+  font-size: var(--mobile-text-comfortable) !important;
+  font-weight: 600;
+  color: #2d4a3a;
+  margin-bottom: var(--mobile-spacing-xs) !important;
+  min-height: var(--mobile-spacing-lg);
+  display: flex;
+  align-items: center;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100% !important;
+  min-height: var(--mobile-touch-comfortable) !important;
+  padding: var(--mobile-spacing-md) !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  border: 2px solid var(--checkout-border) !important;
+  border-radius: 8px !important;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+}
+
+.form-group textarea {
+  min-height: calc(var(--mobile-touch-comfortable) * 2) !important;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* 輸入框焦點狀態 */
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none !important;
+  border-color: var(--checkout-input-focus) !important;
+  box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15) !important;
+  background: #fafffe;
+}
+
+/* 輸入框錯誤狀態 */
+.form-group input.error,
+.form-group textarea.error,
+.form-group select.error {
+  border-color: var(--checkout-error) !important;
+  box-shadow: 0 0 0 3px rgba(255, 82, 82, 0.15) !important;
+}
+
+/* 輸入框成功狀態 */
+.form-group input.success,
+.form-group textarea.success,
+.form-group select.success {
+  border-color: var(--checkout-success) !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15) !important;
+}
+
+/* =================================================
+   ✅ 選擇框和選項優化
+   ================================================= */
+
+.payment-methods,
+.delivery-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-spacing-sm) !important;
+}
+
+.payment-method,
+.delivery-option {
+  display: flex;
+  align-items: center;
+  min-height: var(--mobile-touch-target) !important;
+  padding: var(--mobile-spacing-md) !important;
+  border: 2px solid var(--checkout-border);
+  border-radius: 8px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.payment-method:hover,
+.delivery-option:hover,
+.payment-method:active,
+.delivery-option:active {
+  background: rgba(124, 179, 66, 0.05);
+  border-color: var(--checkout-input-focus);
+}
+
+.payment-method.selected,
+.delivery-option.selected {
+  background: rgba(124, 179, 66, 0.1) !important;
+  border-color: var(--checkout-input-focus) !important;
+  box-shadow: 0 0 0 2px rgba(124, 179, 66, 0.2);
+}
+
+.payment-method input[type="radio"],
+.delivery-option input[type="radio"] {
+  min-width: 20px !important;
+  min-height: 20px !important;
+  margin: 0 var(--mobile-spacing-md) 0 0 !important;
+}
+
+.payment-method label,
+.delivery-option label {
+  font-size: var(--mobile-text-comfortable) !important;
+  margin: 0 !important;
+  cursor: pointer;
+  flex: 1;
+  display: flex !important;
+  align-items: center;
+  min-height: auto !important;
+}
+
+/* =================================================
+   📞 聯絡資訊區域優化
+   ================================================= */
+
+.contact-info {
+  background: #ffffff;
+  border-radius: 12px !important;
+  padding: var(--mobile-spacing-lg) !important;
+  margin-bottom: var(--mobile-spacing-lg) !important;
+  border: 1px solid var(--checkout-border);
+}
+
+.contact-info h3 {
+  font-size: var(--mobile-text-comfortable) !important;
+  margin-bottom: var(--mobile-spacing-md) !important;
+}
+
+/* 電話輸入特殊處理 */
+.form-group input[type="tel"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+/* 地址輸入特殊處理 */
+.form-group textarea[placeholder*="地址"] {
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* =================================================
+   ⚠️ 錯誤訊息和驗證
+   ================================================= */
+
+.error-message {
+  color: var(--checkout-error) !important;
+  font-size: var(--mobile-text-min) !important;
+  margin-top: var(--mobile-spacing-xs) !important;
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-spacing-xs);
+}
+
+.error-message::before {
+  content: "⚠️";
+  font-size: 1rem;
+}
+
+.success-message {
+  color: var(--checkout-success) !important;
+  font-size: var(--mobile-text-min) !important;
+  margin-top: var(--mobile-spacing-xs) !important;
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-spacing-xs);
+}
+
+.success-message::before {
+  content: "✅";
+  font-size: 1rem;
+}
+
+/* =================================================
+   🔢 字符計數器
+   ================================================= */
+
+.character-counter {
+  font-size: var(--mobile-text-min) !important;
+  color: #6b7c6b;
+  text-align: right;
+  margin-top: var(--mobile-spacing-xs) !important;
+  min-height: var(--mobile-spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.character-counter.warning {
+  color: #ff9800;
+}
+
+.character-counter.danger {
+  color: var(--checkout-error);
+}
+
+/* =================================================
+   🛒 確認訂單按鈕
+   ================================================= */
+
+.checkout-actions {
+  position: sticky;
+  bottom: 0;
+  background: #ffffff;
+  padding: var(--mobile-spacing-lg) var(--mobile-spacing-md) !important;
+  /* iOS安全區域 */
+  padding-bottom: calc(var(--mobile-spacing-lg) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--checkout-border);
+  margin: var(--mobile-spacing-lg) calc(-1 * var(--mobile-spacing-md)) 0 !important;
+}
+
+.submit-order-btn {
+  width: 100% !important;
+  min-height: var(--mobile-touch-spacious) !important;
+  padding: var(--mobile-spacing-md) !important;
+  font-size: var(--mobile-text-comfortable) !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 12px !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(124, 179, 66, 0.3);
+}
+
+.submit-order-btn:hover {
+  box-shadow: 0 6px 20px rgba(124, 179, 66, 0.4);
+  transform: translateY(-1px);
+}
+
+.submit-order-btn:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: 0 2px 8px rgba(124, 179, 66, 0.3);
+}
+
+.submit-order-btn:disabled {
+  background: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* =================================================
+   🔄 載入狀態
+   ================================================= */
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(124, 179, 66, 0.2);
+  border-left-color: #7cb342;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: var(--mobile-spacing-md);
+  font-size: var(--mobile-text-comfortable);
+  color: #2d4a3a;
+  text-align: center;
+}
+
+/* =================================================
+   📱 響應式斷點優化
+   ================================================= */
+
+/* 小螢幕 (iPhone SE等) */
+@media (max-width: 375px) {
+  .checkout-container {
+    padding: var(--mobile-spacing-sm) !important;
+  }
+  
+  .order-summary,
+  .contact-info {
+    padding: var(--mobile-spacing-md) !important;
+    margin-bottom: var(--mobile-spacing-md) !important;
+  }
+  
+  .form-group {
+    margin-bottom: var(--mobile-spacing-md) !important;
+  }
+  
+  .checkout-actions {
+    padding: var(--mobile-spacing-md) var(--mobile-spacing-sm) !important;
+  }
+}
+
+/* 中型螢幕 (iPhone 12等) */
+@media (min-width: 376px) and (max-width: 414px) {
+  .checkout-container {
+    max-width: 100%;
+    padding: var(--mobile-spacing-md);
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: var(--mobile-text-comfortable);
+  }
+}
+
+/* 大螢幕 (iPhone 12 Pro Max等) */
+@media (min-width: 415px) {
+  .checkout-container {
+    max-width: 500px;
+    margin: 0 auto !important;
+    padding: var(--mobile-spacing-lg);
+  }
+}
+
+/* =================================================
+   🎯 觸控回饋增強
+   ================================================= */
+
+.form-group input:active,
+.form-group textarea:active,
+.form-group select:active {
+  transform: scale(0.999);
+}
+
+.payment-method:active,
+.delivery-option:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* =================================================
+   ♿ 可訪問性增強
+   ================================================= */
+
+/* 高對比度模式 */
+@media (prefers-contrast: high) {
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    border-width: 3px !important;
+  }
+  
+  .submit-order-btn {
+    border: 3px solid #2d4a3a !important;
+  }
+}
+
+/* 動畫減少模式 */
+@media (prefers-reduced-motion: reduce) {
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .payment-method,
+  .delivery-option,
+  .submit-order-btn {
+    transition: none !important;
+  }
+  
+  .loading-spinner {
+    animation: none !important;
+  }
+}
+
+/* 大字體模式 */
+@media (prefers-font-size: large) {
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: 1.125rem !important;
+    min-height: calc(var(--mobile-touch-comfortable) + 0.5rem) !important;
+  }
+  
+  .submit-order-btn {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* =================================================
+   🔧 iOS Safari 特殊處理
+   ================================================= */
+
+/* 防止iOS縮放 */
+@supports (-webkit-touch-callout: none) {
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: max(16px, var(--mobile-text-comfortable)) !important;
+  }
+}
+
+/* 防止iOS橡皮筋效果 */
+body {
+  overscroll-behavior: none;
+}
+
+/* =================================================
+   🎨 深色模式預備
+   ================================================= */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --checkout-border: rgba(255, 255, 255, 0.2);
+  }
+  
+  .order-summary,
+  .contact-info,
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .payment-method,
+  .delivery-option {
+    background: #1e1e1e !important;
+    color: #ffffff !important;
+    border-color: var(--checkout-border) !important;
+  }
+  
+  .checkout-actions {
+    background: #1e1e1e !important;
+    border-color: var(--checkout-border) !important;
+  }
+}
