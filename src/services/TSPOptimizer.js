@@ -25,6 +25,51 @@ class TSPOptimizer {
     return R * c;
   }
 
+  /**
+   * 計算道路距離 (考慮實際道路情況)
+   * @param {number} lat1 
+   * @param {number} lng1 
+   * @param {number} lat2 
+   * @param {number} lng2 
+   * @returns {number} 預估道路距離 (公里)
+   */
+  calculateRoadDistance(lat1, lng1, lat2, lng2) {
+    const directDistance = this.calculateDistance(lat1, lng1, lat2, lng2);
+    
+    // 台灣都市地區道路修正係數
+    let roadFactor = 1.3; // 預設1.3倍
+    
+    // 根據距離調整係數 (長距離通常道路係數較小)
+    if (directDistance > 10) {
+      roadFactor = 1.2; // 長距離較直
+    } else if (directDistance > 5) {
+      roadFactor = 1.25; // 中距離
+    } else if (directDistance < 1) {
+      roadFactor = 1.4; // 短距離市區較彎曲
+    }
+    
+    return Math.round(directDistance * roadFactor * 100) / 100;
+  }
+
+  /**
+   * 計算預估行駛時間 (分鐘)
+   * @param {number} distance 距離 (公里)
+   * @returns {number} 預估時間 (分鐘)
+   */
+  calculateTravelTime(distance) {
+    // 台灣都市配送平均速度考量
+    let avgSpeed = 25; // km/h (包含紅綠燈、停車等)
+    
+    // 根據距離調整平均速度
+    if (distance > 10) {
+      avgSpeed = 35; // 長距離可能有快速道路
+    } else if (distance < 2) {
+      avgSpeed = 20; // 短距離多市區道路
+    }
+    
+    return Math.round(distance / avgSpeed * 60); // 轉換為分鐘
+  }
+
   toRadians(degrees) {
     return degrees * (Math.PI / 180);
   }
@@ -42,7 +87,7 @@ class TSPOptimizer {
 
     // 從起點到第一個訂單
     if (depot && route.length > 0) {
-      totalDistance += this.calculateDistance(
+      totalDistance += this.calculateRoadDistance(
         currentPoint.lat, currentPoint.lng,
         route[0].lat, route[0].lng
       );
@@ -51,7 +96,7 @@ class TSPOptimizer {
 
     // 訂單間的距離
     for (let i = 1; i < route.length; i++) {
-      totalDistance += this.calculateDistance(
+      totalDistance += this.calculateRoadDistance(
         currentPoint.lat, currentPoint.lng,
         route[i].lat, route[i].lng
       );
@@ -60,7 +105,7 @@ class TSPOptimizer {
 
     // 回到起點
     if (depot && route.length > 0) {
-      totalDistance += this.calculateDistance(
+      totalDistance += this.calculateRoadDistance(
         currentPoint.lat, currentPoint.lng,
         depot.lat, depot.lng
       );

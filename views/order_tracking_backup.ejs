@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訂單追蹤 - 承億蔬菜外送</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .tracking-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .order-header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 2rem;
+        }
+
+        .order-header h1 {
+            color: #2e7d32;
+            margin: 0 0 1rem 0;
+        }
+
+        .order-id {
+            font-size: 1.5rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .status-timeline {
+            margin: 2rem 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .timeline-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .timeline-icon.completed {
+            background: #4caf50;
+            color: white;
+        }
+
+        .timeline-icon.current {
+            background: #ff9800;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .timeline-icon.pending {
+            background: #e0e0e0;
+            color: #999;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .timeline-content {
+            flex: 1;
+            padding-top: 0.5rem;
+        }
+
+        .timeline-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-description {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-time {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .order-details {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .detail-value {
+            color: #666;
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .map-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .driver-info {
+            background: #e3f2fd;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .driver-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2196f3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .driver-details {
+            display: flex;
+            align-items: center;
+        }
+
+        .driver-text {
+            flex: 1;
+        }
+
+        .driver-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .driver-contact {
+            color: #666;
+        }
+
+        .estimated-time {
+            text-align: center;
+            padding: 1.5rem;
+            background: #fff3e0;
+            border-radius: 8px;
+            margin: 2rem 0;
+            border: 2px solid #ff9800;
+        }
+
+        .estimated-time h3 {
+            color: #ef6c00;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .time-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ef6c00;
+        }
+
+        .refresh-button {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 1rem 0;
+        }
+
+        .refresh-button:hover {
+            background: #1b5e20;
+        }
+
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transform: translateX(100%);
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .notification.notification-fade-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); }
+            to { transform: translateX(100%); }
+        }
+
+        .notification-content {
+            padding: 1rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .notification-icon {
+            font-size: 1.5rem;
+            margin-right: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .notification-text {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+
+        .notification-message {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+            margin-left: 0.5rem;
+        }
+
+        .notification-order {
+            border-left: 4px solid #4caf50;
+        }
+
+        .notification-info {
+            border-left: 4px solid #2196f3;
+        }
+
+        .notification-warning {
+            border-left: 4px solid #ff9800;
+        }
+
+        .notification-error {
+            border-left: 4px solid #f44336;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .tracking-container {
+                margin: 1rem;
+                padding: 0.8rem;
+            }
+            
+            .timeline-item {
+                margin-bottom: 1.5rem;
+            }
+            
+            .timeline-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .map-container {
+                height: 300px;
+            }
+            
+            .notification-container {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tracking-container">
+        <div class="order-header">
+            <h1>訂單追蹤</h1>
+            <div class="order-id">訂單編號: #<span id="orderId"><%= order.id %></span></div>
+            <button class="refresh-button" onclick="refreshOrderStatus()">🔄 刷新狀態</button>
+        </div>
+
+        <!-- 訂單狀態時間軸 -->
+        <div class="status-timeline" id="statusTimeline">
+            <!-- 動態生成時間軸項目 -->
+        </div>
+
+        <!-- 預計送達時間 -->
+        <div class="estimated-time" id="estimatedTimeSection" style="display: none;">
+            <h3>🕒 預計送達時間</h3>
+            <div class="time-display" id="estimatedTime">--:--</div>
+            <div id="countdown" style="margin-top: 1rem; color: #666;"></div>
+        </div>
+
+        <!-- 外送員資訊 -->
+        <div class="driver-info" id="driverInfo" style="display: none;">
+            <h3>🚚 外送員資訊</h3>
+            <div class="driver-details">
+                <div class="driver-avatar" id="driverAvatar">👤</div>
+                <div class="driver-text">
+                    <div class="driver-name" id="driverName">Loading...</div>
+                    <div class="driver-contact">
+                        📞 <span id="driverPhone">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 地圖 -->
+        <div class="map-container" id="mapContainer">
+            <div class="map-loading">
+                📍 正在載入地圖...
+            </div>
+        </div>
+
+        <!-- 訂單詳情 -->
+        <div class="order-details">
+            <h3>📋 訂單詳情</h3>
+            <div class="detail-row">
+                <span class="detail-label">聯絡人:</span>
+                <span class="detail-value"><%= order.contact_name %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">電話:</span>
+                <span class="detail-value"><%= order.contact_phone %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">地址:</span>
+                <span class="detail-value"><%= order.address %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">訂單金額:</span>
+                <span class="detail-value">$<%= order.total %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">下單時間:</span>
+                <span class="detail-value"><%= new Date(order.created_at).toLocaleString() %></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">目前狀態:</span>
+                <span class="detail-value" data-order-status="<%= order.id %>">
+                    <%= order.status %>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 連接狀態指示器 -->
+    <div class="connection-status disconnected" id="connectionStatus">
+        🔴 未連接
+    </div>
+
+    <!-- 載入必要的JavaScript -->
+    <script src="/js/realtime-notifications.js"></script>
+    <script>
+        // 訂單資料
+        const orderData = <%- JSON.stringify(order) %>;
+        const orderId = orderData.id;
+        
+        // 狀態對應的圖示和描述
+        const statusConfig = {
+            'placed': { icon: '📝', title: '訂單成立', description: '您的訂單已成功建立' },
+            'confirmed': { icon: '✅', title: '訂單確認', description: '我們已確認您的訂單' },
+            'preparing': { icon: '👨‍🍳', title: '商品準備中', description: '正在為您準備新鮮商品' },
+            'ready': { icon: '📦', title: '商品準備完成', description: '商品已準備好，等待外送員取貨' },
+            'assigned': { icon: '🚚', title: '已分配外送員', description: '外送員已接單，準備取貨' },
+            'picked_up': { icon: '🏃‍♂️', title: '外送員已取貨', description: '外送員已取得商品，正在前往您的地址' },
+            'delivering': { icon: '🛵', title: '配送中', description: '外送員正在路上，即將送達' },
+            'delivered': { icon: '🎉', title: '已送達', description: '商品已成功送達，感謝您的訂購' },
+            'completed': { icon: '✨', title: '訂單完成', description: '訂單已完成，歡迎再次訂購' },
+            'cancelled': { icon: '❌', title: '訂單取消', description: '很抱歉，訂單已被取消' }
+        };
+
+        // 訂單狀態順序
+        const statusOrder = ['placed', 'confirmed', 'preparing', 'ready', 'assigned', 'picked_up', 'delivering', 'delivered', 'completed'];
+        
+        let orderTrackingMap = null;
+
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeOrderTracking();
+            loadGoogleMaps();
+        });
+
+        /**
+         * 初始化訂單追蹤
+         */
+        function initializeOrderTracking() {
+            // 渲染狀態時間軸
+            renderStatusTimeline();
+            
+            // 監聽即時通知事件
+            if (window.realtimeNotifications) {
+                // 訂閱訂單更新
+                window.realtimeNotifications.subscribeToOrder(orderId);
+                
+                // 監聽連接狀態變化
+                window.realtimeNotifications.on('connected', updateConnectionStatus);
+                window.realtimeNotifications.on('disconnected', updateConnectionStatus);
+                
+                // 監聽訂單更新
+                window.realtimeNotifications.on('orderUpdate', handleOrderUpdate);
+                
+                // 監聽外送員位置更新
+                window.realtimeNotifications.on('driverLocation', handleDriverLocationUpdate);
+            }
+
+            // 獲取最新訂單狀態
+            refreshOrderStatus();
+        }
+
+        /**
+         * 渲染狀態時間軸
+         */
+        function renderStatusTimeline() {
+            const timelineContainer = document.getElementById('statusTimeline');
+            const currentStatus = orderData.status;
+            const currentIndex = statusOrder.indexOf(currentStatus);
+            
+            let html = '';
+            
+            statusOrder.forEach((status, index) => {
+                const config = statusConfig[status];
+                let iconClass = 'pending';
+                
+                if (index < currentIndex) {
+                    iconClass = 'completed';
+                } else if (index === currentIndex) {
+                    iconClass = 'current';
+                }
+                
+                html += `
+                    <div class="timeline-item">
+                        <div class="timeline-icon ${iconClass}">
+                            ${config.icon}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">${config.title}</div>
+                            <div class="timeline-description">${config.description}</div>
+                            <div class="timeline-time" id="time-${status}"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            timelineContainer.innerHTML = html;
+        }
+
+        /**
+         * 處理訂單更新
+         */
+        function handleOrderUpdate(data) {
+            console.log('收到訂單更新:', data);
+            
+            // 更新時間軸
+            renderStatusTimeline();
+            
+            // 更新預計送達時間
+            if (data.estimatedDeliveryTime) {
+                updateEstimatedDeliveryTime(data.estimatedDeliveryTime);
+            }
+            
+            // 更新外送員資訊
+            if (data.driverInfo) {
+                updateDriverInfo(data.driverInfo);
+                
+                // 訂閱外送員位置更新
+                if (data.driverInfo.id) {
+                    window.realtimeNotifications.subscribeToDriver(data.driverInfo.id);
+                }
+            }
+        }
+
+        /**
+         * 處理外送員位置更新
+         */
+        function handleDriverLocationUpdate(data) {
+            console.log('收到外送員位置更新:', data);
+            
+            // 更新地圖上的外送員位置
+            if (orderTrackingMap && orderTrackingMap.updateDriverLocation) {
+                orderTrackingMap.updateDriverLocation({
+                    lat: data.lat,
+                    lng: data.lng,
+                    timestamp: data.timestamp
+                });
+            }
+        }
+
+        /**
+         * 更新連接狀態
+         */
+        function updateConnectionStatus(data) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (window.realtimeNotifications && window.realtimeNotifications.isConnected) {
+                statusEl.className = 'connection-status connected';
+                statusEl.textContent = '🟢 即時連接';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.textContent = '🔴 連接中斷';
+            }
+        }
+
+        /**
+         * 更新預計送達時間
+         */
+        function updateEstimatedDeliveryTime(deliveryTime) {
+            const estimatedTimeSection = document.getElementById('estimatedTimeSection');
+            const estimatedTimeEl = document.getElementById('estimatedTime');
+            const countdownEl = document.getElementById('countdown');
+            
+            if (deliveryTime) {
+                const deliveryDate = new Date(deliveryTime);
+                estimatedTimeEl.textContent = deliveryDate.toLocaleTimeString();
+                estimatedTimeSection.style.display = 'block';
+                
+                // 開始倒數計時
+                startCountdown(deliveryDate, countdownEl);
+            }
+        }
+
+        /**
+         * 開始倒數計時
+         */
+        function startCountdown(targetDate, element) {
+            const updateCountdown = () => {
+                const now = new Date();
+                const timeDiff = targetDate - now;
+                
+                if (timeDiff > 0) {
+                    const minutes = Math.floor(timeDiff / (1000 * 60));
+                    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+                    element.textContent = `還有 ${minutes} 分 ${seconds} 秒`;
+                } else {
+                    element.textContent = '預計送達時間已到';
+                    clearInterval(countdownTimer);
+                }
+            };
+            
+            updateCountdown();
+            const countdownTimer = setInterval(updateCountdown, 1000);
+        }
+
+        /**
+         * 更新外送員資訊
+         */
+        function updateDriverInfo(driverInfo) {
+            const driverInfoSection = document.getElementById('driverInfo');
+            const driverNameEl = document.getElementById('driverName');
+            const driverPhoneEl = document.getElementById('driverPhone');
+            const driverAvatarEl = document.getElementById('driverAvatar');
+            
+            driverNameEl.textContent = driverInfo.name || '未知';
+            driverPhoneEl.textContent = driverInfo.phone || '--';
+            driverAvatarEl.textContent = driverInfo.name ? driverInfo.name.charAt(0) : '👤';
+            
+            driverInfoSection.style.display = 'block';
+        }
+
+        /**
+         * 刷新訂單狀態
+         */
+        async function refreshOrderStatus() {
+            try {
+                const response = await fetch(`/api/orders/${orderId}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('訂單狀態已更新:', data);
+                    
+                    // 更新全域訂單資料
+                    Object.assign(orderData, data);
+                    
+                    // 重新渲染時間軸
+                    renderStatusTimeline();
+                    
+                    // 更新其他資訊
+                    if (data.estimated_delivery_time) {
+                        updateEstimatedDeliveryTime(data.estimated_delivery_time);
+                    }
+                    
+                    if (data.driver) {
+                        updateDriverInfo(data.driver);
+                    }
+                }
+            } catch (error) {
+                console.error('刷新訂單狀態失敗:', error);
+            }
+        }
+
+        /**
+         * 載入混合地圖 (優先使用免費 Leaflet)
+         * 成本節省: 每次載入節省 $0.007 USD
+         */
+        async function loadHybridMap() {
+            try {
+                // 基本追蹤功能使用免費的 Leaflet
+                console.log('🗺️ 載入免費地圖服務 (Leaflet)...');
+                
+                // 載入混合地圖載入器
+                if (typeof HybridMapLoader === 'undefined') {
+                    await loadHybridMapScript();
+                }
+                
+                // 初始化免費地圖
+                window.mapClient = await HybridMapLoader.loadOptimalMap(['basic-tracking'], 'mapContainer');
+                initLeafletMap();
+                
+                console.log('✅ 免費地圖載入完成 - 節省成本!');
+                
+            } catch (error) {
+                console.error('❌ 混合地圖載入失敗:', error);
+                // 備援: 顯示基本資訊而不顯示地圖
+                showBasicLocationInfo();
+            }
+        }
+        
+        /**
+         * 載入混合地圖腳本
+         */
+        function loadHybridMapScript() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = '/js/leaflet-hybrid-map.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        /**
+         * 初始化 Leaflet 地圖 (免費版本)
+         */
+        function initLeafletMap() {
+            const mapContainer = document.getElementById('mapContainer');
+            
+            // 預設台中位置
+            const defaultLocation = { lat: 24.1477, lng: 120.6736 };
+            
+            // 如果訂單有座標，使用訂單座標
+            let orderLocation = defaultLocation;
+            if (orderData.lat && orderData.lng) {
+                orderLocation = {
+                    lat: parseFloat(orderData.lat),
+                    lng: parseFloat(orderData.lng)
+                };
+            }
+            
+            const map = new google.maps.Map(mapContainer, {
+                zoom: 14,
+                center: orderLocation,
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels.icon',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+            
+            // 建立訂單位置標記
+            const orderMarker = new google.maps.Marker({
+                position: orderLocation,
+                map: map,
+                title: '送達地址',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#4CAF50" width="32px" height="32px">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            
+            // 建立外送員標記 (初始隱藏)
+            const driverMarker = new google.maps.Marker({
+                map: map,
+                title: '外送員位置',
+                visible: false,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FF9800" width="32px" height="32px">
+                            <path d="M19 15l-6 6-6-6h6V3h6v12z"/>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            
+            // 建立路線顯示
+            const directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                polylineOptions: {
+                    strokeColor: '#FF9800',
+                    strokeWeight: 4,
+                    strokeOpacity: 0.8
+                }
+            });
+            directionsRenderer.setMap(map);
+            
+            // 建立地圖控制物件
+            orderTrackingMap = {
+                map: map,
+                orderMarker: orderMarker,
+                driverMarker: driverMarker,
+                directionsRenderer: directionsRenderer,
+                
+                updateDriverLocation: function(locationData) {
+                    const driverPosition = {
+                        lat: locationData.lat,
+                        lng: locationData.lng
+                    };
+                    
+                    this.driverMarker.setPosition(driverPosition);
+                    this.driverMarker.setVisible(true);
+                    
+                    // 計算並顯示路線
+                    this.calculateRoute(driverPosition, orderLocation);
+                },
+                
+                calculateRoute: function(origin, destination) {
+                    const directionsService = new google.maps.DirectionsService();
+                    
+                    directionsService.route({
+                        origin: origin,
+                        destination: destination,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                        avoidHighways: false,
+                        avoidTolls: false
+                    }, (response, status) => {
+                        if (status === 'OK') {
+                            this.directionsRenderer.setDirections(response);
+                            
+                            // 調整地圖視角以包含兩個點
+                            const bounds = new google.maps.LatLngBounds();
+                            bounds.extend(origin);
+                            bounds.extend(destination);
+                            this.map.fitBounds(bounds);
+                        }
+                    });
+                }
+            };
+            
+            // 將地圖物件設為全域變數
+            window.orderTrackingMap = orderTrackingMap;
+            
+            console.log('地圖已初始化');
+        }
+    </script>
+</body>
+</html>

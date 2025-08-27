@@ -28,10 +28,18 @@ class RouteOptimizationService {
       optimizationInterval: 300000, // 5分鐘間隔
       maxRetries: 3
     };
+
+    // 💰 成本優化配置 - 第一階段：距離計算免費化
+    this.costOptimizationConfig = {
+      useHaversineDistance: true, // 使用免費Haversine計算替代Google Distance Matrix
+      useGoogleBackup: true,      // 保留Google作為備援
+      logSavings: true            // 記錄成本節省
+    };
     
     // 上次優化時間記錄
     this.lastOptimizationTime = null;
     this.isOptimizing = false;
+    this.dailySavings = { apiCalls: 0, estimatedCost: 0 }; // 記錄節省統計
   }
 
   /**

@@ -1,9 +1,11 @@
 // =====================================
 // Google Maps 服務
 // 提供地理編碼、距離計算、路線規劃等功能
+// 第二階段優化：整合混合地理編碼服務
 // =====================================
 
 const axios = require('axios');
+const HybridGeocodingService = require('./HybridGeocodingService');
 
 class GoogleMapsService {
   constructor(pool = null) {
@@ -12,9 +14,14 @@ class GoogleMapsService {
     this.baseUrl = 'https://maps.googleapis.com/maps/api';
     this.pool = pool; // 資料庫連線池
     
+    // 🆓 第二階段：初始化混合地理編碼服務
+    this.hybridGeocodingService = new HybridGeocodingService(this);
+    
     if (!this.apiKey) {
       console.warn('⚠️ Google Maps API Key 未設定，將使用模擬資料');
     }
+    
+    console.log('🔀 GoogleMapsService 已啟用混合地理編碼 (優先免費服務)');
   }
   
   /**
@@ -26,47 +33,53 @@ class GoogleMapsService {
   }
 
   /**
-   * 批量地理編碼
+   * 批量地理編碼 - 第二階段優化版本
+   * 優先使用免費服務，智能備援Google服務
    * @param {Array} orders - 需要地理編碼的訂單
    */
   async batchGeocode(orders) {
-    console.log(`📍 開始批量地理編碼 ${orders.length} 個地址...`);
+    console.log(`🔀 開始混合批量地理編碼 ${orders.length} 個地址...`);
     
     if (!this.apiKey) {
       return this.mockBatchGeocode(orders);
     }
 
     const results = [];
-    const batchSize = 25; // Google Maps API 每次請求限制
     
     try {
-      for (let i = 0; i < orders.length; i += batchSize) {
-        const batch = orders.slice(i, i + batchSize);
+      // 🆓 使用混合地理編碼服務進行批量處理
+      const addresses = orders.map(order => order.address);
+      const geocodeResults = await this.hybridGeocodingService.batchGeocode(addresses, {
+        maxGoogleRequests: Math.min(5, Math.ceil(orders.length * 0.1)), // 最多10%使用Google
+        prioritizeImportant: true
+      });
         
-        // 並行處理批次內的地址
-        const batchPromises = batch.map(order => this.geocodeAddress(order.address));
-        const batchResults = await Promise.all(batchPromises);
+      // 處理結果並更新訂單的地理位置
+      for (let i = 0; i < orders.length; i++) {
+        const order = orders[i];
+        const result = geocodeResults[i];
         
-        // 更新訂單的地理位置
-        for (let j = 0; j < batch.length; j++) {
-          const result = batchResults[j];
-          if (result.success) {
-            // 更新資料庫中的訂單位置
-            await this.updateOrderLocation(batch[j].id, result);
-            results.push({ orderId: batch[j].id, ...result });
-          } else {
-            console.error(`地理編碼失敗: ${batch[j].address} - ${result.error}`);
-            results.push({ orderId: batch[j].id, success: false, error: result.error });
-          }
-        }
-        
-        // 避免超過 API 配額限制
-        if (i + batchSize < orders.length) {
-          await this.delay(100); // 100ms 延遲
+        if (result.success) {
+          // 更新資料庫中的訂單位置
+          await this.updateOrderLocation(order.id, result);
+          results.push({ 
+            orderId: order.id, 
+            ...result,
+            serviceUsed: result.hybridSource || 'unknown' // 記錄使用的服務
+          });
+        } else {
+          console.error(`地理編碼失敗: ${order.address} - ${result.error}`);
+          results.push({ orderId: order.id, success: false, error: result.error });
         }
       }
       
-      console.log(`✅ 批量地理編碼完成，成功 ${results.filter(r => r.success).length}/${results.length}`);
+      const successCount = results.filter(r => r.success).length;
+      const freeCount = results.filter(r => r.serviceUsed === 'free').length;
+      const googleCount = results.filter(r => r.serviceUsed === 'google').length;
+      
+      console.log(`✅ 混合批量地理編碼完成: ${successCount}/${results.length} 成功`);
+      console.log(`💰 服務使用分布: ${freeCount} 免費服務, ${googleCount} Google服務`);
+      
       return results;
       
     } catch (error) {
@@ -76,7 +89,8 @@ class GoogleMapsService {
   }
 
   /**
-   * 單個地址地理編碼
+   * 單個地址地理編碼 - 第二階段優化版本
+   * 優先使用免費服務，智能備援Google服務
    * @param {string} address - 地址
    */
   async geocodeAddress(address) {
@@ -84,63 +98,22 @@ class GoogleMapsService {
       return { success: false, error: '無效的地址' };
     }
 
-    // 檢查快取
-    const cachedResult = await this.getCachedGeocode(address);
-    if (cachedResult) {
-      await this.updateCacheHitCount(address);
-      return { success: true, ...cachedResult };
-    }
-
-    if (!this.apiKey) {
-      return this.mockGeocode(address);
-    }
+    console.log(`🔀 混合地理編碼: ${address}`);
 
     try {
-      const response = await axios.get(`${this.baseUrl}/geocode/json`, {
-        params: {
-          address: address,
-          key: this.apiKey,
-          language: 'zh-TW',
-          region: 'tw'
-        },
-        timeout: 10000
-      });
-
-      const data = response.data;
+      // 🆓 優先使用混合地理編碼服務
+      const result = await this.hybridGeocodingService.geocodeAddress(address);
       
-      if (data.status === 'OK' && data.results.length > 0) {
-        const result = data.results[0];
-        const location = result.geometry.location;
-        
-        const geocodeResult = {
-          lat: location.lat,
-          lng: location.lng,
-          formatted_address: result.formatted_address,
-          place_id: result.place_id,
-          address_components: result.address_components,
-          geometry_type: result.geometry.location_type,
-          location_type: result.types
-        };
-
-        // 儲存到快取
-        await this.cacheGeocodeResult(address, geocodeResult);
-        
-        return { success: true, ...geocodeResult };
+      if (result.success) {
+        console.log(`✅ 混合地理編碼成功 (${result.hybridSource}): ${address}`);
+        return result;
       } else {
-        const error = `地理編碼失敗: ${data.status}`;
-        console.warn(error, address);
-        return { success: false, error };
+        console.warn(`⚠️ 混合地理編碼失敗: ${address} - ${result.error}`);
+        return result;
       }
       
     } catch (error) {
-      console.error('Google Maps API 錯誤:', error.message);
-      
-      // API 失敗時使用模擬資料
-      if (error.response?.status === 429) {
-        console.warn('API 配額已用完，使用模擬資料');
-        return this.mockGeocode(address);
-      }
-      
+      console.error('混合地理編碼錯誤:', error.message);
       return { success: false, error: error.message };
     }
   }
