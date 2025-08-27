@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 網站版本檢查工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
+            color: #2d4a3a;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(45, 90, 61, 0.15);
+            margin-bottom: 20px;
+        }
+        
+        h1 { color: #2d5a3d; text-align: center; }
+        h2 { color: #2d5a3d; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        
+        .status { padding: 12px; border-radius: 8px; margin: 10px 0; font-weight: 600; }
+        .status.success { background: #e8f5e8; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .status.error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .status.warning { background: #fff3e0; color: #f57c00; border: 1px solid #ffcc02; }
+        .status.info { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+        
+        .button {
+            background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+            color: white; border: none; padding: 12px 20px; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(124, 179, 66, 0.4); }
+        
+        .code-block {
+            background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0;
+            font-family: monospace; white-space: pre-wrap; max-height: 200px; overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+        
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px; margin: 20px 0;
+        }
+        
+        .metric { background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; }
+        .metric-value { font-size: 24px; font-weight: 700; color: #7cb342; }
+        .metric-label { font-size: 12px; color: #666; margin-top: 5px; }
+        
+        .back-link { display: inline-block; margin-top: 20px; color: #7cb342; text-decoration: none; font-weight: 600; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 承億蔬果外送 - 網站版本檢查工具</h1>
+        
+        <div class="status info" id="check-status">
+            🔄 正在檢查網站版本...
+        </div>
+        
+        <div class="grid">
+            <div class="metric">
+                <div class="metric-value" id="css-status">-</div>
+                <div class="metric-label">CSS檔案狀態</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="js-status">-</div>
+                <div class="metric-label">JS檔案狀態</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="cache-status">-</div>
+                <div class="metric-label">瀏覽器快取</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="version-status">-</div>
+                <div class="metric-label">版本狀態</div>
+            </div>
+        </div>
+        
+        <button class="button" onclick="checkAllFiles()">🔍 檢查所有檔案</button>
+        <button class="button" onclick="clearAllCache()">🧹 清除快取</button>
+        <button class="button" onclick="forceReload()">🔄 強制重新載入</button>
+    </div>
+
+    <div class="card">
+        <h2>📋 檢查結果</h2>
+        <div id="results-container">
+            <div class="status info">點擊上方按鈕開始檢查...</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🛠️ 除錯信息</h2>
+        <div id="debug-info">
+            <div><strong>User Agent:</strong> <span id="user-agent"></span></div>
+            <div><strong>Screen Size:</strong> <span id="screen-size"></span></div>
+            <div><strong>Viewport:</strong> <span id="viewport-size"></span></div>
+            <div><strong>Device Type:</strong> <span id="device-type"></span></div>
+            <div><strong>Current URL:</strong> <span id="current-url"></span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>💡 解決方案</h2>
+        <div id="solutions">
+            <h3>手機版快取清除方法：</h3>
+            <ul>
+                <li><strong>Chrome (Android):</strong> 設定 → 隱私權 → 清除瀏覽資料 → 選擇「快取圖片和檔案」</li>
+                <li><strong>Safari (iOS):</strong> 設定 → Safari → 清除記錄與網站資料</li>
+                <li><strong>通用方法:</strong> 在網址列輸入 <code>about:blank</code> 後重新輸入網址</li>
+                <li><strong>強制重新整理:</strong> 長按重新整理按鈕，選擇「硬性重新整理」</li>
+            </ul>
+            
+            <h3>確認新版本的方法：</h3>
+            <ol>
+                <li>開啟購物車，檢查標題旁是否有🧹按鈕</li>
+                <li>商品卡片應該沒有圖片，只有文字信息</li>
+                <li>購物車佈局應該是三層結構（標題、選項、數量+價格）</li>
+            </ol>
+        </div>
+    </div>
+
+    <a href="https://chengyivegetable.vercel.app" class="back-link">
+        ← 返回承億蔬果外送網站
+    </a>
+
+    <script>
+        // 初始化頁面
+        window.onload = function() {
+            updateDebugInfo();
+            setTimeout(checkAllFiles, 1000);
+        };
+
+        function updateDebugInfo() {
+            document.getElementById('user-agent').textContent = navigator.userAgent;
+            document.getElementById('screen-size').textContent = `${screen.width}x${screen.height}`;
+            document.getElementById('viewport-size').textContent = `${window.innerWidth}x${window.innerHeight}`;
+            
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            let deviceType = 'Desktop';
+            if (isIOS) deviceType = 'iOS';
+            else if (isAndroid) deviceType = 'Android';
+            else if (isMobile) deviceType = 'Mobile';
+            
+            document.getElementById('device-type').textContent = deviceType;
+            document.getElementById('current-url').textContent = window.location.href;
+        }
+
+        async function checkAllFiles() {
+            const status = document.getElementById('check-status');
+            const results = document.getElementById('results-container');
+            
+            status.className = 'status info';
+            status.innerHTML = '🔄 正在檢查檔案...';
+            
+            let resultsHtml = '';
+            
+            // 檢查CSS檔案
+            try {
+                const cssResponse = await fetch('https://chengyivegetable.vercel.app/css/cart-optimized.css', {
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (cssResponse.ok) {
+                    resultsHtml += '<div class="status success">✅ cart-optimized.css 存在且可訪問</div>';
+                    document.getElementById('css-status').textContent = '✅';
+                } else {
+                    resultsHtml += '<div class="status error">❌ cart-optimized.css 不可訪問</div>';
+                    document.getElementById('css-status').textContent = '❌';
+                }
+            } catch (e) {
+                resultsHtml += '<div class="status error">❌ CSS檔案檢查失敗: ' + e.message + '</div>';
+                document.getElementById('css-status').textContent = '❌';
+            }
+
+            // 檢查JS檔案
+            try {
+                const jsResponse = await fetch('https://chengyivegetable.vercel.app/js/mobile-enhancements.js', {
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (jsResponse.ok) {
+                    resultsHtml += '<div class="status success">✅ mobile-enhancements.js 存在且可訪問</div>';
+                    document.getElementById('js-status').textContent = '✅';
+                } else {
+                    resultsHtml += '<div class="status error">❌ mobile-enhancements.js 不可訪問</div>';
+                    document.getElementById('js-status').textContent = '❌';
+                }
+            } catch (e) {
+                resultsHtml += '<div class="status error">❌ JS檔案檢查失敗: ' + e.message + '</div>';
+                document.getElementById('js-status').textContent = '❌';
+            }
+
+            // 檢查主頁面
+            try {
+                const pageResponse = await fetch('https://chengyivegetable.vercel.app', {
+                    cache: 'no-cache'
+                });
+                
+                if (pageResponse.ok) {
+                    const pageContent = await pageResponse.text();
+                    
+                    if (pageContent.includes('cart-optimized.css')) {
+                        resultsHtml += '<div class="status success">✅ 主頁面已引用新CSS</div>';
+                    } else {
+                        resultsHtml += '<div class="status warning">⚠️ 主頁面可能未引用新CSS</div>';
+                    }
+                    
+                    if (pageContent.includes('mobile-enhancements.js')) {
+                        resultsHtml += '<div class="status success">✅ 主頁面已引用新JS</div>';
+                    } else {
+                        resultsHtml += '<div class="status warning">⚠️ 主頁面可能未引用新JS</div>';
+                    }
+                    
+                    if (pageContent.includes('clearCartData')) {
+                        resultsHtml += '<div class="status success">✅ 新的清除功能已部署</div>';
+                        document.getElementById('version-status').textContent = '最新';
+                    } else {
+                        resultsHtml += '<div class="status error">❌ 新功能未部署或快取問題</div>';
+                        document.getElementById('version-status').textContent = '舊版';
+                    }
+                }
+            } catch (e) {
+                resultsHtml += '<div class="status error">❌ 主頁面檢查失敗: ' + e.message + '</div>';
+            }
+
+            // 檢查localStorage
+            try {
+                const cartData = localStorage.getItem('cart');
+                if (cartData) {
+                    const cart = JSON.parse(cartData);
+                    resultsHtml += `<div class="status warning">⚠️ 發現舊購物車資料 (${cart.length} 項目)</div>`;
+                    document.getElementById('cache-status').textContent = '有資料';
+                } else {
+                    resultsHtml += '<div class="status success">✅ 購物車資料已清空</div>';
+                    document.getElementById('cache-status').textContent = '已清空';
+                }
+            } catch (e) {
+                resultsHtml += '<div class="status info">ℹ️ localStorage檢查: ' + e.message + '</div>';
+                document.getElementById('cache-status').textContent = '錯誤';
+            }
+
+            results.innerHTML = resultsHtml;
+            
+            status.className = 'status success';
+            status.innerHTML = '✅ 檢查完成！';
+        }
+
+        function clearAllCache() {
+            try {
+                // 清除localStorage
+                localStorage.clear();
+                
+                // 清除sessionStorage
+                sessionStorage.clear();
+                
+                // 嘗試清除service worker快取
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(registration => registration.unregister());
+                    });
+                }
+                
+                alert('✅ 快取已清除！建議重新載入頁面。');
+                document.getElementById('cache-status').textContent = '已清空';
+                
+            } catch (e) {
+                alert('❌ 清除快取時發生錯誤: ' + e.message);
+            }
+        }
+
+        function forceReload() {
+            // 強制重新載入，忽略快取
+            window.location.reload(true);
+        }
+
+        // 定期更新檢查
+        setInterval(() => {
+            if (document.getElementById('version-status').textContent !== '最新') {
+                checkAllFiles();
+            }
+        }, 30000); // 每30秒檢查一次
+    </script>
+</body>
+</html>
