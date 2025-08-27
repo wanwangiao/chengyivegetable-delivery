@@ -1194,6 +1194,85 @@
         font-size: 1rem;
       }
     }
+
+    /* =================================================
+       🛒 購物車響應式優化
+       ================================================= */
+    @media (max-width: 480px) {
+      /* 購物車項目在小屏幕上的調整 */
+      .cart-item-horizontal {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.8rem !important;
+        padding: 1rem !important;
+      }
+      
+      .cart-item-image {
+        width: 50px !important;
+        height: 50px !important;
+        align-self: flex-start !important;
+      }
+      
+      .cart-item-info {
+        flex: none !important;
+        width: 100% !important;
+      }
+      
+      .cart-quantity-controls {
+        justify-content: center !important;
+        padding: 0.5rem !important;
+      }
+      
+      .cart-subtotal-column {
+        text-align: center !important;
+        margin: 0 !important;
+      }
+    }
+
+    /* 在手機上使用橫向佈局優化 */
+    @media (min-width: 320px) {
+      .horizontal-cart-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.8rem;
+        min-height: 80px;
+      }
+      
+      .horizontal-cart-item .cart-image {
+        flex-shrink: 0;
+        width: 55px;
+        height: 55px;
+      }
+      
+      .horizontal-cart-item .cart-info {
+        flex: 1;
+        min-width: 0;
+      }
+      
+      .horizontal-cart-item .cart-controls {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .horizontal-cart-item .cart-quantity {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: rgba(124, 179, 66, 0.05);
+        border-radius: 15px;
+        padding: 0.2rem;
+      }
+      
+      .horizontal-cart-item .cart-subtotal {
+        min-width: 50px;
+        text-align: center;
+        font-weight: 700;
+        color: #7cb342;
+      }
+    }
   </style>
 </head>
 
@@ -1940,48 +2019,91 @@
         subtotal += itemTotal;
         
         return `
-          <div style="display: flex; align-items: center; gap: 1.2rem; padding: 1.2rem; 
-                      background: rgba(124, 179, 66, 0.05); border-radius: 16px; margin-bottom: 1rem; 
-                      border: 1px solid rgba(124, 179, 66, 0.1);">
+          <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; 
+                      background: white; border-radius: 16px; margin-bottom: 1rem; 
+                      border: 1px solid rgba(124, 179, 66, 0.2); box-shadow: 0 2px 10px rgba(45, 90, 61, 0.08);
+                      transition: all 0.3s ease;" 
+                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 20px rgba(45, 90, 61, 0.12)'"
+                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 10px rgba(45, 90, 61, 0.08)'">
             
-            <div style="font-size: 2.5rem; flex-shrink: 0; width: 60px; text-align: center;">
+            <!-- 🖼️ 商品圖片區域 -->
+            <div style="flex-shrink: 0; width: 65px; height: 65px; display: flex; align-items: center; justify-content: center;
+                        background: linear-gradient(135deg, #f8fffe, #f1f8f6); border-radius: 12px; 
+                        border: 1px solid rgba(124, 179, 66, 0.15);">
               ${typeof item.image === 'string' && item.image.startsWith('/uploads/') ? 
-                `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 10px;">` : 
-                item.image}
+                `<img src="${item.image}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 8px;">` : 
+                `<div style="font-size: 2.2rem;">${item.image}</div>`}
             </div>
             
-            <div style="flex: 1; cursor: pointer;" onclick="openCartItemDetail(${index})">
-              <h4 style="margin: 0 0 0.5rem 0; font-weight: 600; font-size: 1.1rem;">${item.name}</h4>
-              <div style="font-size: 1.2rem; font-weight: 700; color: #7cb342;">
+            <!-- 📝 商品資訊區域 -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; cursor: pointer;" 
+                 onclick="openCartItemDetail(${index})">
+              <h4 style="margin: 0; font-weight: 600; font-size: 1rem; line-height: 1.3; color: var(--text-primary);
+                         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
+                  title="${item.name}">${item.name}</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <div style="font-size: 1.1rem; font-weight: 700; color: #7cb342;">
+                  ${item.is_priced_item ? '💰 時價' : '$' + itemTotal}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.2;">
+                  ${item.is_priced_item ? '📏 依重量計算' : '🔢 ' + item.quantity + ' ' + item.unit + ' × $' + item.price}
+                </div>
+              </div>
+              
+              <div style="font-size: 0.75rem; color: #7cb342; font-weight: 500; margin-top: 0.2rem;">
+                ✏️ 點擊編輯
+              </div>
+            </div>
+            
+            <!-- 🎛️ 數量控制器 -->
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+                        background: rgba(124, 179, 66, 0.05); border-radius: 20px; padding: 0.3rem;
+                        border: 1px solid rgba(124, 179, 66, 0.15);">
+              
+              <button onclick="event.stopPropagation(); updateCartQuantity(${index}, -1)" 
+                      style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #7cb342; 
+                             background: white; color: #7cb342; font-size: 1rem; font-weight: bold; 
+                             cursor: pointer; display: flex; align-items: center; justify-content: center;
+                             transition: all 0.2s ease;" 
+                      ${item.quantity <= 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}
+                      onmouseover="if(!this.disabled) { this.style.background='#7cb342'; this.style.color='white'; }"
+                      onmouseout="if(!this.disabled) { this.style.background='white'; this.style.color='#7cb342'; }">−</button>
+              
+              <div style="min-width: 32px; text-align: center; font-size: 0.95rem; font-weight: 700; 
+                          color: var(--text-primary); padding: 0.1rem;">${item.quantity}</div>
+              
+              <button onclick="event.stopPropagation(); updateCartQuantity(${index}, 1)" 
+                      style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #7cb342; 
+                             background: white; color: #7cb342; font-size: 1rem; font-weight: bold; 
+                             cursor: pointer; display: flex; align-items: center; justify-content: center;
+                             transition: all 0.2s ease;"
+                      onmouseover="this.style.background='#7cb342'; this.style.color='white'"
+                      onmouseout="this.style.background='white'; this.style.color='#7cb342'">+</button>
+            </div>
+            
+            <!-- 💲 小計金額 -->
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.2rem; 
+                        min-width: 60px; flex-shrink: 0;">
+              <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary); text-align: center;">
                 ${item.is_priced_item ? '時價' : '$' + itemTotal}
               </div>
-              <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                ${item.is_priced_item ? '依重量計算' : '$' + item.price + ' × ' + item.quantity + ' ' + item.unit}
-              </div>
-              <div style="font-size: 0.8rem; color: #7cb342; margin-top: 0.3rem; font-weight: 500;">
-                ✏️ 點擊編輯細項
+              <div style="font-size: 0.7rem; color: var(--text-secondary); text-align: center;">
+                小計
               </div>
             </div>
             
-            <div style="display: flex; align-items: center; gap: 0.8rem;">
-              <button onclick="updateCartQuantity(${index}, -1)" 
-                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(124, 179, 66, 0.1); 
-                             border: 2px solid rgba(124, 179, 66, 0.2); color: #7cb342; cursor: pointer; 
-                             font-weight: bold; transition: all 0.3s ease;"
-                      ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
-              
-              <span style="min-width: 35px; text-align: center; font-weight: 700; font-size: 1.1rem;">${item.quantity}</span>
-              
-              <button onclick="updateCartQuantity(${index}, 1)" 
-                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(124, 179, 66, 0.1); 
-                             border: 2px solid rgba(124, 179, 66, 0.2); color: #7cb342; cursor: pointer; 
-                             font-weight: bold; transition: all 0.3s ease;">+</button>
-              
-              <button onclick="removeFromCart(${index})" 
-                      style="width: 36px; height: 36px; border-radius: 50%; background: rgba(244, 67, 54, 0.1); 
-                             border: 2px solid rgba(244, 67, 54, 0.2); color: #f44336; cursor: pointer; 
-                             font-weight: bold; transition: all 0.3s ease;">×</button>
-            </div>
+            <!-- 🗑️ 刪除按鈕 -->
+            <button onclick="event.stopPropagation(); removeFromCart(${index})" 
+                    style="width: 28px; height: 28px; border-radius: 50%; margin-left: 0.5rem;
+                           background: rgba(255, 87, 34, 0.1); border: 1px solid rgba(255, 87, 34, 0.2); 
+                           color: #ff5722; cursor: pointer; display: flex; align-items: center; 
+                           justify-content: center; font-size: 0.9rem; transition: all 0.2s ease;
+                           flex-shrink: 0;" 
+                    onmouseover="this.style.background='#ff5722'; this.style.color='white'"
+                    onmouseout="this.style.background='rgba(255, 87, 34, 0.1)'; this.style.color='#ff5722'"
+                    title="移除商品">🗑</button>
+            
           </div>
         `;
       }).join('');
