@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>結帳</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/checkout.css">
   </head>
   <body>
     <header>
@@ -22,35 +23,48 @@
           <div class="form-row">
             <div class="form-group">
               <label for="name">👤 姓名 *</label>
-              <input type="text" id="name" required placeholder="請輸入您的姓名">
+              <input type="text" id="name" required 
+                     placeholder="請輸入您的姓名" 
+                     minlength="2" 
+                     autocomplete="name">
+              <div class="field-error" id="name-error"></div>
             </div>
             <div class="form-group">
               <label for="phone">📱 手機 *</label>
-              <input type="tel" id="phone" required placeholder="09xxxxxxxx" pattern="09[0-9]{8}">
+              <input type="tel" id="phone" required 
+                     placeholder="09xxxxxxxx" 
+                     pattern="09[0-9]{8}"
+                     autocomplete="tel">
+              <div class="field-error" id="phone-error"></div>
             </div>
           </div>
           
           <div class="form-group">
             <label for="address">📍 送貨地址 *</label>
-            <input type="text" id="address" required placeholder="請輸入完整地址（含縣市區）">
+            <input type="text" id="address" required 
+                   placeholder="請輸入完整地址（含縣市區道路號碼）" 
+                   minlength="8"
+                   autocomplete="street-address">
+            <div class="field-error" id="address-error"></div>
           </div>
           
           <div class="form-group">
             <label for="notes">💬 備註</label>
-            <textarea id="notes" rows="3" placeholder="有任何特殊需求請在此註明"></textarea>
-          </div>
-          
-          <div class="form-group">
+            <textarea id="notes" rows="3" 
+                      placeholder="有任何特殊需求請在此註明（如：不要太辣、樓層資訊等）"
+                      maxlength="200"></textarea>
+            <div class="char-count" id="notes-count">0/200</div>
           </div>
           
           <div class="form-group">
             <label for="paymentMethod">💳 付款方式 *</label>
             <select id="paymentMethod" required>
               <option value="">請選擇付款方式</option>
-              <option value="cash">💰 現金付款</option>
-              <option value="linepay">📱 LINE Pay</option>
-              <option value="bank_transfer">🏦 銀行轉帳</option>
+              <option value="cash">💰 現金付款（貨到付款）</option>
+              <option value="linepay">📱 LINE Pay（線上支付）</option>
+              <option value="bank_transfer">🏦 銀行轉帳（需提供轉帳證明）</option>
             </select>
+            <div class="field-error" id="payment-error"></div>
           </div>
           
           <div class="info-box">
@@ -150,6 +164,129 @@
           });
       }
       renderOrder();
+      
+      // 🎯 實時表單驗證和用戶體驗優化
+      setupFormValidation();
+      
+      // 字符計數器
+      const notesTextarea = document.getElementById('notes');
+      const notesCount = document.getElementById('notes-count');
+      
+      notesTextarea.addEventListener('input', function() {
+        const length = this.value.length;
+        notesCount.textContent = `${length}/200`;
+        
+        notesCount.className = 'char-count';
+        if (length > 160) notesCount.classList.add('warning');
+        if (length > 190) notesCount.classList.add('danger');
+      });
+      
+      function setupFormValidation() {
+        const form = document.getElementById('checkout-form');
+        const nameInput = document.getElementById('name');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+        const paymentSelect = document.getElementById('paymentMethod');
+        
+        // 實時驗證姓名
+        nameInput.addEventListener('blur', validateName);
+        nameInput.addEventListener('input', clearError.bind(null, 'name'));
+        
+        // 實時驗證手機
+        phoneInput.addEventListener('blur', validatePhone);
+        phoneInput.addEventListener('input', clearError.bind(null, 'phone'));
+        
+        // 實時驗證地址
+        addressInput.addEventListener('blur', validateAddress);
+        addressInput.addEventListener('input', clearError.bind(null, 'address'));
+        
+        // 實時驗證付款方式
+        paymentSelect.addEventListener('change', validatePayment);
+      }
+      
+      function showFieldError(fieldId, message) {
+        const errorElement = document.getElementById(fieldId + '-error');
+        if (errorElement) {
+          errorElement.textContent = message;
+          errorElement.classList.add('show');
+        }
+      }
+      
+      function clearError(fieldId) {
+        const errorElement = document.getElementById(fieldId + '-error');
+        if (errorElement) {
+          errorElement.classList.remove('show');
+        }
+      }
+      
+      function validateName() {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+          showFieldError('name', '請輸入您的姓名');
+          return false;
+        }
+        if (name.length < 2) {
+          showFieldError('name', '姓名至少需要2個字元');
+          return false;
+        }
+        if (name.length > 20) {
+          showFieldError('name', '姓名不能超過20個字元');
+          return false;
+        }
+        if (!/^[a-zA-Z\u4e00-\u9fa5\s]+$/.test(name)) {
+          showFieldError('name', '姓名只能包含中文、英文和空格');
+          return false;
+        }
+        clearError('name');
+        return true;
+      }
+      
+      function validatePhone() {
+        const phone = document.getElementById('phone').value.trim();
+        if (!phone) {
+          showFieldError('phone', '請輸入手機號碼');
+          return false;
+        }
+        if (!/^09\d{8}$/.test(phone)) {
+          showFieldError('phone', '請輸入正確的手機號碼格式（09xxxxxxxx）');
+          return false;
+        }
+        clearError('phone');
+        return true;
+      }
+      
+      function validateAddress() {
+        const address = document.getElementById('address').value.trim();
+        if (!address) {
+          showFieldError('address', '請輸入送貨地址');
+          return false;
+        }
+        if (address.length < 8) {
+          showFieldError('address', '請輸入完整地址（至少8個字元）');
+          return false;
+        }
+        if (address.length > 100) {
+          showFieldError('address', '地址不能超過100個字元');
+          return false;
+        }
+        // 簡單檢查是否包含常見地址元素
+        if (!/[\u4e00-\u9fa5]{2,}(市|縣|區|鄉|鎮|路|街|巷|弄|號)/.test(address)) {
+          showFieldError('address', '請輸入有效的台灣地址格式');
+          return false;
+        }
+        clearError('address');
+        return true;
+      }
+      
+      function validatePayment() {
+        const payment = document.getElementById('paymentMethod').value;
+        if (!payment) {
+          showFieldError('payment', '請選擇付款方式');
+          return false;
+        }
+        clearError('payment');
+        return true;
+      }
 
       document.getElementById('checkout-form').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -174,27 +311,14 @@
         const notes = document.getElementById('notes').value.trim();
         const paymentMethod = document.getElementById('paymentMethod').value;
         
-        // 前端驗證
-        if (!name || name.length < 2) {
-          showMessage('姓名至少需要2個字元', 'error');
-          resetButton();
-          return;
-        }
+        // 前端統一驗證
+        const isNameValid = validateName();
+        const isPhoneValid = validatePhone();
+        const isAddressValid = validateAddress();
+        const isPaymentValid = validatePayment();
         
-        if (!phone.match(/^09\d{8}$/)) {
-          showMessage('請輸入正確的手機號碼格式（09xxxxxxxx）', 'error');
-          resetButton();
-          return;
-        }
-        
-        if (!address || address.length < 5) {
-          showMessage('地址至少需要5個字元', 'error');
-          resetButton();
-          return;
-        }
-        
-        if (!paymentMethod) {
-          showMessage('請選擇付款方式', 'error');
+        if (!isNameValid || !isPhoneValid || !isAddressValid || !isPaymentValid) {
+          showMessage('請修正表單中的錯誤後再提交', 'error');
           resetButton();
           return;
         }

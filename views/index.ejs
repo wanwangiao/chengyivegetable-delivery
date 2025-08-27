@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>誠意鮮蔬｜新鮮蔬果外送 - 手機版</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/cart-modal.css">
   </head>
   <body>
     <!-- 頂部導航 -->
@@ -164,21 +165,49 @@
           <span class="cart-total">合計: $<span id="cart-subtotal">0</span> 元</span>
           <span class="cart-note">來去結帳</span>
         </div>
-        <button class="checkout-btn" id="checkout-btn" onclick="goToCheckout()">
-          <span class="checkout-arrow">▶</span>
+        <button class="checkout-btn" id="checkout-btn" onclick="showCartModal()">
+          <span class="checkout-arrow">🛒</span>
         </button>
       </div>
     </div>
 
-    <!-- 購物車詳情彈窗（隱藏） -->
-    <div class="cart-details" id="cart-details" style="display: none;">
+    <!-- 🛒 新版購物車模態框 -->
+    <div class="cart-modal-overlay" id="cart-modal-overlay">
       <div class="cart-header">
-        <h3>購物車明細</h3>
-        <button class="close-cart" onclick="closeCartDetails()">✕</button>
+        <h3 class="cart-title">
+          🛒 購物車
+          <span class="cart-item-count" id="cart-item-count">0</span>
+        </h3>
+        <button class="cart-close-btn" onclick="closeCartModal()">✕</button>
       </div>
-      <ul id="cart-list" class="cart-items"></ul>
-      <div class="cart-footer">
-        <p class="cart-note-text">（計價商品將於秤重後更新金額）</p>
+      
+      <div class="cart-content" id="cart-content">
+        <!-- 購物車商品列表將動態生成 -->
+      </div>
+      
+      <div class="cart-footer" id="cart-footer">
+        <div id="minimum-order-notice" class="minimum-order-notice" style="display: none;">
+          ⚠️ 最低訂購金額為 $200 元
+        </div>
+        
+        <div class="cart-summary" id="cart-summary">
+          <div class="cart-summary-row">
+            <span class="cart-summary-label">小計</span>
+            <span class="cart-summary-value" id="cart-subtotal">$0</span>
+          </div>
+          <div class="cart-summary-row">
+            <span class="cart-summary-label">運費</span>
+            <span class="cart-summary-value" id="cart-delivery-fee">$50</span>
+          </div>
+          <div class="cart-summary-row">
+            <span class="cart-summary-label">總計</span>
+            <span class="cart-total-value" id="cart-total">$50</span>
+          </div>
+        </div>
+        
+        <button class="cart-checkout-btn" id="cart-checkout-btn" onclick="goToCheckout()">
+          🚀 前往結帳
+        </button>
       </div>
     </div>
 
@@ -341,14 +370,91 @@
         window.location.href = '/checkout';
       }
       
-      // 顯示購物車詳情
-      function showCartDetails() {
-        document.getElementById('cart-details').style.display = 'block';
+      // 🛒 顯示新版購物車模態框
+      function showCartModal() {
+        updateCartModal();
+        const modal = document.getElementById('cart-modal-overlay');
+        modal.classList.add('active');
       }
       
-      // 關閉購物車詳情
-      function closeCartDetails() {
-        document.getElementById('cart-details').style.display = 'none';
+      // 🛒 關閉購物車模態框
+      function closeCartModal() {
+        const modal = document.getElementById('cart-modal-overlay');
+        modal.classList.remove('active');
+      }
+      
+      // 🛒 移除購物車商品
+      function removeFromCart(productId, selectedUnit = null, selectedOptionId = null) {
+        const cart = getCart();
+        
+        // 尋找要移除的商品索引
+        const itemIndex = cart.findIndex(item => {
+          let matches = item.productId === productId;
+          if (selectedUnit) matches = matches && item.selectedUnit === selectedUnit;
+          if (selectedOptionId) matches = matches && item.selectedOptionId === selectedOptionId;
+          return matches;
+        });
+        
+        if (itemIndex > -1) {
+          // 添加移除動畫
+          const cartCard = document.querySelector(`[data-cart-index="${itemIndex}"]`);
+          if (cartCard) {
+            cartCard.classList.add('removing');
+            setTimeout(() => {
+              cart.splice(itemIndex, 1);
+              saveCart(cart);
+              updateCartModal();
+              updateCartSummary();
+              showNotification('商品已移除', 'success');
+            }, 400);
+          } else {
+            cart.splice(itemIndex, 1);
+            saveCart(cart);
+            updateCartModal();
+            updateCartSummary();
+            showNotification('商品已移除', 'success');
+          }
+        }
+      }
+      
+      // 🛒 調整購物車商品數量
+      function updateCartQuantity(productId, selectedUnit, selectedOptionId, newQuantity) {
+        if (newQuantity <= 0) {
+          removeFromCart(productId, selectedUnit, selectedOptionId);
+          return;
+        }
+        
+        const cart = getCart();
+        const item = cart.find(item => {
+          let matches = item.productId === productId;
+          if (selectedUnit) matches = matches && item.selectedUnit === selectedUnit;
+          if (selectedOptionId) matches = matches && item.selectedOptionId === selectedOptionId;
+          return matches;
+        });
+        
+        if (item) {
+          const oldQuantity = item.quantity;
+          item.quantity = newQuantity;
+          
+          // 如果是多顆商品，也要更新unitQuantity
+          if (item.selectedUnit && (item.selectedUnit.includes('5顆') || item.selectedUnit.includes('10顆'))) {
+            const multiplier = item.selectedUnit.includes('5顆') ? 5 : 10;
+            item.unitQuantity = newQuantity * multiplier;
+          } else {
+            item.unitQuantity = newQuantity;
+          }
+          
+          saveCart(cart);
+          updateCartModal();
+          updateCartSummary();
+          
+          // 添加數量變化動畫
+          const qtyDisplay = document.querySelector(`[data-product-id="${productId}"] .cart-qty-display`);
+          if (qtyDisplay) {
+            qtyDisplay.classList.add('changed');
+            setTimeout(() => qtyDisplay.classList.remove('changed'), 300);
+          }
+        }
       }
       
       function showNotification(message, type = 'info') {
@@ -389,46 +495,142 @@
         }
       `;
       document.head.appendChild(style);
+      // 🛒 更新購物車模態框內容
+      function updateCartModal() {
+        const cart = getCart();
+        const cartContent = document.getElementById('cart-content');
+        const cartItemCount = document.getElementById('cart-item-count');
+        
+        // 更新商品計數
+        cartItemCount.textContent = cart.length;
+        
+        if (cart.length === 0) {
+          cartContent.innerHTML = `
+            <div class="cart-empty">
+              <div class="cart-empty-icon">🛒</div>
+              <div class="cart-empty-text">購物車是空的</div>
+              <div class="cart-empty-hint">快去選購新鮮蔬果吧！</div>
+            </div>
+          `;
+          return;
+        }
+        
+        let html = '';
+        cart.forEach((item, index) => {
+          const product = products.find(p => p.id === item.productId);
+          if (!product) return;
+          
+          // 獲取商品圖片
+          let productImage = '🥬'; // 預設emoji
+          if (product.image_url && product.image_url.startsWith('/uploads/')) {
+            productImage = `<img src="${product.image_url}" alt="${product.name}">`;
+          } else if (product.image_url) {
+            productImage = product.image_url;
+          } else if (product.name.includes('番茄')) {
+            productImage = '🍅';
+          } else if (product.name.includes('胡蘿蔔')) {
+            productImage = '🥕';
+          } else if (product.name.includes('小黃瓜')) {
+            productImage = '🥒';
+          } else if (product.name.includes('洋蔥')) {
+            productImage = '🧅';
+          } else if (product.name.includes('玉米')) {
+            productImage = '🌽';
+          } else if (product.name.includes('馬鈴薯')) {
+            productImage = '🥔';
+          }
+          
+          // 計算價格
+          let priceDisplay = '';
+          let itemSubtotal = 0;
+          
+          if (product.is_priced_item) {
+            priceDisplay = '待秤重確認';
+          } else {
+            let basePrice = Number(product.price);
+            if (item.priceModifier) {
+              basePrice += Number(item.priceModifier);
+            }
+            itemSubtotal = basePrice * Number(item.quantity);
+            priceDisplay = `$${basePrice}`;
+          }
+          
+          html += `
+            <div class="cart-item-card" data-cart-index="${index}" data-product-id="${item.productId}">
+              <div class="cart-item-image">${productImage}</div>
+              
+              <div class="cart-item-info">
+                <div class="cart-item-name">${product.name}</div>
+                <div class="cart-item-price">${priceDisplay}</div>
+                ${item.selectedUnit ? `<div class="cart-item-unit">${item.selectedUnit}</div>` : ''}
+                ${product.is_priced_item ? '<div class="cart-item-badge">計價商品</div>' : ''}
+              </div>
+              
+              <div class="cart-item-controls">
+                <div class="cart-quantity-controls">
+                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+                  <div class="cart-qty-display">${item.quantity}</div>
+                  <button class="cart-qty-btn" onclick="updateCartQuantity(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}', ${item.quantity + 1})">+</button>
+                </div>
+                ${!product.is_priced_item ? `<div class="cart-item-subtotal">$${itemSubtotal}</div>` : ''}
+                <button class="cart-remove-btn" onclick="removeFromCart(${item.productId}, '${item.selectedUnit || ''}', '${item.selectedOptionId || ''}')">🗑</button>
+              </div>
+            </div>
+          `;
+        });
+        
+        cartContent.innerHTML = html;
+        updateCartSummary();
+      }
+      
+      // 🛒 更新購物車摘要（底部欄和結算區域）
       function updateCartSummary() {
         const cart = getCart();
-        let html = '';
         let subtotal = 0;
+        let hasVariableItems = false;
         
+        // 計算小計
         cart.forEach(item => {
           const product = products.find(p => p.id === item.productId);
           if (!product) return;
           
-          let line = `
-            <li class="cart-item">
-              <span class="item-name">${product.name}</span>
-              <span class="item-qty">× ${item.quantity}${item.selectedUnit ? ` (${item.selectedUnit})` : ''}</span>
-              <span class="item-price">`;
-          
           if (product.is_priced_item) {
-            line += '待確認';
+            hasVariableItems = true;
           } else {
-            const lineTotal = Number(product.price) * Number(item.quantity);
-            line += `$${lineTotal}`;
-            subtotal += lineTotal;
+            let basePrice = Number(product.price);
+            if (item.priceModifier) {
+              basePrice += Number(item.priceModifier);
+            }
+            subtotal += basePrice * Number(item.quantity);
           }
-          
-          line += '</span></li>';
-          html += line;
         });
         
-        // 更新購物車列表
-        const cartList = document.getElementById('cart-list');
-        if (cartList) {
-          cartList.innerHTML = html;
+        // 計算運費
+        const deliveryFee = subtotal >= 200 ? 0 : 50;
+        const total = subtotal + deliveryFee;
+        
+        // 更新底部購物車摘要
+        const cartSubtotalBottom = document.querySelector('#cart-bottom #cart-subtotal');
+        if (cartSubtotalBottom) {
+          cartSubtotalBottom.innerText = subtotal;
         }
         
-        // 更新小計
-        const cartSubtotal = document.getElementById('cart-subtotal');
-        if (cartSubtotal) {
-          cartSubtotal.innerText = subtotal;
+        // 更新模態框中的摘要
+        const cartSubtotalModal = document.getElementById('cart-subtotal');
+        const cartDeliveryFee = document.getElementById('cart-delivery-fee');
+        const cartTotal = document.getElementById('cart-total');
+        const minimumOrderNotice = document.getElementById('minimum-order-notice');
+        
+        if (cartSubtotalModal) cartSubtotalModal.textContent = `$${subtotal}`;
+        if (cartDeliveryFee) cartDeliveryFee.textContent = deliveryFee === 0 ? '免運費' : `$${deliveryFee}`;
+        if (cartTotal) cartTotal.textContent = `$${total}${hasVariableItems ? '+' : ''}`;
+        
+        // 顯示/隱藏最低訂購提示
+        if (minimumOrderNotice) {
+          minimumOrderNotice.style.display = subtotal > 0 && subtotal < 200 ? 'block' : 'none';
         }
         
-        // 顯示/隱藏購物車底欄
+        // 顯示/隱藏底部購物車
         const cartBottom = document.getElementById('cart-bottom');
         if (cartBottom) {
           cartBottom.style.display = cart.length > 0 ? 'block' : 'none';
