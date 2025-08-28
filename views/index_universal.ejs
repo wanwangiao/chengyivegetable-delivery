@@ -1372,7 +1372,8 @@
       announceToScreenReader('已加入 ' + product.name + ' 到購物車');
     }
     
-    function openProductDetail(productId) {
+    // 🎆 新版 MenuPapa 風格商品彈窗
+    function openProductModal(productId) {
       const product = products.find(p => p.id === productId);
       if (!product) return;
       
@@ -1382,53 +1383,129 @@
       
       title.textContent = product.name;
       
+      // 解析商品選項
+      let optionGroups = [];
+      if (product.has_options && product.option_groups) {
+        try {
+          const parsed = typeof product.option_groups === 'string' ? 
+                        JSON.parse(product.option_groups) : product.option_groups;
+          optionGroups = parsed.groups || [];
+        } catch (e) {
+          console.warn('解析商品選項失敗:', e);
+        }
+      }
+      
       body.innerHTML = `
-        <div style="text-align: center; margin-bottom: var(--spacing-lg);">
-          <div style="font-size: 4rem; margin-bottom: var(--spacing-md);" aria-hidden="true">
-            ${product.image_url || '🥬'}
+        <div style="text-align: center; padding: var(--spacing-lg);">
+          <!-- 🖼️ 商品大圖 -->
+          <div style="margin-bottom: var(--spacing-lg);">
+            ${product.image_url && product.image_url.startsWith('/uploads/') ? 
+              `<img src="${product.image_url}" style="width: 100%; max-width: 300px; height: 200px; object-fit: cover; border-radius: 12px;" alt="${product.name}">` :
+              `<div style="font-size: 8rem; margin: var(--spacing-lg) 0;">${product.image_url || '🥬'}</div>`
+            }
           </div>
-          <h3 style="font-size: var(--font-size-xxl); font-weight: 600; margin-bottom: var(--spacing-sm);">
+          
+          <!-- 📝 商品名稱 -->
+          <h3 style="font-size: var(--font-size-xxl); font-weight: 700; margin-bottom: var(--spacing-md); color: var(--text-primary);">
             ${product.name}
           </h3>
           
-          <div style="background-color: var(--surface-color); padding: var(--spacing-lg); border-radius: 8px; margin-bottom: var(--spacing-lg);">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); text-align: left;">
-              <div><strong>🌱 產地：</strong>台灣在地</div>
-              <div><strong>📦 包裝：</strong>環保包材</div>
-              <div><strong>🚚 配送：</strong>當日新鮮</div>
-              <div><strong>❄️ 保存：</strong>冷藏保鮮</div>
+          <!-- 📄 商品說明 -->
+          <div style="text-align: left; margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--surface-color); border-radius: 8px; color: var(--text-secondary); line-height: 1.6;">
+            ${product.description || (
+              product.is_priced_item ? '新鮮計價商品，秤重後確認價格' : '新鮮優質，精選品質保證'
+            )}
+          </div>
+          
+          <!-- 💰 價格資訊 -->
+          <div style="margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: rgba(124, 179, 66, 0.1); border-radius: 8px;">
+            <div style="font-size: var(--font-size-xxl); font-weight: 700; color: var(--accent-color);">
+              ${product.is_priced_item ? `時價 - $${product.price}/${product.unit_hint || '份'}` : `$${product.price} / ${product.unit_hint || '份'}`}
             </div>
+            ${product.is_priced_item ? 
+              '<div style="font-size: var(--font-size-small); color: var(--text-secondary); margin-top: var(--spacing-xs);">依重量計算，秤重後確認價格</div>' : ''
+            }
           </div>
           
-          <div style="font-size: var(--font-size-xxl); font-weight: 700; color: var(--accent-color); margin-bottom: var(--spacing-lg);">
-            ${product.is_priced_item ? '時價（依重量計算）' : '$' + product.price + ' / ' + (product.unit || '份')}
+          <!-- ⚙️ 商品選項 -->
+          <div id="product-options" style="text-align: left;">
+            ${optionGroups.map(group => `
+              <div style="margin-bottom: var(--spacing-lg);">
+                <h4 style="font-size: var(--font-size-large); font-weight: 600; margin-bottom: var(--spacing-md); color: var(--text-primary);">
+                  ${group.required ? '*' : ''} ${group.group_name}
+                </h4>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);">
+                  ${group.options.map(option => `
+                    <button type="button" 
+                            class="option-btn ${option.is_default ? 'selected' : ''}" 
+                            data-group-id="${group.group_id}"
+                            data-option-id="${option.option_id}"
+                            data-price-modifier="${option.price_modifier}"
+                            data-group-type="${group.group_type}"
+                            onclick="selectOption(this)"
+                            style="padding: var(--spacing-sm) var(--spacing-md); 
+                                   border: 2px solid var(--border-color); 
+                                   border-radius: 25px; 
+                                   background: ${option.is_default ? 'var(--accent-color)' : 'var(--background-color)'}; 
+                                   color: ${option.is_default ? 'white' : 'var(--text-primary)'}; 
+                                   cursor: pointer; 
+                                   transition: all 0.2s ease;
+                                   font-weight: 500;">
+                      ${option.name}${option.price_modifier > 0 ? ` +$${option.price_modifier}` : ''}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
           </div>
           
-          ${!product.is_priced_item ? `
-            <div style="display: flex; align-items: center; justify-content: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);" role="group" aria-label="數量選擇">
-              <button onclick="adjustQuantity(-1)" class="btn btn-secondary" aria-label="減少數量">−</button>
-              <div style="font-size: var(--font-size-xl); font-weight: 700; min-width: 60px; text-align: center; 
-                          padding: var(--spacing-sm); background-color: var(--surface-color); border-radius: 8px;"
-                   id="quantity-display" aria-live="polite">1</div>
-              <button onclick="adjustQuantity(1)" class="btn btn-secondary" aria-label="增加數量">+</button>
+          <!-- 📝 備註 -->
+          <div style="text-align: left; margin-bottom: var(--spacing-lg);">
+            <h4 style="font-size: var(--font-size-large); font-weight: 600; margin-bottom: var(--spacing-sm); color: var(--text-primary);">
+              備註
+            </h4>
+            <textarea id="product-note" 
+                      placeholder="在此輸入文字" 
+                      style="width: 100%; min-height: 80px; padding: var(--spacing-md); 
+                             border: 2px solid var(--border-color); border-radius: 8px; 
+                             font-family: inherit; resize: vertical;"></textarea>
+          </div>
+          
+          <!-- 🛒 購買控制 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md);">
+            <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+              <button onclick="adjustModalQuantity(-1)" 
+                      class="btn btn-secondary" 
+                      style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">−</button>
+              <div id="modal-quantity" 
+                   style="font-size: var(--font-size-xl); font-weight: 700; min-width: 40px; text-align: center;">1</div>
+              <button onclick="adjustModalQuantity(1)" 
+                      class="btn btn-secondary" 
+                      style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">+</button>
             </div>
             
-            <button onclick="addToCartFromModal(${productId})" class="btn btn-primary btn-large" style="width: 100%;">
-              加入購物車
+            <button onclick="addToCartFromModal(${productId})" 
+                    class="btn btn-primary" 
+                    style="flex: 1; padding: var(--spacing-md); font-size: var(--font-size-large); font-weight: 700;">
+              <span id="modal-total-price">$${product.price || 0}</span> 訂購
             </button>
-          ` : `
-            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
-              此商品為計價商品，實際價格依重量計算，請聯絡客服詢價。
-            </p>
-            <button class="btn btn-secondary btn-large" style="width: 100%;" onclick="contactService()">
-              聯絡客服詢價
-            </button>
-          `}
+          </div>
         </div>
       `;
       
+      // 初始化彈窗
+      window.currentModalProduct = product;
+      window.modalQuantity = 1;
+      window.selectedOptions = {};
+      updateModalPrice();
+      
       showModal(modal);
-      announceToScreenReader('已開啟 ' + product.name + ' 詳細資訊');
+      announceToScreenReader('已開啟 ' + product.name + ' 詳情');
+    }
+    
+    // 相容性別名
+    function openProductDetail(productId) {
+      openProductModal(productId);
     }
     
     let currentQuantity = 1;
@@ -1439,16 +1516,120 @@
       announceToScreenReader('數量已調整為 ' + currentQuantity);
     }
     
+    // 🎯 選項選擇功能
+    function selectOption(button) {
+      const groupId = button.dataset.groupId;
+      const optionId = button.dataset.optionId;
+      const groupType = button.dataset.groupType;
+      const priceModifier = parseFloat(button.dataset.priceModifier) || 0;
+      
+      if (groupType === 'single') {
+        // 單選：清除同組其他選項
+        document.querySelectorAll(`[data-group-id="${groupId}"]`).forEach(btn => {
+          btn.classList.remove('selected');
+          btn.style.background = 'white';
+          btn.style.color = 'var(--text-primary)';
+        });
+        
+        // 選中當前選項
+        button.classList.add('selected');
+        button.style.background = 'var(--accent-color)';
+        button.style.color = 'white';
+        
+        window.selectedOptions[groupId] = {
+          optionId: optionId,
+          priceModifier: priceModifier,
+          name: button.textContent.trim()
+        };
+      } else {
+        // 多選：切換狀態
+        if (button.classList.contains('selected')) {
+          button.classList.remove('selected');
+          button.style.background = 'white';
+          button.style.color = 'var(--text-primary)';
+          delete window.selectedOptions[groupId + '_' + optionId];
+        } else {
+          button.classList.add('selected');
+          button.style.background = 'var(--accent-color)';
+          button.style.color = 'white';
+          window.selectedOptions[groupId + '_' + optionId] = {
+            optionId: optionId,
+            priceModifier: priceModifier,
+            name: button.textContent.trim()
+          };
+        }
+      }
+      
+      updateModalPrice();
+    }
+    
+    // 📊 更新彈窗價格
+    function updateModalPrice() {
+      if (!window.currentModalProduct) return;
+      
+      let basePrice = parseFloat(window.currentModalProduct.price) || 0;
+      let optionPrice = 0;
+      
+      // 計算選項加價
+      Object.values(window.selectedOptions || {}).forEach(option => {
+        optionPrice += option.priceModifier;
+      });
+      
+      let totalPrice = (basePrice + optionPrice) * (window.modalQuantity || 1);
+      
+      const priceElement = document.getElementById('modal-total-price');
+      if (priceElement) {
+        if (window.currentModalProduct.is_priced_item) {
+          priceElement.textContent = '時價';
+        } else {
+          priceElement.textContent = '$' + totalPrice;
+        }
+      }
+    }
+    
+    // 🔢 調整彈窗數量
+    function adjustModalQuantity(change) {
+      window.modalQuantity = Math.max(1, (window.modalQuantity || 1) + change);
+      const quantityElement = document.getElementById('modal-quantity');
+      if (quantityElement) {
+        quantityElement.textContent = window.modalQuantity;
+      }
+      updateModalPrice();
+      announceToScreenReader('數量已調整為 ' + window.modalQuantity);
+    }
+
     function addToCartFromModal(productId) {
       const product = products.find(p => p.id === productId);
       if (!product) return;
       
-      addToCart(product, currentQuantity);
-      closeProductDetail();
-      showFeedback('已加入 ' + currentQuantity + ' 個 ' + product.name + ' 到購物車', 'success');
-      announceToScreenReader('已加入 ' + currentQuantity + ' 個 ' + product.name + ' 到購物車');
+      // 建立購物車項目
+      const cartItem = {
+        productId: product.id,
+        name: product.name,
+        basePrice: product.price,
+        quantity: window.modalQuantity || 1,
+        unit: product.unit,
+        is_priced_item: product.is_priced_item,
+        selectedOptions: { ...window.selectedOptions },
+        note: document.getElementById('product-note')?.value || '',
+        image: product.image_url
+      };
       
-      currentQuantity = 1; // 重置
+      // 計算總價
+      let optionPrice = 0;
+      Object.values(cartItem.selectedOptions).forEach(option => {
+        optionPrice += option.priceModifier;
+      });
+      cartItem.totalPrice = (cartItem.basePrice + optionPrice) * cartItem.quantity;
+      
+      // 加入購物車
+      cart.push(cartItem);
+      localStorage.setItem('universalCart', JSON.stringify(cart));
+      updateCartDisplay();
+      
+      closeProductDetail();
+      showFeedback('已加入 ' + cartItem.name + ' 到購物車', 'success');
+      announceToScreenReader('已加入 ' + cartItem.name + ' 到購物車');
     }
     
     // 🛒 購物車功能
@@ -1678,7 +1859,15 @@
     }
     
     function closeProductDetail() {
-      closeModal(document.getElementById('product-modal'));
+      const modal = document.getElementById('product-modal');
+      closeModal(modal);
+      
+      // 清除彈窗狀態
+      window.currentModalProduct = null;
+      window.modalQuantity = 1;
+      window.selectedOptions = {};
+      
+      announceToScreenReader('已關閉商品詳情');
     }
     
     function closeCart() {
