@@ -1668,12 +1668,17 @@
       
       cart.forEach(item => {
         if (!item.is_priced_item) {
-          total += item.price * item.quantity;
+          // 新版購物車使用 totalPrice，舊版使用 price * quantity
+          if (item.totalPrice !== undefined) {
+            total += item.totalPrice;
+          } else {
+            total += (item.price || 0) * (item.quantity || 0);
+          }
         }
-        count += item.quantity;
+        count += item.quantity || 0;
       });
       
-      totalElement.textContent = total;
+      totalElement.textContent = '$' + total;
       countElement.textContent = count;
       
       // 更新購物車按鈕的無障礙標籤
@@ -1711,8 +1716,33 @@
       let subtotal = 0;
       
       const cartItemsHTML = cart.map((item, index) => {
-        const itemTotal = item.is_priced_item ? 0 : item.price * item.quantity;
-        subtotal += itemTotal;
+        let itemTotal = 0;
+        let basePrice = 0;
+        
+        if (!item.is_priced_item) {
+          // 新版購物車使用 totalPrice，舊版使用 price * quantity
+          if (item.totalPrice !== undefined) {
+            itemTotal = item.totalPrice;
+            basePrice = item.basePrice || item.price || 0;
+          } else {
+            itemTotal = (item.price || 0) * (item.quantity || 0);
+            basePrice = item.price || 0;
+          }
+          subtotal += itemTotal;
+        }
+        
+        // 顯示選項資訊
+        let optionsText = '';
+        if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+          const optionNames = Object.values(item.selectedOptions).map(opt => opt.name).join(', ');
+          optionsText = `<div style="font-size: var(--font-size-small); color: var(--text-secondary); margin-top: var(--spacing-xs);">選項: ${optionNames}</div>`;
+        }
+        
+        // 顯示備註
+        let noteText = '';
+        if (item.note && item.note.trim()) {
+          noteText = `<div style="font-size: var(--font-size-small); color: var(--text-secondary); margin-top: var(--spacing-xs);">備註: ${item.note}</div>`;
+        }
         
         return `
           <div style="display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md); 
@@ -1725,8 +1755,10 @@
                 ${item.is_priced_item ? '時價' : '$' + itemTotal}
               </div>
               <div style="font-size: var(--font-size-small); color: var(--text-secondary);">
-                ${item.is_priced_item ? '依重量計算' : '$' + item.price + ' × ' + item.quantity + ' ' + item.unit}
+                ${item.is_priced_item ? '依重量計算' : '$' + basePrice + ' × ' + item.quantity + ' ' + (item.unit || '份')}
               </div>
+              ${optionsText}
+              ${noteText}
             </div>
             
             <div style="display: flex; align-items: center; gap: var(--spacing-sm);" role="group" aria-label="${item.name} 數量控制">
