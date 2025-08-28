@@ -25,8 +25,10 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler'),
       { createAgentSystem } = require('./agents'),
       driverApiRoutes = require('./routes/driver_api'),
+      driverPoolApiRoutes = require('./routes/driver_pool_api'),
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
+      adminDistrictApiRoutes = require('./routes/admin_district_api'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
       { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
       WebSocketManager = require('./services/WebSocketManager'),
@@ -392,11 +394,17 @@ app.use((req, res, next) => {
 // 外送員API路由
 app.use('/api/driver', driverApiRoutes);
 
+// 外送員公共池API路由
+app.use('/api/driver', driverPoolApiRoutes);
+
 // 客戶端API路由
 app.use('/api/customer', customerApiRoutes);
 
 // 後台報表API路由
 app.use('/api/admin/reports', adminReportsApiRoutes);
+
+// 後台區域管理API路由
+app.use('/api/admin/district', adminDistrictApiRoutes);
 
 // Google Maps API路由
 app.use('/api/maps', googleMapsApiRoutes);
@@ -587,7 +595,7 @@ async function fetchProducts() {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
-    res.render('index_ultimate', { 
+    res.render('index_universal', { 
       products: products,
       sessionLine: req.session.line || null
     });
@@ -628,6 +636,20 @@ app.get('/driver/dashboard', (req, res) => {
   }
   
   res.render('driver_dashboard', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
+});
+
+// 🏊 外送員公共池配送系統
+app.get('/driver/pool', (req, res) => {
+  if (!req.session.driverId) {
+    return res.redirect('/driver/login');
+  }
+  
+  res.render('driver_pool_dashboard', {
     driver: {
       id: req.session.driverId,
       name: req.session.driverName || '外送員'

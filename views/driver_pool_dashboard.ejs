@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公共池配送系統 - 誠意鮮蔬</title>
+    <link rel="stylesheet" href="/css/driver-pool.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 頂部導航 -->
+    <header class="pool-header">
+        <div class="header-content">
+            <div class="driver-info">
+                <h1><i class="fas fa-swimming-pool"></i> 公共池配送系統</h1>
+                <div class="driver-details">
+                    <span class="driver-name">外送員：<%= driver.name %></span>
+                    <span class="status-badge online"><i class="fas fa-circle"></i> 上線中</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="refresh-btn" onclick="refreshAllPools()" title="重新整理">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="optimize-route-btn" onclick="showRouteOptimization()" title="一鍵優化路線">
+                    <i class="fas fa-route"></i> 優化路線
+                </button>
+                <a href="/driver/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> 登出
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 選擇統計區 -->
+    <div class="selection-summary">
+        <div class="summary-content">
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <i class="fas fa-shopping-cart text-primary"></i>
+                    <div class="stat-details">
+                        <span class="stat-number" id="selected-count">0</span>
+                        <span class="stat-label">已選訂單</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-dollar-sign text-success"></i>
+                    <div class="stat-details">
+                        <span class="stat-number" id="selected-value">$0</span>
+                        <span class="stat-label">總金額</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-map-marked-alt text-info"></i>
+                    <div class="stat-details">
+                        <span class="stat-number" id="selected-districts">0</span>
+                        <span class="stat-label">涵蓋區域</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock text-warning"></i>
+                    <div class="stat-details">
+                        <span class="stat-number" id="estimated-time">0分鐘</span>
+                        <span class="stat-label">預估時間</span>
+                    </div>
+                </div>
+            </div>
+            <div class="summary-actions">
+                <button class="clear-selections-btn" onclick="clearAllSelections()" title="清空選擇">
+                    <i class="fas fa-trash"></i> 清空
+                </button>
+                <button class="optimize-btn" onclick="optimizeRoute()" disabled title="先選擇訂單">
+                    <i class="fas fa-magic"></i> 一鍵優化
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 區域配送池 -->
+    <main class="pools-container">
+        <!-- 三峽區 -->
+        <section class="district-pool" data-district="三峽區">
+            <div class="pool-header">
+                <div class="pool-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>三峽區</h3>
+                    <span class="order-count badge">0</span>
+                </div>
+                <div class="pool-actions">
+                    <button class="select-all-btn" onclick="selectAllInDistrict('三峽區')">
+                        <i class="fas fa-check-double"></i> 全選
+                    </button>
+                </div>
+            </div>
+            <div class="orders-grid" id="pool-三峽區">
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>載入中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 樹林區 -->
+        <section class="district-pool" data-district="樹林區">
+            <div class="pool-header">
+                <div class="pool-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>樹林區</h3>
+                    <span class="order-count badge">0</span>
+                </div>
+                <div class="pool-actions">
+                    <button class="select-all-btn" onclick="selectAllInDistrict('樹林區')">
+                        <i class="fas fa-check-double"></i> 全選
+                    </button>
+                </div>
+            </div>
+            <div class="orders-grid" id="pool-樹林區">
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>載入中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 土城區 -->
+        <section class="district-pool" data-district="土城區">
+            <div class="pool-header">
+                <div class="pool-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>土城區</h3>
+                    <span class="order-count badge">0</span>
+                </div>
+                <div class="pool-actions">
+                    <button class="select-all-btn" onclick="selectAllInDistrict('土城區')">
+                        <i class="fas fa-check-double"></i> 全選
+                    </button>
+                </div>
+            </div>
+            <div class="orders-grid" id="pool-土城區">
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>載入中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 鶯歌區 -->
+        <section class="district-pool" data-district="鶯歌區">
+            <div class="pool-header">
+                <div class="pool-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>鶯歌區</h3>
+                    <span class="order-count badge">0</span>
+                </div>
+                <div class="pool-actions">
+                    <button class="select-all-btn" onclick="selectAllInDistrict('鶯歌區')">
+                        <i class="fas fa-check-double"></i> 全選
+                    </button>
+                </div>
+            </div>
+            <div class="orders-grid" id="pool-鶯歌區">
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>載入中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 其他區域 -->
+        <section class="district-pool" data-district="其他區域">
+            <div class="pool-header">
+                <div class="pool-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>其他區域</h3>
+                    <span class="order-count badge">0</span>
+                </div>
+                <div class="pool-actions">
+                    <button class="select-all-btn" onclick="selectAllInDistrict('其他區域')">
+                        <i class="fas fa-check-double"></i> 全選
+                    </button>
+                </div>
+            </div>
+            <div class="orders-grid" id="pool-其他區域">
+                <div class="loading-placeholder">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>載入中...</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 路線優化彈窗 -->
+    <div class="modal" id="route-optimization-modal">
+        <div class="modal-overlay" onclick="closeRouteModal()"></div>
+        <div class="modal-content route-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-route"></i> 一鍵路線優化</h3>
+                <button class="modal-close" onclick="closeRouteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="optimization-settings">
+                    <div class="setting-row">
+                        <label>起始地點：</label>
+                        <div class="start-location">
+                            <i class="fas fa-home"></i>
+                            <span>新北市三峽區民生街186號</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <label>優化目標：</label>
+                        <select id="optimization-goal">
+                            <option value="time">最短時間</option>
+                            <option value="distance">最短距離</option>
+                            <option value="mixed">時間距離平衡</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="selected-orders-preview" id="selected-orders-preview">
+                    <!-- 動態載入選中訂單預覽 -->
+                </div>
+                
+                <div class="optimization-result" id="optimization-result" style="display: none;">
+                    <!-- 優化結果將在這裡顯示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeRouteModal()">取消</button>
+                <button class="btn-primary" id="start-optimization-btn" onclick="startRouteOptimization()">
+                    <i class="fas fa-magic"></i> 開始優化
+                </button>
+                <button class="btn-success" id="confirm-route-btn" onclick="confirmOptimizedRoute()" style="display: none;">
+                    <i class="fas fa-check"></i> 確認路線並開始配送
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訂單詳情彈窗 -->
+    <div class="modal" id="order-detail-modal">
+        <div class="modal-overlay" onclick="closeOrderDetailModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt"></i> 訂單詳情</h3>
+                <button class="modal-close" onclick="closeOrderDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="order-detail-content">
+                <!-- 動態載入訂單詳情 -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeOrderDetailModal()">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知系統 -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <script>
+        // 全域變數
+        const driverId = <%= driver.id %>;
+        let selectedOrders = new Map(); // orderId -> order object
+        let poolData = new Map(); // district -> orders array
+        let refreshInterval;
+
+        // 頁面載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePools();
+            startAutoRefresh();
+        });
+
+        // 初始化配送池
+        async function initializePools() {
+            const districts = ['三峽區', '樹林區', '土城區', '鶯歌區', '其他區域'];
+            
+            // 並行載入所有區域的訂單
+            const promises = districts.map(district => loadDistrictOrders(district));
+            
+            try {
+                await Promise.all(promises);
+                updateSelectionSummary();
+            } catch (error) {
+                console.error('載入配送池失敗:', error);
+                showNotification('載入配送池失敗，請重新整理頁面', 'error');
+            }
+        }
+
+        // 載入指定區域的訂單
+        async function loadDistrictOrders(district) {
+            try {
+                const response = await fetch(`/api/driver/pool-orders/${encodeURIComponent(district)}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || '載入失敗');
+                }
+                
+                poolData.set(district, data.orders);
+                renderDistrictOrders(district, data.orders);
+                updateDistrictCount(district, data.orders.length);
+                
+            } catch (error) {
+                console.error(`載入${district}訂單失敗:`, error);
+                const container = document.getElementById(`pool-${district}`);
+                container.innerHTML = `
+                    <div class="error-placeholder">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>載入失敗，請重試</span>
+                        <button onclick="loadDistrictOrders('${district}')" class="retry-btn">重試</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 渲染區域訂單
+        function renderDistrictOrders(district, orders) {
+            const container = document.getElementById(`pool-${district}`);
+            
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-placeholder">
+                        <i class="fas fa-inbox"></i>
+                        <span>暫無${district}訂單</span>
+                    </div>
+                `;
+                return;
+            }
+
+            const ordersHTML = orders.map(order => createOrderCard(order, district)).join('');
+            container.innerHTML = ordersHTML;
+        }
+
+        // 建立訂單卡片（横式佈局）
+        function createOrderCard(order, district) {
+            const isSelected = selectedOrders.has(order.id);
+            const waitingTime = Math.floor((Date.now() - new Date(order.pool_entered_at).getTime()) / (1000 * 60));
+            
+            return `
+                <div class="order-card ${isSelected ? 'selected' : ''} ${order.is_selected && !isSelected ? 'taken-by-other' : ''}" 
+                     data-order-id="${order.id}" 
+                     data-district="${district}"
+                     onclick="toggleOrderSelection(${order.id}, '${district}')">
+                    
+                    <!-- 選擇狀態指示 -->
+                    <div class="selection-indicator">
+                        <i class="fas ${isSelected ? 'fa-check-circle' : 'fa-circle'}"></i>
+                    </div>
+                    
+                    <!-- 横式資訊佈局 -->
+                    <div class="order-content">
+                        <div class="order-info-row">
+                            <!-- 客戶資訊 -->
+                            <div class="customer-info">
+                                <div class="info-group">
+                                    <i class="fas fa-user"></i>
+                                    <span class="customer-name">${order.contact_name}</span>
+                                </div>
+                                <div class="info-group">
+                                    <i class="fas fa-phone"></i>
+                                    <span class="customer-phone">${order.contact_phone}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 金額資訊 -->
+                            <div class="amount-info">
+                                <div class="order-amount">$${order.total_amount}</div>
+                                <div class="payment-method">
+                                    <i class="fas fa-credit-card"></i>
+                                    ${order.payment_method}
+                                </div>
+                            </div>
+                            
+                            <!-- 等待時間 -->
+                            <div class="timing-info">
+                                <div class="waiting-time ${waitingTime > 60 ? 'urgent' : waitingTime > 30 ? 'warning' : ''}">
+                                    <i class="fas fa-clock"></i>
+                                    等待 ${waitingTime}分鐘
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 地址資訊 -->
+                        <div class="address-row">
+                            <div class="address-info">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span class="address-text">${order.address}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 備註資訊 -->
+                        ${order.notes ? `
+                        <div class="notes-row">
+                            <div class="notes-info">
+                                <i class="fas fa-sticky-note"></i>
+                                <span class="notes-text">${order.notes}</span>
+                            </div>
+                        </div>` : ''}
+                        
+                        <!-- 操作按鈕 -->
+                        <div class="actions-row">
+                            <button class="detail-btn" onclick="showOrderDetail(${order.id}); event.stopPropagation();" title="查看詳情">
+                                <i class="fas fa-eye"></i> 詳情
+                            </button>
+                            ${order.is_selected && !isSelected ? `
+                            <span class="taken-badge">
+                                <i class="fas fa-user-check"></i> 已被選擇
+                            </span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 切換訂單選擇狀態
+        async function toggleOrderSelection(orderId, district) {
+            const order = poolData.get(district)?.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // 檢查是否已被其他司機選擇
+            if (order.is_selected && !selectedOrders.has(orderId)) {
+                showNotification('此訂單已被其他外送員選擇', 'warning');
+                return;
+            }
+            
+            const isCurrentlySelected = selectedOrders.has(orderId);
+            
+            try {
+                const response = await fetch(`/api/driver/toggle-order-selection/${orderId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        district, 
+                        action: isCurrentlySelected ? 'deselect' : 'select' 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                // 更新本地狀態
+                if (isCurrentlySelected) {
+                    selectedOrders.delete(orderId);
+                    showNotification('已取消選擇訂單', 'info');
+                } else {
+                    selectedOrders.set(orderId, order);
+                    showNotification('已選擇訂單', 'success');
+                }
+                
+                // 更新UI
+                updateOrderCardSelection(orderId, district);
+                updateSelectionSummary();
+                
+            } catch (error) {
+                console.error('切換選擇狀態失敗:', error);
+                showNotification('操作失敗: ' + error.message, 'error');
+            }
+        }
+
+        // 更新訂單卡片選擇狀態
+        function updateOrderCardSelection(orderId, district) {
+            const card = document.querySelector(`[data-order-id="${orderId}"]`);
+            if (!card) return;
+            
+            const isSelected = selectedOrders.has(orderId);
+            const indicator = card.querySelector('.selection-indicator i');
+            
+            card.classList.toggle('selected', isSelected);
+            indicator.className = `fas ${isSelected ? 'fa-check-circle' : 'fa-circle'}`;
+        }
+
+        // 更新選擇統計
+        function updateSelectionSummary() {
+            const selectedCount = selectedOrders.size;
+            const totalValue = Array.from(selectedOrders.values()).reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+            const districts = new Set(Array.from(selectedOrders.values()).map(order => order.pool_district || '未知')).size;
+            const estimatedTime = selectedCount * 12; // 平均每單12分鐘預估
+            
+            document.getElementById('selected-count').textContent = selectedCount;
+            document.getElementById('selected-value').textContent = `$${totalValue.toFixed(0)}`;
+            document.getElementById('selected-districts').textContent = districts;
+            document.getElementById('estimated-time').textContent = `${estimatedTime}分鐘`;
+            
+            // 更新優化按鈕狀態
+            const optimizeBtn = document.querySelector('.optimize-btn');
+            optimizeBtn.disabled = selectedCount < 2;
+            optimizeBtn.title = selectedCount < 2 ? '至少選擇2個訂單才能優化' : '點擊開始路線優化';
+        }
+
+        // 選擇區域內所有訂單
+        async function selectAllInDistrict(district) {
+            const orders = poolData.get(district) || [];
+            const availableOrders = orders.filter(order => !order.is_selected);
+            
+            if (availableOrders.length === 0) {
+                showNotification(`${district}沒有可選擇的訂單`, 'info');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/driver/select-district-orders/${encodeURIComponent(district)}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                // 更新本地狀態
+                availableOrders.forEach(order => {
+                    selectedOrders.set(order.id, order);
+                    updateOrderCardSelection(order.id, district);
+                });
+                
+                updateSelectionSummary();
+                showNotification(`已選擇${district}內 ${availableOrders.length} 個訂單`, 'success');
+                
+            } catch (error) {
+                console.error('批量選擇失敗:', error);
+                showNotification('批量選擇失敗: ' + error.message, 'error');
+            }
+        }
+
+        // 清空所有選擇
+        async function clearAllSelections() {
+            if (selectedOrders.size === 0) {
+                showNotification('沒有選擇的訂單', 'info');
+                return;
+            }
+            
+            const confirmClear = confirm('確定要清空所有已選擇的訂單嗎？');
+            if (!confirmClear) return;
+            
+            try {
+                const response = await fetch('/api/driver/clear-all-selections', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                // 更新UI
+                selectedOrders.forEach((order, orderId) => {
+                    const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                    if (card) {
+                        card.classList.remove('selected');
+                        const indicator = card.querySelector('.selection-indicator i');
+                        indicator.className = 'fas fa-circle';
+                    }
+                });
+                
+                selectedOrders.clear();
+                updateSelectionSummary();
+                showNotification('已清空所有選擇', 'success');
+                
+            } catch (error) {
+                console.error('清空選擇失敗:', error);
+                showNotification('清空失敗: ' + error.message, 'error');
+            }
+        }
+
+        // 顯示路線優化彈窗
+        function showRouteOptimization() {
+            if (selectedOrders.size < 2) {
+                showNotification('請至少選擇2個訂單才能進行路線優化', 'warning');
+                return;
+            }
+            
+            // 更新選中訂單預覽
+            updateSelectedOrdersPreview();
+            document.getElementById('route-optimization-modal').style.display = 'flex';
+        }
+
+        // 更新選中訂單預覽
+        function updateSelectedOrdersPreview() {
+            const container = document.getElementById('selected-orders-preview');
+            const orders = Array.from(selectedOrders.values());
+            
+            const previewHTML = `
+                <div class="preview-header">
+                    <h4><i class="fas fa-list"></i> 選中訂單預覽 (${orders.length}筆)</h4>
+                </div>
+                <div class="preview-list">
+                    ${orders.map((order, index) => `
+                        <div class="preview-item">
+                            <span class="item-number">${index + 1}</span>
+                            <div class="item-info">
+                                <div class="item-customer">${order.contact_name}</div>
+                                <div class="item-address">${order.address}</div>
+                            </div>
+                            <div class="item-amount">$${order.total_amount}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="preview-stats">
+                    <div class="stat">總金額: $${orders.reduce((sum, o) => sum + parseFloat(o.total_amount), 0).toFixed(0)}</div>
+                    <div class="stat">涵蓋區域: ${new Set(orders.map(o => o.pool_district)).size}個</div>
+                </div>
+            `;
+            
+            container.innerHTML = previewHTML;
+        }
+
+        // 開始路線優化
+        async function startRouteOptimization() {
+            const goal = document.getElementById('optimization-goal').value;
+            const orderIds = Array.from(selectedOrders.keys());
+            
+            document.getElementById('start-optimization-btn').style.display = 'none';
+            document.getElementById('optimization-result').innerHTML = `
+                <div class="optimization-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>正在優化路線，請稍候...</span>
+                </div>
+            `;
+            document.getElementById('optimization-result').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/driver/optimize-route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderIds,
+                        optimizationGoal: goal,
+                        startLocation: {
+                            address: '新北市三峽區民生街186號',
+                            lat: 24.934154,
+                            lng: 121.368540
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                displayOptimizationResult(result.optimization);
+                document.getElementById('confirm-route-btn').style.display = 'inline-block';
+                
+            } catch (error) {
+                console.error('路線優化失敗:', error);
+                document.getElementById('optimization-result').innerHTML = `
+                    <div class="optimization-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>優化失敗: ${error.message}</span>
+                        <button onclick="startRouteOptimization()" class="retry-btn">重試</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 顯示優化結果
+        function displayOptimizationResult(optimization) {
+            const resultHTML = `
+                <div class="optimization-success">
+                    <div class="result-header">
+                        <h4><i class="fas fa-route"></i> 優化完成</h4>
+                        <div class="result-stats">
+                            <span class="stat">總距離: ${optimization.totalDistance.toFixed(1)}km</span>
+                            <span class="stat">預估時間: ${optimization.totalTime}分鐘</span>
+                            <span class="stat">節省時間: ${optimization.timeSaved || 0}分鐘</span>
+                        </div>
+                    </div>
+                    <div class="route-sequence">
+                        <div class="sequence-header">
+                            <h5>最佳配送順序:</h5>
+                        </div>
+                        <div class="sequence-list">
+                            <div class="sequence-item start-point">
+                                <span class="seq-number">起點</span>
+                                <div class="seq-info">
+                                    <div class="seq-location">新北市三峽區民生街186號</div>
+                                    <div class="seq-note">配送起始點</div>
+                                </div>
+                            </div>
+                            ${optimization.route.map((stop, index) => `
+                                <div class="sequence-item">
+                                    <span class="seq-number">${index + 1}</span>
+                                    <div class="seq-info">
+                                        <div class="seq-customer">${stop.customerName}</div>
+                                        <div class="seq-location">${stop.address}</div>
+                                        <div class="seq-timing">
+                                            距上一點: ${stop.distanceFromPrevious?.toFixed(1)}km | 
+                                            預估到達: ${stop.estimatedArrival}
+                                        </div>
+                                    </div>
+                                    <div class="seq-amount">$${stop.amount}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('optimization-result').innerHTML = resultHTML;
+        }
+
+        // 確認優化路線並開始配送
+        async function confirmOptimizedRoute() {
+            const confirmed = confirm('確認此優化路線並開始配送？確認後將無法修改。');
+            if (!confirmed) return;
+            
+            try {
+                const response = await fetch('/api/driver/confirm-route', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                
+                showNotification('路線已確認，開始配送！', 'success');
+                closeRouteModal();
+                
+                // 跳轉到配送執行頁面
+                setTimeout(() => {
+                    window.location.href = `/driver/delivery-execution/${result.batchId}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('確認路線失敗:', error);
+                showNotification('確認失敗: ' + error.message, 'error');
+            }
+        }
+
+        // 顯示訂單詳情
+        async function showOrderDetail(orderId) {
+            try {
+                const response = await fetch(`/api/driver/order-detail/${orderId}`);
+                const order = await response.json();
+                
+                if (!order.success) {
+                    throw new Error(order.message);
+                }
+                
+                const detailHTML = `
+                    <div class="order-detail-content">
+                        <div class="detail-section">
+                            <h4>訂單資訊</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>訂單編號:</label>
+                                    <span>#${order.data.id}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>下單時間:</label>
+                                    <span>${new Date(order.data.created_at).toLocaleString()}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>入池時間:</label>
+                                    <span>${new Date(order.data.pool_entered_at).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>客戶資訊</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>姓名:</label>
+                                    <span>${order.data.contact_name}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>電話:</label>
+                                    <span>${order.data.contact_phone}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>地址:</label>
+                                    <span>${order.data.address}</span>
+                                </div>
+                                ${order.data.notes ? `
+                                <div class="detail-item full-width">
+                                    <label>備註:</label>
+                                    <span>${order.data.notes}</span>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>商品明細</h4>
+                            <div class="items-list">
+                                ${(order.data.items || []).map(item => `
+                                    <div class="item-row">
+                                        <span class="item-name">${item.product_name}</span>
+                                        <span class="item-quantity">x${item.quantity}</span>
+                                        <span class="item-price">$${item.price}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>付款資訊</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>付款方式:</label>
+                                    <span>${order.data.payment_method}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>訂單金額:</label>
+                                    <span class="amount-highlight">$${order.data.total_amount}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('order-detail-content').innerHTML = detailHTML;
+                document.getElementById('order-detail-modal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('載入訂單詳情失敗:', error);
+                showNotification('載入訂單詳情失敗', 'error');
+            }
+        }
+
+        // 關閉彈窗
+        function closeRouteModal() {
+            document.getElementById('route-optimization-modal').style.display = 'none';
+            document.getElementById('start-optimization-btn').style.display = 'inline-block';
+            document.getElementById('confirm-route-btn').style.display = 'none';
+            document.getElementById('optimization-result').style.display = 'none';
+        }
+
+        function closeOrderDetailModal() {
+            document.getElementById('order-detail-modal').style.display = 'none';
+        }
+
+        // 重新整理所有配送池
+        async function refreshAllPools() {
+            showNotification('正在重新整理配送池...', 'info');
+            await initializePools();
+            showNotification('配送池已更新', 'success');
+        }
+
+        // 更新區域訂單數量
+        function updateDistrictCount(district, count) {
+            const badge = document.querySelector(`[data-district="${district}"] .order-count`);
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+        }
+
+        // 自動刷新
+        function startAutoRefresh() {
+            // 每30秒自動刷新一次
+            refreshInterval = setInterval(() => {
+                initializePools();
+            }, 30000);
+        }
+
+        // 通知系統
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            notification.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            // 自動移除
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // 頁面卸載時清理
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
