@@ -446,86 +446,128 @@
       background-color: var(--background-color);
     }
     
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: var(--spacing-lg);
+    .products-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      max-width: 800px;
+      margin: 0 auto;
       padding: 0 var(--spacing-md);
     }
     
-    @media (max-width: 600px) {
-      .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: var(--spacing-md);
-      }
-    }
-    
-    @media (max-width: 400px) {
-      .products-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    
-    .product-card {
-      background-color: var(--background-color);
-      border: 2px solid var(--border-color);
-      border-radius: 12px;
+    .product-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-md);
       padding: var(--spacing-lg);
+      background: var(--background-color);
+      border-radius: 12px;
+      border: 2px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all var(--animation-normal) ease;
       cursor: pointer;
       position: relative;
-      min-height: 200px;
-      display: flex;
-      flex-direction: column;
     }
     
-    .product-card:hover,
-    .product-card:focus-within {
-      border-color: var(--accent-color);
-      box-shadow: 0 4px 16px rgba(124, 179, 66, 0.15);
+    .product-item:hover,
+    .product-item:focus {
       transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124, 179, 66, 0.15);
+      border-color: var(--accent-color);
     }
     
-    .product-card:focus {
+    .product-item:focus {
       outline: 3px solid var(--accent-color);
       outline-offset: 2px;
     }
     
-    .product-image {
-      text-align: center;
-      margin-bottom: var(--spacing-md);
-      padding: var(--spacing-lg);
-      background-color: var(--surface-color);
-      border-radius: 8px;
-      min-height: 120px;
+    .product-image-left {
+      flex-shrink: 0;
+      width: 120px;
+      height: 120px;
       display: flex;
       align-items: center;
       justify-content: center;
+      background: var(--surface-color);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
     }
     
-    .product-emoji {
-      font-size: 4rem;
+    .product-image-left img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    
+    .product-image-left .product-emoji {
+      font-size: 3rem;
       line-height: 1;
     }
     
-    .product-image img {
-      max-width: 100%;
-      max-height: 120px;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-    
-    .product-info {
+    .product-info-right {
       flex: 1;
       display: flex;
       flex-direction: column;
+      gap: var(--spacing-sm);
+      min-width: 0;
+    }
+    
+    .product-price-info {
+      display: flex;
+      align-items: baseline;
+      gap: var(--spacing-xs);
+    }
+    
+    .product-price-info .product-price {
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+      color: var(--accent-color);
+    }
+    
+    .product-price-info .product-unit {
+      font-size: var(--font-size-small);
+      color: var(--text-secondary);
+    }
+    
+    .product-description {
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: var(--font-size-small);
+    }
+    
+    /* 響應式設計 - 手機版垂直佈局 */
+    @media (max-width: 600px) {
+      .product-item {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .product-image-left {
+        width: 100%;
+        height: 150px;
+        align-self: center;
+      }
+      
+      .product-info-right {
+        text-align: center;
+      }
+      
+      .product-price-info {
+        justify-content: center;
+      }
     }
     
     .product-name {
       font-size: var(--font-size-xl);
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: var(--spacing-sm);
+      margin: 0;
       line-height: 1.3;
     }
     
@@ -533,7 +575,6 @@
       font-size: var(--font-size-xxl);
       font-weight: 700;
       color: var(--accent-color);
-      margin-bottom: var(--spacing-sm);
     }
     
     .product-unit {
@@ -1012,15 +1053,18 @@
           </button>
         </div>
       <% } else { %>
-        <div class="products-grid" id="products-grid" role="tabpanel" aria-labelledby="category-all">
+        <div class="products-list" id="products-list" role="tabpanel" aria-labelledby="category-all">
           <% products.forEach(function(product) { %>
-            <article class="product-card" 
+            <article class="product-item" 
                      data-category="<%= product.is_priced_item ? 'proxy' : 'leafy' %>"
                      role="article"
                      aria-labelledby="product-<%= product.id %>-name"
-                     tabindex="0">
+                     tabindex="0"
+                     onclick="openProductModal(<%= product.id %>)"
+                     style="cursor: pointer;">
               
-              <div class="product-image" role="img" aria-label="<%= product.name %> 商品圖片">
+              <!-- 左側商品圖片 -->
+              <div class="product-image-left" role="img" aria-label="<%= product.name %> 商品圖片">
                 <% if (product.image_url && product.image_url.startsWith('/uploads/')) { %>
                   <img src="<%= product.image_url %>" 
                        alt="<%= product.name %>" 
@@ -1033,34 +1077,23 @@
                 <% } %>
               </div>
               
-              <div class="product-info">
+              <!-- 右側商品資訊 -->
+              <div class="product-info-right">
                 <h3 class="product-name" id="product-<%= product.id %>-name">
                   <%= product.name %>
                 </h3>
                 
-                <% if (product.is_priced_item) { %>
-                  <div class="product-price" aria-label="時價商品">時價</div>
-                  <div class="product-unit">依重量計算</div>
-                  <div class="product-badge">計價商品</div>
-                <% } else { %>
-                  <div class="product-price" aria-label="價格 <%= product.price %> 元">$<%= product.price %></div>
+                <div class="product-price-info">
+                  <% if (product.is_priced_item) { %>
+                    <div class="product-price" aria-label="時價商品">時價</div>
+                  <% } else { %>
+                    <div class="product-price" aria-label="價格 <%= product.price %> 元">$<%= product.price %></div>
+                  <% } %>
                   <div class="product-unit">/ <%= product.unit || '份' %></div>
-                <% } %>
+                </div>
                 
-                <div class="product-actions">
-                  <button class="quick-add-btn" 
-                          onclick="quickAddToCart(<%= product.id %>)"
-                          aria-describedby="product-<%= product.id %>-name"
-                          <% if (product.is_priced_item) { %>disabled<% } %>>
-                    <span aria-hidden="true">🛒</span>
-                    <span>加入購物車</span>
-                  </button>
-                  
-                  <button class="detail-btn" 
-                          onclick="openProductDetail(<%= product.id %>)"
-                          aria-label="查看 <%= product.name %> 詳細資訊">
-                    <span aria-hidden="true">ℹ️</span>
-                  </button>
+                <div class="product-description">
+                  <%= product.description || (product.is_priced_item ? '新鮮計價商品，秤重後確認價格' : '新鮮優質，精選品質保證') %>
                 </div>
               </div>
             </article>
