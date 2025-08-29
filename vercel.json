@@ -20,6 +20,15 @@
       "dest": "/src/server.js"
     }
   ],
+  "git": {
+    "deploymentEnabled": {
+      "master": true
+    }
+  },
+  "github": {
+    "autoDeployOnPush": true,
+    "productionBranch": "master"
+  },
   "env": {
     "NODE_ENV": "production",
     "VERCEL": "1",
