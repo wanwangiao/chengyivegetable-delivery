@@ -14,7 +14,8 @@
     "smart-deploy": "node smart-deploy.js",
     "claude-deploy": "node claude-hook-deploy.js",
     "auto-deploy": "node safe-deploy.js",
-    "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'"
+    "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'",
+    "universal-deploy": "node universal-deploy.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",

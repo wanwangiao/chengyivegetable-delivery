@@ -7,6 +7,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { universalDeploy } = require('./universal-deploy.js');
 
 // 檢查是否由 Claude Code 觸發
 const args = process.argv.slice(2);
@@ -38,39 +39,13 @@ function shouldTriggerDeploy(userInput) {
 
 // 智能部署函數
 async function smartDeploy(commitMessage = null) {
-  console.log('🤖 Claude Code Hook 觸發自動部署...\n');
+  console.log('🤖 Claude Code Hook 觸發通用智能部署系統...\n');
   
   try {
-    // 檢查是否有更改
-    const status = execSync('git status --porcelain', { encoding: 'utf8' });
-    
-    // 智能生成提交訊息
-    const timestamp = new Date().toLocaleString('zh-TW');
-    const defaultMessage = commitMessage || `📋 Claude Code 自動更新 - ${timestamp}`;
-    
-    if (status.trim()) {
-      console.log('📝 檢測到更改，開始自動部署...');
-      
-      // 更新 CLAUDE.md
-      await updateClaudeProgress();
-      
-      console.log('1️⃣ 添加所有更改...');
-      execSync('git add .', { stdio: 'inherit' });
-      
-      console.log('2️⃣ 提交更改...');
-      execSync(`git commit -m "${defaultMessage}"`, { stdio: 'inherit' });
-    } else {
-      console.log('📋 沒有新更改，檢查是否需要推送...');
-    }
-    
-    console.log('3️⃣ 推送到遠端...');
-    execSync('git push', { stdio: 'inherit' });
-    
-    console.log('4️⃣ 部署到生產環境...');
-    execSync('vercel --prod', { stdio: 'inherit' });
+    // 使用通用部署系統
+    await universalDeploy();
     
     console.log('\n🎉 Claude Code Hook 自動部署完成！');
-    console.log('🌐 線上網址: https://veg-delivery-platform.vercel.app');
     console.log('🤖 下次只要說"請更新進度記錄並推送部署"即可自動觸發！');
     
   } catch (error) {
