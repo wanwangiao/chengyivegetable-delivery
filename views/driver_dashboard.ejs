@@ -14,6 +14,45 @@
     <link rel="preload" href="/css/driver-portal.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="/css/driver-portal.css"></noscript>
     
+    <!-- 增強通知系統樣式 -->
+    <style>
+        .notification-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .notification-controls {
+                display: none; /* 手機端隱藏額外控制 */
+            }
+        }
+    </style>
+
     <!-- 非關鍵資源延遲載入 -->
     <script>
         // CSS懶加載函數
@@ -44,6 +83,17 @@
             </div>
             <div class="header-actions">
                 <span class="status online">🟢 上線中</span>
+                <div class="notification-controls">
+                    <button onclick="notificationManager.toggleSound()" class="control-btn" title="切換音效">
+                        🔊
+                    </button>
+                    <button onclick="notificationManager.showHistory()" class="control-btn" title="通知歷史">
+                        📋
+                    </button>
+                    <button onclick="showNotification('這是測試通知！', 'success', {actions: [{label: '確認', handler: 'console.log(\"測試完成\")''}]})" class="control-btn" title="測試通知">
+                        🧪
+                    </button>
+                </div>
                 <a href="/driver/logout" class="logout-btn">登出</a>
             </div>
         </div>
@@ -556,7 +606,13 @@
                 }
             } catch (error) {
                 console.error('載入可接訂單失敗:', error);
-                showNotification('載入訂單失敗，請重新整理', 'error');
+                showNotification('載入訂單失敗', 'error', {
+                    duration: 5000,
+                    actions: [
+                        { label: '重新載入', handler: 'loadAvailableOrders()' },
+                        { label: '檢查網路', handler: 'showNetworkStatus()' }
+                    ]
+                });
             }
         }
 
@@ -748,10 +804,22 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification(
-                        currentAction === 'take' ? '✅ 訂單接取成功！' : '🎉 配送完成！客戶已收到通知',
-                        'success'
-                    );
+                    if (currentAction === 'take') {
+                        showNotification('✅ 訂單接取成功！', 'success', {
+                            duration: 3000,
+                            actions: [
+                                { label: '查看我的配送', handler: 'showTab("my-orders")' }
+                            ]
+                        });
+                    } else {
+                        showNotification('🎉 配送完成！客戶已收到通知', 'success', {
+                            duration: 5000,
+                            actions: [
+                                { label: '查看完成記錄', handler: 'showTab("completed")' },
+                                { label: '繼續配送', handler: 'showTab("available")' }
+                            ]
+                        });
+                    }
                     closeOrderModal();
                     
                     // 重新載入所有訂單列表
@@ -766,7 +834,13 @@
                 }
             } catch (error) {
                 console.error('操作失敗:', error);
-                showNotification('❌ 操作失敗，請檢查網路連線後重試', 'error');
+                showNotification('❌ 操作失敗，請檢查網路連線', 'error', {
+                    duration: 6000,
+                    actions: [
+                        { label: '重試', handler: 'performOrderAction()' },
+                        { label: '刷新頁面', handler: 'location.reload()' }
+                    ]
+                });
             }
         }
 
@@ -1116,50 +1190,371 @@
             return '其他區域';
         }
 
-        // 通知系統
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <span class="notification-icon">
-                        ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
-                    </span>
-                    <span class="notification-message">${message}</span>
-                </div>
-            `;
-            
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                z-index: 10000;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 350px;
-                font-size: 14px;
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-            }, 100);
-            
-            setTimeout(() => {
-                notification.style.transform = 'translateX(100%)';
+        // 增強通知系統
+        class NotificationManager {
+            constructor() {
+                this.notifications = [];
+                this.container = this.createContainer();
+                this.soundEnabled = true;
+                this.maxNotifications = 5;
+                this.history = [];
+            }
+
+            createContainer() {
+                const container = document.createElement('div');
+                container.id = 'notification-container';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    max-width: 400px;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(container);
+                return container;
+            }
+
+            playSound(type) {
+                if (!this.soundEnabled) return;
+                
+                try {
+                    const context = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = context.createOscillator();
+                    const gainNode = context.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(context.destination);
+                    
+                    // 不同類型的通知使用不同音效
+                    const frequencies = {
+                        success: [523.25, 659.25], // C5 -> E5
+                        error: [493.88, 392.00],   // B4 -> G4  
+                        warning: [440.00, 523.25], // A4 -> C5
+                        info: [523.25]             // C5
+                    };
+                    
+                    const freq = frequencies[type] || frequencies.info;
+                    
+                    freq.forEach((f, i) => {
+                        setTimeout(() => {
+                            oscillator.frequency.setValueAtTime(f, context.currentTime);
+                        }, i * 150);
+                    });
+                    
+                    gainNode.gain.setValueAtTime(0.1, context.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+                    
+                    oscillator.start(context.currentTime);
+                    oscillator.stop(context.currentTime + 0.5);
+                } catch (e) {
+                    // 音效播放失敗時靜默處理
+                }
+            }
+
+            show(message, type = 'info', options = {}) {
+                const {
+                    duration = 4000,
+                    persistent = false,
+                    actions = [],
+                    priority = 'normal'
+                } = options;
+
+                // 限制通知數量
+                if (this.notifications.length >= this.maxNotifications) {
+                    this.notifications[0].remove();
+                }
+
+                const notification = this.createNotification(message, type, actions, persistent);
+                this.notifications.push(notification);
+                this.container.appendChild(notification);
+                
+                // 添加到歷史記錄
+                this.history.unshift({
+                    message,
+                    type,
+                    timestamp: new Date(),
+                    id: Date.now() + Math.random()
+                });
+                if (this.history.length > 50) {
+                    this.history = this.history.slice(0, 50);
+                }
+
+                // 播放音效
+                this.playSound(type);
+
+                // 顯示動畫
+                requestAnimationFrame(() => {
+                    notification.style.transform = 'translateX(0) scale(1)';
+                    notification.style.opacity = '1';
+                });
+
+                // 自動移除（非持久化通知）
+                if (!persistent) {
+                    setTimeout(() => {
+                        this.remove(notification);
+                    }, duration);
+                }
+
+                return notification;
+            }
+
+            createNotification(message, type, actions, persistent) {
+                const notification = document.createElement('div');
+                notification.className = `enhanced-notification ${type}`;
+                
+                const icons = {
+                    success: '🎉',
+                    error: '❌',
+                    warning: '⚠️',
+                    info: 'ℹ️'
+                };
+
+                const colors = {
+                    success: 'linear-gradient(135deg, #27ae60, #2ecc71)',
+                    error: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+                    warning: 'linear-gradient(135deg, #f39c12, #e67e22)',
+                    info: 'linear-gradient(135deg, #3498db, #2980b9)'
+                };
+
+                notification.innerHTML = `
+                    <div class="notification-header">
+                        <span class="notification-icon">${icons[type] || icons.info}</span>
+                        <span class="notification-type">${type.toUpperCase()}</span>
+                        ${!persistent ? '<button class="notification-close" onclick="notificationManager.remove(this.closest(\'.enhanced-notification\'))">×</button>' : ''}
+                    </div>
+                    <div class="notification-body">
+                        <p class="notification-message">${message}</p>
+                        ${actions.length > 0 ? `
+                            <div class="notification-actions">
+                                ${actions.map(action => `
+                                    <button class="notification-action-btn" onclick="${action.handler}">${action.label}</button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="notification-progress"></div>
+                `;
+
+                notification.style.cssText = `
+                    background: ${colors[type] || colors.info};
+                    color: white;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                    margin-bottom: 10px;
+                    transform: translateX(400px) scale(0.8);
+                    opacity: 0;
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    pointer-events: all;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    overflow: hidden;
+                    position: relative;
+                `;
+
+                // 內部樣式
+                const style = document.createElement('style');
+                style.textContent = `
+                    .enhanced-notification .notification-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 12px 16px 8px;
+                        font-weight: 600;
+                        font-size: 12px;
+                    }
+                    
+                    .enhanced-notification .notification-icon {
+                        font-size: 18px;
+                        margin-right: 8px;
+                    }
+                    
+                    .enhanced-notification .notification-close {
+                        background: rgba(255,255,255,0.2);
+                        border: none;
+                        color: white;
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        font-size: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: background 0.2s;
+                    }
+                    
+                    .enhanced-notification .notification-close:hover {
+                        background: rgba(255,255,255,0.3);
+                    }
+                    
+                    .enhanced-notification .notification-body {
+                        padding: 0 16px 12px;
+                    }
+                    
+                    .enhanced-notification .notification-message {
+                        margin: 0;
+                        font-size: 14px;
+                        line-height: 1.4;
+                    }
+                    
+                    .enhanced-notification .notification-actions {
+                        margin-top: 12px;
+                        display: flex;
+                        gap: 8px;
+                    }
+                    
+                    .enhanced-notification .notification-action-btn {
+                        background: rgba(255,255,255,0.2);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s;
+                    }
+                    
+                    .enhanced-notification .notification-action-btn:hover {
+                        background: rgba(255,255,255,0.3);
+                        transform: translateY(-1px);
+                    }
+                    
+                    .enhanced-notification .notification-progress {
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        height: 3px;
+                        background: rgba(255,255,255,0.3);
+                        animation: progress 4s linear;
+                    }
+                    
+                    @keyframes progress {
+                        from { width: 100%; }
+                        to { width: 0%; }
+                    }
+                `;
+                
+                if (!document.getElementById('notification-styles')) {
+                    style.id = 'notification-styles';
+                    document.head.appendChild(style);
+                }
+
+                return notification;
+            }
+
+            remove(notification) {
+                if (!notification || !notification.parentNode) return;
+                
+                notification.style.transform = 'translateX(400px) scale(0.8)';
+                notification.style.opacity = '0';
+                
                 setTimeout(() => {
                     if (notification.parentNode) {
                         notification.parentNode.removeChild(notification);
                     }
+                    this.notifications = this.notifications.filter(n => n !== notification);
                 }, 300);
-            }, 4000);
+            }
+
+            clear() {
+                this.notifications.forEach(notification => this.remove(notification));
+            }
+
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                this.show(`音效已${this.soundEnabled ? '開啟' : '關閉'}`, 'info', { duration: 2000 });
+            }
+
+            showHistory() {
+                const historyHtml = this.history.map(item => `
+                    <div class="history-item">
+                        <span class="history-time">${item.timestamp.toLocaleTimeString()}</span>
+                        <span class="history-type ${item.type}">${item.type}</span>
+                        <span class="history-message">${item.message}</span>
+                    </div>
+                `).join('');
+
+                this.show(`
+                    <div class="notification-history">
+                        <h4>通知歷史</h4>
+                        ${historyHtml || '<p>暫無通知記錄</p>'}
+                    </div>
+                `, 'info', { 
+                    persistent: true,
+                    actions: [
+                        { label: '關閉', handler: 'notificationManager.clear()' }
+                    ]
+                });
+            }
         }
+
+        // 初始化通知管理器
+        const notificationManager = new NotificationManager();
+
+        // 向下兼容的函數
+        function showNotification(message, type = 'info', options = {}) {
+            return notificationManager.show(message, type, options);
+        }
+
+        // 網路狀態檢查
+        function showNetworkStatus() {
+            const isOnline = navigator.onLine;
+            const connectionType = navigator.connection?.effectiveType || 'unknown';
+            
+            showNotification(
+                `網路狀態: ${isOnline ? '已連線' : '離線'} | 連線類型: ${connectionType}`, 
+                isOnline ? 'info' : 'warning',
+                {
+                    duration: 3000,
+                    actions: isOnline ? [] : [
+                        { label: '重試連線', handler: 'location.reload()' }
+                    ]
+                }
+            );
+        }
+
+        // 批次操作確認
+        function showBatchConfirmation(orderCount, action) {
+            showNotification(
+                `確認${action} ${orderCount} 筆訂單？`, 
+                'warning',
+                {
+                    persistent: true,
+                    actions: [
+                        { label: '確認', handler: `executeBatchAction('${action}', ${orderCount})` },
+                        { label: '取消', handler: 'notificationManager.clear()' }
+                    ]
+                }
+            );
+        }
+
+        // 執行批次操作（示例）
+        function executeBatchAction(action, count) {
+            notificationManager.clear();
+            showNotification(`正在執行批次${action} ${count} 筆訂單...`, 'info');
+            
+            // 模擬批次操作
+            setTimeout(() => {
+                showNotification(`✅ 批次${action}完成！`, 'success');
+            }, 2000);
+        }
+
+        // 頁面載入時顯示歡迎通知
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                showNotification(
+                    `🎯 歡迎回來！系統已為您優化推薦`, 
+                    'success',
+                    {
+                        duration: 5000,
+                        actions: [
+                            { label: '查看推薦', handler: 'showTab("available")' }
+                        ]
+                    }
+                );
+            }, 1500);
+        });
     </script>
 </body>
 </html>
