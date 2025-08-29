@@ -2103,16 +2103,32 @@ app.get('/admin/products', ensureAdmin, async (req, res, next) => {
 // 後台：更新某產品
 app.post('/admin/products/:id/update', ensureAdmin, async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
-  const { price, isPricedItem, unitHint } = req.body;
+  const { price, isPricedItem, unitHint, weightPricePerUnit } = req.body;
   try {
     const priceVal = price === '' || price === null ? null : parseFloat(price);
     const priced = isPricedItem === 'on' || isPricedItem === 'true';
-    await pool.query(
-      'UPDATE products SET price=$1, is_priced_item=$2, unit_hint=$3 WHERE id=$4',
-      [priceVal, priced, unitHint || null, id]
-    );
+    const weightPriceVal = weightPricePerUnit === '' || weightPricePerUnit === null ? null : parseFloat(weightPricePerUnit);
+    
+    // 檢查是否需要添加稱重商品欄位
+    const result = await pool.query('SELECT column_name FROM information_schema.columns WHERE table_name = $1', ['products']);
+    const columns = result.rows.map(row => row.column_name);
+    
+    if (columns.includes('weight_price_per_unit')) {
+      await pool.query(
+        'UPDATE products SET price=$1, is_priced_item=$2, unit_hint=$3, weight_price_per_unit=$4 WHERE id=$5',
+        [priceVal, priced, unitHint || null, weightPriceVal, id]
+      );
+    } else {
+      // 如果欄位不存在，僅更新原有欄位
+      await pool.query(
+        'UPDATE products SET price=$1, is_priced_item=$2, unit_hint=$3 WHERE id=$4',
+        [priceVal, priced, unitHint || null, id]
+      );
+    }
+    
     res.redirect('/admin/products');
   } catch (err) {
+    console.log('商品更新錯誤:', err.message);
     next(err);
   }
 });
