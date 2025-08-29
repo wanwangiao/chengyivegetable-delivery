@@ -4,7 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>外送員工作台 - 誠意鮮蔬</title>
-    <link rel="stylesheet" href="/css/driver-portal.css">
+    
+    <!-- 性能優化標籤 -->
+    <meta name="theme-color" content="#28a745">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="preconnect" href="/api/driver/available-orders">
+    
+    <!-- 關鍵CSS優先載入 -->
+    <link rel="preload" href="/css/driver-portal.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/css/driver-portal.css"></noscript>
+    
+    <!-- 非關鍵資源延遲載入 -->
+    <script>
+        // CSS懶加載函數
+        function loadCSS(href) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        }
+        
+        // 預載API資源
+        if ('serviceWorker' in navigator && window.fetch) {
+            window.addEventListener('load', () => {
+                // 預取常用API
+                fetch('/api/driver/available-orders').catch(() => {});
+                fetch('/api/driver/stats').catch(() => {});
+            });
+        }
+    </script>
 </head>
 <body>
     <!-- 頂部導航 -->
@@ -132,6 +160,63 @@
         let currentOrderId = null;
         let currentAction = null;
 
+        // 性能優化工具函數
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        }
+
+        // 前端API快取
+        const frontendCache = new Map();
+        const FRONTEND_CACHE_DURATION = 15000; // 15秒前端快取
+
+        async function optimizedFetch(url, options = {}) {
+            const cacheKey = url + JSON.stringify(options);
+            const cached = frontendCache.get(cacheKey);
+            
+            if (cached && Date.now() - cached.timestamp < FRONTEND_CACHE_DURATION) {
+                console.log(`🚀 前端快取命中: ${url}`);
+                return cached.data;
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                if (response.ok && response.status === 200) {
+                    frontendCache.set(cacheKey, {
+                        data: data,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API請求失敗:', error);
+                throw error;
+            }
+        }
+
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', function() {
             initDriverDashboard();
@@ -140,11 +225,13 @@
             loadCompletedOrders();
             updateStats();
             
-            // 每30秒自動更新
-            setInterval(function() {
+            // 每30秒自動更新 - 使用節流優化
+            const throttledUpdate = throttle(() => {
                 loadAvailableOrders();
                 updateStats();
-            }, 30000);
+            }, 5000); // 最多每5秒更新一次
+            
+            setInterval(throttledUpdate, 30000);
         });
 
         // 初始化儀表板
@@ -408,11 +495,10 @@
             return result;
         }
 
-        // 載入可接訂單
+        // 載入可接訂單 - 優化版本
         async function loadAvailableOrders() {
             try {
-                const response = await fetch('/api/driver/available-orders');
-                const data = await response.json();
+                const data = await optimizedFetch('/api/driver/available-orders');
                 
                 const container = document.getElementById('available-orders');
                 const countBadge = document.getElementById('available-count');
@@ -555,11 +641,10 @@
             }
         }
 
-        // 更新統計數據
+        // 更新統計數據 - 優化版本
         async function updateStats() {
             try {
-                const response = await fetch('/api/driver/stats');
-                const data = await response.json();
+                const data = await optimizedFetch('/api/driver/stats');
                 
                 document.getElementById('avg-delivery-time').textContent = (data.avgDeliveryTime || '--') + ' 分鐘';
             } catch (error) {

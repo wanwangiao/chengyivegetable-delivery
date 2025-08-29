@@ -290,7 +290,40 @@ app.set('view options', {
   rmWhitespace: true,
   charset: 'utf-8'
 });
-app.use(express.static(path.join(__dirname, '../public')));
+// 靜態資源快取策略 - 性能優化
+app.use('/css', express.static(path.join(__dirname, '../public/css'), {
+  maxAge: '7d', // CSS文件快取7天
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'public, max-age=604800'); // 7天
+  }
+}));
+
+app.use('/js', express.static(path.join(__dirname, '../public/js'), {
+  maxAge: '7d', // JS文件快取7天
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'public, max-age=604800'); // 7天
+  }
+}));
+
+app.use('/images', express.static(path.join(__dirname, '../public/images'), {
+  maxAge: '30d', // 圖片快取30天
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'public, max-age=2592000'); // 30天
+  }
+}));
+
+// 其他靜態資源
+app.use(express.static(path.join(__dirname, '../public'), {
+  maxAge: '1d', // 其他文件快取1天
+  etag: true,
+  lastModified: true
+}));
 
 // 處理 favicon.ico 請求
 app.get('/favicon.ico', (req, res) => {
@@ -302,8 +335,20 @@ app.use(helmet({
   contentSecurityPolicy: false // 暫時禁用 CSP
 }));
 
-// 壓縮回應
-app.use(compression());
+// 壓縮回應 - 增強版本
+app.use(compression({
+  filter: (req, res) => {
+    // 不壓縮已經壓縮過的響應
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // 使用compression預設的過濾器
+    return compression.filter(req, res);
+  },
+  level: process.env.NODE_ENV === 'production' ? 6 : 1, // 生產環境使用更高壓縮率
+  threshold: 1024, // 只有超過1KB的響應才壓縮
+  windowBits: 15
+}));
 
 // CORS設定
 app.use(cors({
@@ -407,6 +452,83 @@ function cleanupSession(req) {
       }
     });
   }
+}
+
+// API響應快取系統 - 提升性能
+const apiCache = new Map();
+const CACHE_TTL = 30 * 1000; // 30秒快取
+
+function createCacheKey(req) {
+  return `${req.method}:${req.path}:${JSON.stringify(req.query)}:${req.session?.driverId || 'anonymous'}`;
+}
+
+function apiCacheMiddleware(ttl = CACHE_TTL) {
+  return (req, res, next) => {
+    // 只快取GET請求
+    if (req.method !== 'GET') {
+      return next();
+    }
+
+    const cacheKey = createCacheKey(req);
+    const cached = apiCache.get(cacheKey);
+    
+    if (cached && (Date.now() - cached.timestamp) < ttl) {
+      console.log(`🚀 API快取命中: ${req.path}`);
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('X-Cache-TTL', Math.round((ttl - (Date.now() - cached.timestamp)) / 1000));
+      return res.json(cached.data);
+    }
+
+    // 覆寫res.json來快取響應
+    const originalJson = res.json;
+    res.json = function(data) {
+      // 只快取成功的響應
+      if (res.statusCode === 200 && data) {
+        apiCache.set(cacheKey, {
+          data: data,
+          timestamp: Date.now()
+        });
+        
+        // 清理過期快取（每100次請求清理一次）
+        if (Math.random() < 0.01) {
+          cleanExpiredCache();
+        }
+      }
+      
+      res.setHeader('X-Cache', 'MISS');
+      return originalJson.call(this, data);
+    };
+
+    next();
+  };
+}
+
+function cleanExpiredCache() {
+  const now = Date.now();
+  let cleaned = 0;
+  
+  for (const [key, value] of apiCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL * 2) {
+      apiCache.delete(key);
+      cleaned++;
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log(`🧹 清理了${cleaned}個過期快取項目`);
+  }
+}
+
+// 手動清除特定API快取
+function clearApiCache(pattern) {
+  let cleared = 0;
+  for (const key of apiCache.keys()) {
+    if (key.includes(pattern)) {
+      apiCache.delete(key);
+      cleared++;
+    }
+  }
+  console.log(`🔄 清除了${cleared}個相關快取: ${pattern}`);
 }
 
 // 設置全局變數供路由使用
@@ -742,8 +864,8 @@ app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
   });
 });
 
-// 🚛 外送員API - 可接訂單
-app.get('/api/driver/available-orders', async (req, res) => {
+// 🚛 外送員API - 可接訂單 (添加快取優化)
+app.get('/api/driver/available-orders', apiCacheMiddleware(15000), async (req, res) => { // 15秒快取
   try {
     let orders = [];
     
@@ -918,8 +1040,8 @@ app.get('/api/driver/completed-orders', async (req, res) => {
   }
 });
 
-// 🚛 外送員API - 統計數據
-app.get('/api/driver/stats', async (req, res) => {
+// 🚛 外送員API - 統計數據 (添加快取優化)
+app.get('/api/driver/stats', apiCacheMiddleware(60000), async (req, res) => { // 60秒快取
   try {
     const driverId = req.session.driverId;
     if (!driverId) {
@@ -1025,6 +1147,11 @@ app.post('/api/driver/take-order/:id', async (req, res) => {
       console.log(`📝 Demo模式: 外送員 ${driverId} 接取了訂單 ${orderId}`);
     }
     
+    // 清除相關API快取
+    clearApiCache('available-orders');
+    clearApiCache('driver/stats');
+    clearApiCache('today-stats');
+    
     res.json({ success: true, message: '訂單接取成功' });
   } catch (error) {
     console.error('接取訂單失敗:', error);
@@ -1076,6 +1203,12 @@ app.post('/api/driver/complete-order/:id', async (req, res) => {
       console.log(`📝 Demo模式: 外送員 ${driverId} 完成了訂單 ${orderId}`);
     }
     
+    // 清除相關API快取
+    clearApiCache('driver/stats');
+    clearApiCache('today-stats');
+    clearApiCache('my-orders');
+    clearApiCache('completed-orders');
+    
     res.json({ success: true, message: '配送完成' });
   } catch (error) {
     console.error('完成配送失敗:', error);
@@ -1083,8 +1216,8 @@ app.post('/api/driver/complete-order/:id', async (req, res) => {
   }
 });
 
-// 🚀 PWA 外送員API - 今日統計
-app.get('/api/driver/today-stats', async (req, res) => {
+// 🚀 PWA 外送員API - 今日統計 (添加快取優化)
+app.get('/api/driver/today-stats', apiCacheMiddleware(45000), async (req, res) => { // 45秒快取
   const driverId = req.session.driverId;
   
   if (!driverId) {
