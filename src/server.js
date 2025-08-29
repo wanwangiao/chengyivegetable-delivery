@@ -1714,6 +1714,23 @@ app.get('/line-connected', (req, res) => {
 });
 
 // ---------------- Google Maps & 地圖 API ----------------
+
+// 配送地圖頁面（獨立頁面）
+app.get('/delivery-map', (req, res) => {
+  try {
+    res.render('delivery_map', {
+      title: '配送地圖 - 誠意鮮蔬',
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || 'demo-key'
+    });
+  } catch (err) {
+    console.error('配送地圖頁面錯誤:', err);
+    res.status(500).render('error', { 
+      message: '地圖載入失敗',
+      error: err
+    });
+  }
+});
+
 // 管理員地圖頁
 app.get('/admin/map', ensureAdmin, (req, res) => {
   // 讓前端取得 API 金鑰

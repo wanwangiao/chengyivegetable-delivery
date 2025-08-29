@@ -40,10 +40,10 @@
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon">⏱️</div>
                 <div class="stat-content">
-                    <h3>今日收入</h3>
-                    <p class="stat-number" id="today-earnings">$0</p>
+                    <h3>平均配送時間</h3>
+                    <p class="stat-number" id="avg-delivery-time">-- 分鐘</p>
                 </div>
             </div>
         </div>
@@ -217,22 +217,20 @@
                 const waitTime = (Date.now() - new Date(order.packed_at).getTime()) / (1000 * 60); // 分鐘
                 const urgencyScore = Math.min(waitTime / 15, 8); // 15分鐘後開始緊急
                 
-                // 金額效率計算
-                const valueEfficiency = order.total / areaInfo.avgTime; // 每分鐘收益
+                // 月薪制，移除金額效率計算
                 
                 // 批次效率獎勵
                 const batchBonus = Math.min(areaOrderCount, areaInfo.capacity) * 2;
                 
-                // 總效率分數計算
+                // 總效率分數計算（月薪制，移除價值效率）
                 order.recommendScore = (
                     areaInfo.efficiency * 2 +           // 區域基礎效率 (20分)
                     urgencyScore +                      // 等待緊急度 (8分)
-                    Math.min(valueEfficiency / 10, 5) + // 價值效率 (5分)
                     batchBonus                          // 批次獎勵 (10分)
                 );
                 
                 // 生成智能推薦原因
-                order.recommendReason = generateRecommendReason(order, area, areaInfo, areaOrderCount, waitTime, valueEfficiency);
+                order.recommendReason = generateRecommendReason(order, area, areaInfo, areaOrderCount, waitTime);
                 order.batchInfo = `${area} (${areaOrderCount}筆)`;
                 order.estimatedTime = areaInfo.avgTime;
             });
@@ -242,7 +240,7 @@
         }
         
         // 生成推薦原因
-        function generateRecommendReason(order, area, areaInfo, areaCount, waitTime, valueEfficiency) {
+        function generateRecommendReason(order, area, areaInfo, areaCount, waitTime) {
             let reasons = [];
             
             // 效率原因
@@ -268,11 +266,11 @@
                 reasons.push(`包裝已久，建議優先`);
             }
             
-            // 價值原因
-            if (valueEfficiency > 20) {
-                reasons.push(`高收益訂單`);
-            } else if (order.total > 300) {
-                reasons.push(`高價值訂單`);
+            // 訂單商品數量原因
+            if (order.items && order.items.length > 3) {
+                reasons.push(`多商品訂單`);
+            } else if (order.items && order.items.length === 1) {
+                reasons.push(`簡單配送`);
             }
             
             // 時間效率
@@ -357,7 +355,7 @@
                             <div class="order-header">
                                 <span class="order-number">#${order.id}</span>
                                 <span class="order-area">${getAreaFromAddress(order.address)}</span>
-                                <span class="order-amount">$${order.total}</span>
+                                <span class="order-items">${order.items ? order.items.length : 1}項商品</span>
                             </div>
                             <div class="order-customer">
                                 <span class="customer-name">👤 ${order.customer_name}</span>
@@ -415,7 +413,7 @@
                             <div class="order-header">
                                 <span class="order-number">#${order.id}</span>
                                 <span class="order-status delivering">🚛 配送中</span>
-                                <span class="order-amount">$${order.total}</span>
+                                <span class="order-items">${order.items ? order.items.length : 1}項商品</span>
                             </div>
                             <div class="order-customer">
                                 <span class="customer-name">👤 ${order.customer_name}</span>
@@ -455,7 +453,7 @@
                         <div class="order-header">
                             <span class="order-number">#${order.id}</span>
                             <span class="order-status completed">✅ 已完成</span>
-                            <span class="order-amount">$${order.total}</span>
+                            <span class="order-items">${order.items ? order.items.length : 1}項商品</span>
                         </div>
                         <div class="order-customer">
                             <span class="customer-name">👤 ${order.customer_name}</span>
@@ -477,7 +475,7 @@
                 const response = await fetch('/api/driver/stats');
                 const data = await response.json();
                 
-                document.getElementById('today-earnings').textContent = '$' + data.todayEarnings;
+                document.getElementById('avg-delivery-time').textContent = (data.avgDeliveryTime || '--') + ' 分鐘';
             } catch (error) {
                 console.error('更新統計失敗:', error);
             }
@@ -501,7 +499,7 @@
                             <h4>📦 訂單資訊</h4>
                             <p><strong>訂單編號:</strong> #${order.id}</p>
                             <p><strong>下單時間:</strong> ${formatTime(order.created_at)}</p>
-                            <p><strong>訂單金額:</strong> $${order.total}</p>
+                            <p><strong>商品數量:</strong> ${order.items ? order.items.length : 1} 項</p>
                             <p><strong>付款方式:</strong> ${order.payment_method}</p>
                         </div>
                         
@@ -526,16 +524,16 @@
                         <div class="detail-section">
                             <h4>💰 費用明細</h4>
                             <div class="fee-row">
-                                <span>商品金額:</span>
-                                <span>$${order.subtotal}</span>
+                                <span>商品數量:</span>
+                                <span>${order.items ? order.items.length : 1} 項</span>
                             </div>
                             <div class="fee-row">
                                 <span>配送費:</span>
                                 <span>$${order.delivery_fee || 0}</span>
                             </div>
                             <div class="fee-row total">
-                                <span>總金額:</span>
-                                <span>$${order.total}</span>
+                                <span>預計配送時間:</span>
+                                <span>${order.estimatedTime || 20} 分鐘</span>
                             </div>
                         </div>
                     </div>
@@ -750,7 +748,7 @@
             const batch = [];
             const areaGroups = {};
             let totalTime = 0;
-            let totalValue = 0;
+            let totalItems = 0;
             
             // 按區域分組
             orders.forEach(order => {
@@ -788,7 +786,7 @@
                         if (batch.length < maxOrders) {
                             batch.push(order);
                             totalTime += avgTime;
-                            totalValue += order.total;
+                            totalItems += (order.items ? order.items.length : 1);
                         }
                     });
                 });
@@ -796,8 +794,8 @@
             return {
                 orders: batch,
                 totalTime: totalTime,
-                totalValue: totalValue,
-                efficiency: totalValue / totalTime,
+                totalItems: totalItems,
+                efficiency: totalItems / (totalTime / 60),
                 areaCount: Object.keys(areaGroups).length
             };
         }
@@ -823,8 +821,8 @@
                                 <span class="stat-value">${Math.round(batchData.totalTime)} 分鐘</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">💰 總收益</span>
-                                <span class="stat-value">$${batchData.totalValue}</span>
+                                <span class="stat-label">📦 總商品數</span>
+                                <span class="stat-value">${batchData.totalItems} 項</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">🏆 效率指數</span>
@@ -835,7 +833,7 @@
                             <h4>📊 效率分析</h4>
                             <p>✅ 涵蓋 ${batchData.areaCount} 個配送區域</p>
                             <p>✅ 平均每筆訂單 ${(batchData.totalTime / batchData.orders.length).toFixed(1)} 分鐘</p>
-                            <p>✅ 每分鐘收益 $${batchData.efficiency.toFixed(2)}</p>
+                            <p>✅ 每小時配送 ${batchData.efficiency.toFixed(1)} 項商品</p>
                         </div>
                     </div>
                     <div class="batch-orders">
@@ -846,7 +844,7 @@
                                     <span class="order-rank">${index + 1}</span>
                                     <div class="order-info">
                                         <strong>#${order.id}</strong> - ${getAreaFromAddress(order.address)}
-                                        <br><small>👤 ${order.customer_name} | 💰 $${order.total}</small>
+                                        <br><small>👤 ${order.customer_name} | 📦 ${order.items ? order.items.length : 1}項商品</small>
                                     </div>
                                     <div class="order-reason">
                                         <small>💡 ${order.recommendReason}</small>
