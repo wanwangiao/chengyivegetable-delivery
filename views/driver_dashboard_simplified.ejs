@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外送員工作台 - 承億蔬菜</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#28a745">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="承億外送">
+    <link rel="manifest" href="/manifest.json">
+    
+    <link rel="stylesheet" href="/css/driver-portal.css">
+    
+    <!-- Sortable.js for drag & drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <style>
+        /* 簡化樣式 */
+        .simplified-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 地區選擇按鈕 */
+        .area-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .area-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 120px;
+        }
+        
+        .area-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .area-btn.active {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            transform: scale(1.05);
+        }
+        
+        .area-count {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        
+        /* 主要內容區域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+        
+        /* 訂單列表區域 */
+        .orders-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .orders-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        /* 訂單卡片 */
+        .order-card {
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .order-card:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .order-card.selected {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .order-number {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .order-area {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .order-customer {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .order-address {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        /* 我的配送區域特殊樣式 */
+        .my-delivery-section {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .my-delivery-section .section-header {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+        
+        .sortable-list {
+            min-height: 100px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fafafa;
+        }
+        
+        .sortable-list.drag-over {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+        
+        .delivery-order-card {
+            background: white;
+            border-left: 4px solid #27ae60;
+            position: relative;
+            cursor: move;
+        }
+        
+        .delivery-order-card::before {
+            content: "⋮⋮";
+            position: absolute;
+            left: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #27ae60;
+            font-size: 16px;
+        }
+        
+        .delivery-order-card:hover {
+            background: #f0f8f0;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-accept {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-accept:hover {
+            background: #219a52;
+        }
+        
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+        
+        .btn-optimize {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            font-size: 16px;
+            padding: 12px 25px;
+            border-radius: 8px;
+            margin: 15px;
+        }
+        
+        .btn-optimize:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+        
+        /* 空狀態 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* 載入狀態 */
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 通知樣式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+        
+        /* 統計面板 */
+        .stats-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .stat-item h3 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <!-- 頂部導航 -->
+    <header class="driver-header">
+        <div class="header-content">
+            <div class="driver-info">
+                <h1>🍃 承億蔬菜外送</h1>
+                <p>外送員：<%= driver.name %></p>
+            </div>
+            <div class="header-actions">
+                <span class="status online">🟢 上線中</span>
+                <a href="/driver/logout" class="logout-btn">登出</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="simplified-dashboard">
+        <!-- 統計面板 -->
+        <div class="stats-panel">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3 id="today-completed">0</h3>
+                    <p>今日完成</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="my-orders-count">0</h3>
+                    <p>進行中</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="total-earnings">$0</h3>
+                    <p>今日收入</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 地區選擇器 -->
+        <div class="area-selector">
+            <button class="area-btn" data-area="三峽區" onclick="selectArea('三峽區')">
+                📍 三峽區 <span class="area-count" id="count-三峽區">0</span>
+            </button>
+            <button class="area-btn" data-area="樹林區" onclick="selectArea('樹林區')">
+                📍 樹林區 <span class="area-count" id="count-樹林區">0</span>
+            </button>
+            <button class="area-btn" data-area="鶯歌區" onclick="selectArea('鶯歌區')">
+                📍 鶯歌區 <span class="area-count" id="count-鶯歌區">0</span>
+            </button>
+            <button class="area-btn" data-area="土城區" onclick="selectArea('土城區')">
+                📍 土城區 <span class="area-count" id="count-土城區">0</span>
+            </button>
+            <button class="area-btn" data-area="北大特區" onclick="selectArea('北大特區')">
+                📍 北大特區 <span class="area-count" id="count-北大特區">0</span>
+            </button>
+        </div>
+
+        <!-- 主要內容區域 -->
+        <div class="main-content">
+            <!-- 選擇的地區訂單 -->
+            <div class="orders-section">
+                <div class="section-header">
+                    <h2 class="section-title" id="area-title">請選擇地區查看訂單</h2>
+                    <button class="btn btn-accept" onclick="acceptSelectedOrders()" id="accept-btn" style="display: none;">
+                        ✅ 接受選中的訂單
+                    </button>
+                </div>
+                <div class="orders-list" id="area-orders">
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <p>請點選上方地區按鈕查看訂單</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的配送 -->
+            <div class="orders-section my-delivery-section">
+                <div class="section-header">
+                    <h2 class="section-title">🚛 我的配送 (<span id="delivery-count">0</span>)</h2>
+                    <button class="btn btn-optimize" onclick="optimizeRoute()" id="optimize-btn" style="display: none;">
+                        🧭 一鍵路線優化
+                    </button>
+                </div>
+                <div class="orders-list">
+                    <div class="sortable-list" id="my-delivery-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">🚛</div>
+                            <p>尚未接取任何訂單<br>從左側地區選擇訂單接取</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 通知容器 -->
+    <div id="notification-container"></div>
+
+    <script>
+        // 全域變數
+        const driverId = <%= driver.id %>;
+        let currentArea = null;
+        let selectedOrders = [];
+        let myDeliveryOrders = [];
+        let sortableInstance = null;
+
+        // 頁面載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            initDashboard();
+            loadOrderCounts();
+            loadMyDeliveryOrders();
+            updateStats();
+            
+            // 每30秒更新一次
+            setInterval(() => {
+                loadOrderCounts();
+                updateStats();
+            }, 30000);
+        });
+
+        // 初始化儀表板
+        function initDashboard() {
+            // 初始化拖拉排序
+            const deliveryList = document.getElementById('my-delivery-list');
+            sortableInstance = Sortable.create(deliveryList, {
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    // 重新排序我的配送訂單
+                    const newOrder = Array.from(deliveryList.children)
+                        .filter(el => el.dataset.orderId)
+                        .map(el => el.dataset.orderId);
+                    
+                    // 更新本地訂單順序
+                    reorderMyDeliveryOrders(newOrder);
+                    showNotification('訂單順序已更新', 'success');
+                }
+            });
+        }
+
+        // 選擇地區
+        async function selectArea(area) {
+            // 更新按鈕狀態
+            document.querySelectorAll('.area-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-area="${area}"]`).classList.add('active');
+            
+            currentArea = area;
+            selectedOrders = [];
+            
+            // 更新標題
+            document.getElementById('area-title').textContent = `📍 ${area} 可接訂單`;
+            
+            // 載入該地區訂單
+            await loadAreaOrders(area);
+        }
+
+        // 載入地區訂單數量
+        async function loadOrderCounts() {
+            try {
+                const response = await fetch('/api/driver/order-counts');
+                const data = await response.json();
+                
+                // 更新各地區數量
+                Object.entries(data.counts).forEach(([area, count]) => {
+                    const countElement = document.getElementById(`count-${area}`);
+                    if (countElement) {
+                        countElement.textContent = count;
+                    }
+                });
+            } catch (error) {
+                console.error('載入訂單數量失敗:', error);
+            }
+        }
+
+        // 載入特定地區的訂單
+        async function loadAreaOrders(area) {
+            const container = document.getElementById('area-orders');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入中...</div>';
+            
+            try {
+                const response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                const data = await response.json();
+                
+                if (data.orders.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>${area} 目前沒有可接的訂單</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.orders.map(order => `
+                        <div class="order-card" data-order-id="${order.id}" onclick="toggleOrderSelection(${order.id})">
+                            <div class="order-header">
+                                <span class="order-number">#${order.id}</span>
+                                <span class="order-area">${area}</span>
+                            </div>
+                            <div class="order-customer">
+                                👤 ${order.customer_name} | 📞 ${order.customer_phone}
+                            </div>
+                            <div class="order-address">
+                                📍 ${order.address}
+                            </div>
+                            <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
+                                🛒 ${order.items ? order.items.length : 1} 項商品 | 💰 配送費 $${order.delivery_fee || 50}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                updateAcceptButton();
+            } catch (error) {
+                console.error('載入地區訂單失敗:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p>載入失敗，請重試</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 切換訂單選擇狀態
+        function toggleOrderSelection(orderId) {
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+            const isSelected = selectedOrders.includes(orderId);
+            
+            if (isSelected) {
+                selectedOrders = selectedOrders.filter(id => id !== orderId);
+                orderCard.classList.remove('selected');
+            } else {
+                selectedOrders.push(orderId);
+                orderCard.classList.add('selected');
+            }
+            
+            updateAcceptButton();
+        }
+
+        // 更新接受按鈕狀態
+        function updateAcceptButton() {
+            const acceptBtn = document.getElementById('accept-btn');
+            if (selectedOrders.length > 0) {
+                acceptBtn.style.display = 'inline-block';
+                acceptBtn.textContent = `✅ 接受選中的 ${selectedOrders.length} 筆訂單`;
+            } else {
+                acceptBtn.style.display = 'none';
+            }
+        }
+
+        // 接受選中的訂單
+        async function acceptSelectedOrders() {
+            if (selectedOrders.length === 0) return;
+            
+            const confirmText = `確定要接取 ${selectedOrders.length} 筆訂單嗎？`;
+            if (!confirm(confirmText)) return;
+            
+            try {
+                const response = await fetch('/api/driver/batch-accept-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: selectedOrders
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(`✅ 成功接取 ${selectedOrders.length} 筆訂單！`, 'success');
+                    selectedOrders = [];
+                    
+                    // 重新載入數據
+                    await Promise.all([
+                        loadAreaOrders(currentArea),
+                        loadMyDeliveryOrders(),
+                        loadOrderCounts()
+                    ]);
+                } else {
+                    showNotification('接取訂單失敗：' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('接取訂單失敗:', error);
+                showNotification('接取訂單失敗，請檢查網路連線', 'error');
+            }
+        }
+
+        // 載入我的配送訂單
+        async function loadMyDeliveryOrders() {
+            try {
+                const response = await fetch('/api/driver/my-orders');
+                const data = await response.json();
+                
+                myDeliveryOrders = data.orders;
+                renderMyDeliveryOrders();
+                updateOptimizeButton();
+                
+                // 更新統計
+                document.getElementById('my-orders-count').textContent = data.orders.length;
+                document.getElementById('delivery-count').textContent = data.orders.length;
+            } catch (error) {
+                console.error('載入我的配送訂單失敗:', error);
+            }
+        }
+
+        // 渲染我的配送訂單
+        function renderMyDeliveryOrders() {
+            const container = document.getElementById('my-delivery-list');
+            
+            if (myDeliveryOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🚛</div>
+                        <p>尚未接取任何訂單<br>從左側地區選擇訂單接取</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = myDeliveryOrders.map((order, index) => `
+                    <div class="order-card delivery-order-card" data-order-id="${order.id}">
+                        <div class="order-header">
+                            <span class="order-number">#${order.id}</span>
+                            <span class="order-area">${getAreaFromAddress(order.address)}</span>
+                            <span style="font-size: 12px; color: #666;">第 ${index + 1} 站</span>
+                        </div>
+                        <div class="order-customer">
+                            👤 ${order.customer_name} | 📞 ${order.customer_phone}
+                        </div>
+                        <div class="order-address">
+                            📍 ${order.address}
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-remove" onclick="removeFromMyDelivery(${order.id})">
+                                🗑️ 移除
+                            </button>
+                            <button class="btn btn-accept" onclick="completeDelivery(${order.id})">
+                                ✅ 完成配送
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 從我的配送中移除訂單
+        async function removeFromMyDelivery(orderId) {
+            if (!confirm('確定要移除這筆訂單嗎？訂單將回到可接取狀態。')) return;
+            
+            try {
+                const response = await fetch(`/api/driver/remove-order/${orderId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('✅ 訂單已移除並回到可接取狀態', 'success');
+                    
+                    // 重新載入數據
+                    await Promise.all([
+                        loadMyDeliveryOrders(),
+                        loadOrderCounts(),
+                        currentArea ? loadAreaOrders(currentArea) : Promise.resolve()
+                    ]);
+                } else {
+                    showNotification('移除失敗：' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('移除訂單失敗:', error);
+                showNotification('移除失敗，請檢查網路連線', 'error');
+            }
+        }
+
+        // 完成配送
+        async function completeDelivery(orderId) {
+            if (!confirm('確定已完成這筆訂單的配送嗎？\n系統將自動發送通知給客戶。')) return;
+            
+            try {
+                const response = await fetch(`/api/driver/complete-order/${orderId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('🎉 配送完成！客戶已收到通知', 'success');
+                    
+                    // 重新載入數據
+                    await Promise.all([
+                        loadMyDeliveryOrders(),
+                        updateStats()
+                    ]);
+                } else {
+                    showNotification('完成失敗：' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('完成配送失敗:', error);
+                showNotification('操作失敗，請檢查網路連線', 'error');
+            }
+        }
+
+        // 重新排序我的配送訂單
+        function reorderMyDeliveryOrders(newOrder) {
+            const reorderedOrders = newOrder.map(orderId => 
+                myDeliveryOrders.find(order => order.id == orderId)
+            ).filter(Boolean);
+            
+            myDeliveryOrders = reorderedOrders;
+            renderMyDeliveryOrders();
+        }
+
+        // 更新優化按鈕狀態
+        function updateOptimizeButton() {
+            const optimizeBtn = document.getElementById('optimize-btn');
+            if (myDeliveryOrders.length >= 2) {
+                optimizeBtn.style.display = 'inline-block';
+            } else {
+                optimizeBtn.style.display = 'none';
+            }
+        }
+
+        // 一鍵路線優化
+        async function optimizeRoute() {
+            if (myDeliveryOrders.length < 2) {
+                showNotification('至少需要2筆訂單才能進行路線優化', 'warning');
+                return;
+            }
+            
+            showNotification('🧭 正在優化路線...', 'info');
+            
+            try {
+                const response = await fetch('/api/driver/optimize-route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: myDeliveryOrders.map(order => order.id)
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 更新訂單順序
+                    myDeliveryOrders = result.optimizedOrders;
+                    renderMyDeliveryOrders();
+                    
+                    showNotification(`🎉 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
+                    
+                    // 顯示優化結果
+                    if (result.routeUrl) {
+                        setTimeout(() => {
+                            if (confirm('是否要在新頁面查看優化後的路線圖？')) {
+                                window.open(result.routeUrl, '_blank');
+                            }
+                        }, 2000);
+                    }
+                } else {
+                    showNotification('路線優化失敗：' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('路線優化失敗:', error);
+                showNotification('路線優化失敗，請檢查網路連線', 'error');
+            }
+        }
+
+        // 更新統計數據
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/driver/stats');
+                const data = await response.json();
+                
+                document.getElementById('today-completed').textContent = data.todayCompleted || 0;
+                document.getElementById('total-earnings').textContent = '$' + (data.todayEarnings || 0);
+            } catch (error) {
+                console.error('更新統計失敗:', error);
+            }
+        }
+
+        // 工具函數 - 從地址獲取地區
+        function getAreaFromAddress(address) {
+            if (address.includes('三峽')) return '三峽區';
+            if (address.includes('北大')) return '北大特區';
+            if (address.includes('樹林')) return '樹林區';
+            if (address.includes('鶯歌')) return '鶯歌區';
+            if (address.includes('土城')) return '土城區';
+            return '其他區域';
+        }
+
+        // 顯示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.getElementById('notification-container').appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -44,8 +44,9 @@ function detectProject() {
     console.log('⚠️ 無法讀取 Git 資訊');
   }
   
-  // 3. 檢測部署平台
-  if (fs.existsSync(path.join(process.cwd(), '.vercel'))) {
+  // 3. 檢測部署平台 - 優先級: Vercel > Netlify > Docker > Git
+  if (fs.existsSync(path.join(process.cwd(), '.vercel')) || 
+      fs.existsSync(path.join(process.cwd(), 'vercel.json'))) {
     projectInfo.deploymentType = 'vercel';
     
     const vercelConfigPath = path.join(process.cwd(), '.vercel', 'project.json');
@@ -57,6 +58,12 @@ function detectProject() {
         console.log('⚠️ Vercel 配置讀取失敗');
       }
     }
+    
+    // 檢查是否同時存在 Docker 配置但應該使用 Vercel
+    if (fs.existsSync(path.join(process.cwd(), 'Dockerfile'))) {
+      console.log('🔄 檢測到 Docker 配置但優先使用 Vercel 部署');
+    }
+    
   } else if (fs.existsSync(path.join(process.cwd(), '.netlify'))) {
     projectInfo.deploymentType = 'netlify';
     console.log('🌐 檢測到 Netlify 部署');

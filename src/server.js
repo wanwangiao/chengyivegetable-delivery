@@ -24,6 +24,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler'),
       { createAgentSystem } = require('./agents'),
       driverApiRoutes = require('./routes/driver_api'),
+      { router: driverSimplifiedApiRoutes, setDatabasePool: setDriverSimplifiedDatabasePool } = require('./routes/driver_simplified_api'),
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
@@ -229,6 +230,7 @@ createDatabasePool().then(async () => {
   // 初始化 Google Maps API 服務
   try {
     setGoogleMapsDatabasePool(pool);
+    setDriverSimplifiedDatabasePool(pool, demoMode);
     console.log('🗺️ Google Maps API 服務已初始化');
 
   // 暫時註解即時通知系統初始化
@@ -538,7 +540,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// 外送員API路由
+// 簡化版外送員API路由 (優先處理)
+app.use('/api/driver', driverSimplifiedApiRoutes);
+
+// 外送員API路由 (原有功能)
 app.use('/api/driver', driverApiRoutes);
 
 // 客戶端API路由
@@ -822,8 +827,19 @@ app.post('/driver/login', async (req, res) => {
   }
 });
 
-// 🚛 外送員工作台
+// 🚛 外送員工作台 (新的簡化版本)
 app.get('/driver/dashboard', ensureDriverPage, (req, res) => {
+  
+  res.render('driver_dashboard_simplified', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
+});
+
+// 🚛 外送員工作台 (舊版本，保留作為備份)
+app.get('/driver/dashboard-old', ensureDriverPage, (req, res) => {
   
   res.render('driver_dashboard', {
     driver: {
