@@ -11,7 +11,9 @@
     "deploy-with-message": "node smart-deploy.js",
     "push-and-deploy": "git push && vercel --prod",
     "quick-deploy": "npm run deploy",
-    "smart-deploy": "node smart-deploy.js"
+    "smart-deploy": "node smart-deploy.js",
+    "claude-deploy": "node claude-hook-deploy.js",
+    "auto-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",
