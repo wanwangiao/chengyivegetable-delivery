@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mapboxService = require('../services/mapboxService');
 
 // 資料庫連接將從主應用程式傳入
 let db = null;
@@ -296,21 +297,33 @@ router.post('/optimize-route', async (req, res) => {
                 optimizedOrders: optimizedOrders,
                 timeSaved: timeSaved,
                 message: `路線已優化，預計節省 ${timeSaved} 分鐘`,
-                routeUrl: generateMockRouteUrl(optimizedOrders)
+                routeUrl: generateMockMapboxUrl(optimizedOrders),
+                interactiveUrl: generateMockInteractiveUrl(optimizedOrders)
             });
         } else {
-            // 實際路線優化 - 整合 Google Maps API
+            // 實際路線優化 - 整合 Mapbox API
             const orders = await getOrderDetails(orderIds);
-            const optimizedResult = await optimizeDeliveryRoute(orders);
+            const addresses = orders.map(order => order.address);
+            const optimizedResult = await mapboxService.optimizeRoute(addresses);
             
-            res.json({ 
-                success: true, 
-                optimizedOrders: optimizedResult.orders,
-                timeSaved: optimizedResult.timeSaved,
-                totalDistance: optimizedResult.totalDistance,
-                routeUrl: optimizedResult.routeUrl,
-                message: `路線已優化，預計節省 ${optimizedResult.timeSaved} 分鐘`
-            });
+            if (optimizedResult.success) {
+                // 根據優化後的順序重新排列訂單
+                const optimizedOrders = optimizedResult.optimizedAddresses.map(addr => 
+                    orders[addr.originalIndex]
+                );
+                
+                res.json({ 
+                    success: true, 
+                    optimizedOrders,
+                    timeSaved: Math.max(0, orders.length * 3 - optimizedResult.totalDuration / 60), // 估算節省時間
+                    totalDistance: optimizedResult.totalDistance,
+                    routeUrl: optimizedResult.mapboxUrl,
+                    interactiveUrl: mapboxService.generateInteractiveMapUrl(optimizedResult.optimizedAddresses.map(a => a.coordinates)),
+                    message: `路線已優化，總距離 ${optimizedResult.totalDistance} 公里，預計需時 ${Math.round(optimizedResult.totalDuration)} 分鐘`
+                });
+            } else {
+                res.status(400).json(optimizedResult);
+            }
         }
     } catch (error) {
         console.error('路線優化失敗:', error);
@@ -508,10 +521,29 @@ function simulateRouteOptimization(orderIds) {
     }));
 }
 
-// 生成模擬路線URL
-function generateMockRouteUrl(orders) {
-    const addresses = orders.map(order => encodeURIComponent(order.address || '新北市三峽區')).join('|');
-    return `https://www.google.com/maps/dir/${addresses}`;
+// 生成模擬Mapbox路線URL
+function generateMockMapboxUrl(orders) {
+    // 模擬Mapbox靜態地圖URL
+    const pins = orders.map((order, index) => {
+        const label = String.fromCharCode(65 + index); // A, B, C...
+        // 使用三峽區周邊的示範座標
+        const lng = 121.37 + (Math.random() - 0.5) * 0.02;
+        const lat = 24.93 + (Math.random() - 0.5) * 0.02;
+        return `pin-l-${label.toLowerCase()}+ff0000(${lng},${lat})`;
+    }).join(',');
+    
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${pins}/auto/800x600@2x?access_token=demo`;
+}
+
+// 生成模擬互動式地圖URL
+function generateMockInteractiveUrl(orders) {
+    const waypoints = orders.map(() => {
+        const lng = 121.37 + (Math.random() - 0.5) * 0.02;
+        const lat = 24.93 + (Math.random() - 0.5) * 0.02;
+        return `${lng},${lat}`;
+    }).join('|');
+    
+    return `https://www.mapbox.com/directions/?waypoints=${waypoints}#12/24.93/121.37`;
 }
 
 // 發送LINE通知 (需要LINE Notify Token)
@@ -524,17 +556,39 @@ async function sendLineNotification(customerName, orderId) {
     console.log('發送LINE通知:', message);
 }
 
-// 實際路線優化函數 (需要整合Google Maps API)
+// 實際路線優化函數 (使用Mapbox API)
 async function optimizeDeliveryRoute(orders) {
-    // 這裡應該整合Google Maps Directions API
-    // 實作TSP (Traveling Salesman Problem) 或使用Google Maps的waypoint optimization
-    
-    return {
-        orders: orders, // 優化後的訂單順序
-        timeSaved: 15,  // 節省的時間
-        totalDistance: 12.5, // 總距離(公里)
-        routeUrl: generateMockRouteUrl(orders)
-    };
+    // 這個函數現在已被mapboxService.optimizeRoute替代
+    // 保留作為後備選項
+    try {
+        const addresses = orders.map(order => order.address);
+        const result = await mapboxService.optimizeRoute(addresses);
+        
+        if (result.success) {
+            return {
+                orders: result.optimizedAddresses.map(addr => orders[addr.originalIndex]),
+                timeSaved: Math.max(5, Math.round(orders.length * 2)), // 估算節省時間
+                totalDistance: result.totalDistance,
+                routeUrl: result.mapboxUrl
+            };
+        } else {
+            // 如果Mapbox失敗，返回原順序
+            return {
+                orders: orders,
+                timeSaved: 0,
+                totalDistance: orders.length * 2, // 估算距離
+                routeUrl: generateMockMapboxUrl(orders)
+            };
+        }
+    } catch (error) {
+        console.error('Mapbox route optimization failed:', error);
+        return {
+            orders: orders,
+            timeSaved: 0,
+            totalDistance: orders.length * 2,
+            routeUrl: generateMockMapboxUrl(orders)
+        };
+    }
 }
 
 module.exports = { router, setDatabasePool };

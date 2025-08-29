@@ -17,6 +17,10 @@
     <!-- Sortable.js for drag & drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
+    <!-- Mapbox GL JS -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    
     <style>
         /* 簡化樣式 */
         .simplified-dashboard {
@@ -334,6 +338,97 @@
             font-size: 14px;
             opacity: 0.9;
         }
+        
+        /* 地圖模態框樣式 */
+        .map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .map-modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .map-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .map-modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .map-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px 10px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        
+        .map-close-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .mapbox-container {
+            width: 100%;
+            height: 400px;
+            flex-grow: 1;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .map-modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-modal-footer p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .map-modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+            
+            .mapbox-container {
+                height: 300px;
+            }
+            
+            .map-modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -427,6 +522,23 @@
         </div>
     </main>
 
+    <!-- 路線地圖容器 -->
+    <div id="map-modal" class="map-modal" style="display: none;">
+        <div class="map-modal-content">
+            <div class="map-modal-header">
+                <h3>🗺️ 路線優化地圖</h3>
+                <button class="map-close-btn" onclick="closeMapModal()">&times;</button>
+            </div>
+            <div id="mapbox-container" class="mapbox-container"></div>
+            <div class="map-modal-footer">
+                <p id="map-info">載入中...</p>
+                <button class="btn btn-primary" onclick="openExternalMap()" id="external-map-btn" style="display: none;">
+                    🔗 開啟外部導航
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 通知容器 -->
     <div id="notification-container"></div>
 
@@ -437,6 +549,12 @@
         let selectedOrders = [];
         let myDeliveryOrders = [];
         let sortableInstance = null;
+        let mapboxMap = null;
+        let currentRouteUrl = null;
+        let currentInteractiveUrl = null;
+        
+        // Mapbox access token (demo token, 實際使用時需要從後端傳遞)
+        const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiZGVtby11c2VyIiwiYSI6ImNrcTM4YjNmNjBmNDUyeG5pdjE1NGRqZDIifQ.DemoTokenForTesting';
 
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', function() {
@@ -786,13 +904,15 @@
                     
                     showNotification(`🎉 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
                     
-                    // 顯示優化結果
+                    // 保存路線URL
+                    currentRouteUrl = result.routeUrl;
+                    currentInteractiveUrl = result.interactiveUrl || result.routeUrl;
+                    
+                    // 顯示地圖模態框
                     if (result.routeUrl) {
                         setTimeout(() => {
-                            if (confirm('是否要在新頁面查看優化後的路線圖？')) {
-                                window.open(result.routeUrl, '_blank');
-                            }
-                        }, 2000);
+                            showRouteMap(result.optimizedOrders, result.totalDistance, result.timeSaved);
+                        }, 1500);
                     }
                 } else {
                     showNotification('路線優化失敗：' + result.message, 'error');
@@ -841,6 +961,141 @@
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
         }
+
+        // ========== Mapbox 地圖功能 ==========
+
+        // 顯示路線地圖
+        function showRouteMap(orders, totalDistance, timeSaved) {
+            document.getElementById('map-modal').style.display = 'flex';
+            
+            // 設置Mapbox access token
+            if (typeof mapboxgl !== 'undefined') {
+                mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+            } else {
+                console.warn('Mapbox GL JS not loaded, fallback to external link');
+                openExternalMap();
+                return;
+            }
+            
+            // 初始化地圖信息
+            const mapInfo = document.getElementById('map-info');
+            mapInfo.textContent = `路線總距離：${totalDistance || '計算中'} 公里，預計節省時間：${timeSaved || 0} 分鐘`;
+            
+            // 顯示外部地圖按鈕
+            document.getElementById('external-map-btn').style.display = 'inline-block';
+            
+            // 生成模擬地圖（在沒有真實Mapbox token時）
+            setTimeout(() => {
+                initMapboxRoute(orders);
+            }, 300);
+        }
+
+        // 初始化Mapbox路線地圖
+        function initMapboxRoute(orders) {
+            const mapContainer = document.getElementById('mapbox-container');
+            
+            if (mapboxMap) {
+                mapboxMap.remove();
+            }
+            
+            try {
+                // 創建新地圖實例
+                mapboxMap = new mapboxgl.Map({
+                    container: 'mapbox-container',
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [121.37, 24.93], // 三峽區中心
+                    zoom: 12
+                });
+                
+                // 添加導航控制
+                mapboxMap.addControl(new mapboxgl.NavigationControl());
+                
+                // 地圖載入完成後添加標記
+                mapboxMap.on('load', function() {
+                    addRouteMarkers(orders);
+                });
+                
+            } catch (error) {
+                console.error('Mapbox初始化失敗:', error);
+                mapContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🗺️</div>
+                        <p>地圖載入失敗</p>
+                        <p style="font-size: 12px;">請點擊下方「開啟外部導航」按鈕查看路線</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 添加路線標記
+        function addRouteMarkers(orders) {
+            if (!mapboxMap || !orders || orders.length === 0) return;
+            
+            const bounds = new mapboxgl.LngLatBounds();
+            
+            // 為每個訂單添加標記
+            orders.forEach((order, index) => {
+                // 生成模擬座標（實際應用中應該從geocoding獲取）
+                const lng = 121.37 + (Math.random() - 0.5) * 0.02;
+                const lat = 24.93 + (Math.random() - 0.5) * 0.02;
+                
+                // 創建標記
+                const marker = new mapboxgl.Marker({
+                    color: index === 0 ? '#28a745' : (index === orders.length - 1 ? '#dc3545' : '#007bff')
+                })
+                .setLngLat([lng, lat])
+                .setPopup(new mapboxgl.Popup({ offset: 25 })
+                    .setHTML(`
+                        <div style="padding: 5px;">
+                            <strong>${index === 0 ? '起點' : (index === orders.length - 1 ? '終點' : '第' + index + '站')}</strong><br>
+                            <small>${order.address}</small><br>
+                            <small>客戶：${order.customer_name}</small>
+                        </div>
+                    `))
+                .addTo(mapboxMap);
+                
+                bounds.extend([lng, lat]);
+            });
+            
+            // 調整地圖視野以包含所有標記
+            if (orders.length > 1) {
+                mapboxMap.fitBounds(bounds, { padding: 50 });
+            }
+        }
+
+        // 關閉地圖模態框
+        function closeMapModal() {
+            document.getElementById('map-modal').style.display = 'none';
+            if (mapboxMap) {
+                mapboxMap.remove();
+                mapboxMap = null;
+            }
+        }
+
+        // 開啟外部地圖
+        function openExternalMap() {
+            if (currentInteractiveUrl) {
+                window.open(currentInteractiveUrl, '_blank');
+            } else if (currentRouteUrl) {
+                window.open(currentRouteUrl, '_blank');
+            } else {
+                showNotification('無法獲取路線地圖', 'warning');
+            }
+        }
+
+        // 點擊模態框背景關閉
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'map-modal') {
+                closeMapModal();
+            }
+        });
+
+        // ESC鍵關閉模態框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeMapModal();
+            }
+        });
     </script>
 </body>
 </html>

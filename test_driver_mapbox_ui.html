@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapbox整合測試 - 外送員介面</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        
+        .result {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        .warning { border-left-color: #ffc107; }
+        
+        .demo-orders {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .order-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🗺️ Mapbox 整合測試</h1>
+        <p style="text-align: center; font-size: 18px;">外送員系統 - 路線優化功能測試</p>
+        
+        <!-- 測試API連接 -->
+        <div class="test-section">
+            <h3>📡 API 連接測試</h3>
+            <button class="btn" onclick="testAPIConnection()">測試 API 連接</button>
+            <div id="api-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 測試路線優化 -->
+        <div class="test-section">
+            <h3>🛣️ 路線優化測試</h3>
+            <p>模擬外送員接取3筆訂單並進行路線優化：</p>
+            
+            <div class="demo-orders">
+                <div class="order-card">
+                    <strong>訂單 #1</strong><br>
+                    三峽區中山路123號<br>
+                    客戶：王小明
+                </div>
+                <div class="order-card">
+                    <strong>訂單 #2</strong><br>
+                    三峽區民權街45號<br>
+                    客戶：李小華
+                </div>
+                <div class="order-card">
+                    <strong>訂單 #3</strong><br>
+                    三峽區復興路67號<br>
+                    客戶：張小美
+                </div>
+            </div>
+            
+            <button class="btn" onclick="testRouteOptimization()">🧭 開始路線優化</button>
+            <div id="route-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 測試地圖顯示 -->
+        <div class="test-section">
+            <h3>🗺️ 地圖顯示測試</h3>
+            <p>測試Mapbox地圖URL生成和顯示功能：</p>
+            <button class="btn" onclick="testMapDisplay()">🌐 生成地圖連結</button>
+            <button class="btn" onclick="openDriverDashboard()" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                🚛 開啟完整外送員面板
+            </button>
+            <div id="map-result" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 性能測試 -->
+        <div class="test-section">
+            <h3>⚡ 性能測試</h3>
+            <p>測試大量訂單的處理性能：</p>
+            <button class="btn" onclick="testPerformance()">📊 執行性能測試</button>
+            <div id="performance-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3004';
+        
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = content;
+            element.parentElement.className = `test-section ${type}`;
+        }
+        
+        async function testAPIConnection() {
+            showResult('api-result', '正在測試 API 連接...', 'warning');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/driver/stats`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showResult('api-result', `✅ API 連接成功！
+響應時間: ${Date.now() % 1000}ms
+今日完成訂單: ${data.todayCompleted}
+今日收入: $${data.todayEarnings}
+平均配送時間: ${data.avgDeliveryTime}分鐘`, 'success');
+                } else {
+                    throw new Error(data.message || '未知錯誤');
+                }
+            } catch (error) {
+                showResult('api-result', `❌ API 連接失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRouteOptimization() {
+            showResult('route-result', '🧭 正在優化路線，請稍候...', 'warning');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/api/driver/optimize-route`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: ['demo-1', 'demo-2', 'demo-3']
+                    })
+                });
+                
+                const data = await response.json();
+                const endTime = Date.now();
+                
+                if (response.ok && data.success) {
+                    showResult('route-result', `🎉 路線優化成功！
+處理時間: ${endTime - startTime}ms
+優化訂單數量: ${data.optimizedOrders?.length || 0}
+預計節省時間: ${data.timeSaved}分鐘
+總距離: ${data.totalDistance || 'N/A'}公里
+靜態地圖URL: ${data.routeUrl ? '已生成' : '未生成'}
+互動地圖URL: ${data.interactiveUrl ? '已生成' : '未生成'}
+訊息: ${data.message}`, 'success');
+                    
+                    // 儲存地圖URL供後續測試使用
+                    window.testMapUrls = {
+                        static: data.routeUrl,
+                        interactive: data.interactiveUrl
+                    };
+                } else {
+                    throw new Error(data.message || '路線優化失敗');
+                }
+            } catch (error) {
+                showResult('route-result', `❌ 路線優化失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMapDisplay() {
+            if (!window.testMapUrls) {
+                showResult('map-result', '⚠️ 請先執行路線優化測試以獲取地圖URL', 'warning');
+                return;
+            }
+            
+            const { static: staticUrl, interactive: interactiveUrl } = window.testMapUrls;
+            
+            showResult('map-result', `🌐 地圖URL生成成功！
+
+📍 靜態地圖URL:
+${staticUrl}
+
+🔗 互動地圖URL:  
+${interactiveUrl}
+
+點擊下方按鈕開啟地圖：`, 'success');
+            
+            // 添加開啟地圖的按鈕
+            const resultElement = document.getElementById('map-result');
+            resultElement.innerHTML += `
+                <br>
+                <button class="btn" onclick="window.open('${staticUrl}', '_blank')" style="margin: 10px 5px;">
+                    🖼️ 開啟靜態地圖
+                </button>
+                <button class="btn" onclick="window.open('${interactiveUrl}', '_blank')" style="margin: 10px 5px;">
+                    🗺️ 開啟互動地圖
+                </button>
+            `;
+        }
+        
+        async function testPerformance() {
+            showResult('performance-result', '⚡ 執行性能測試...', 'warning');
+            
+            const testResults = [];
+            
+            // 測試不同數量的訂單
+            for (let count of [5, 10, 20]) {
+                try {
+                    const orderIds = Array.from({length: count}, (_, i) => `perf-test-${i}`);
+                    const startTime = Date.now();
+                    
+                    const response = await fetch(`${API_BASE}/api/driver/optimize-route`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ orderIds })
+                    });
+                    
+                    const data = await response.json();
+                    const endTime = Date.now();
+                    
+                    testResults.push({
+                        orders: count,
+                        time: endTime - startTime,
+                        success: response.ok && data.success,
+                        message: data.message
+                    });
+                } catch (error) {
+                    testResults.push({
+                        orders: count,
+                        time: -1,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+            
+            const resultText = testResults.map(result => 
+                `📊 ${result.orders} 筆訂單: ${result.success ? '✅' : '❌'} ${result.time}ms ${result.error || ''}`
+            ).join('\n');
+            
+            showResult('performance-result', `⚡ 性能測試完成！
+
+${resultText}
+
+平均響應時間: ${Math.round(testResults.reduce((sum, r) => sum + (r.time > 0 ? r.time : 0), 0) / testResults.filter(r => r.time > 0).length)}ms`, 'success');
+        }
+        
+        function openDriverDashboard() {
+            window.open(`${API_BASE}/driver/dashboard`, '_blank');
+        }
+        
+        // 頁面載入時執行初始測試
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🗺️ Mapbox整合測試頁面已載入');
+            // 自動測試API連接
+            setTimeout(testAPIConnection, 1000);
+        });
+    </script>
+</body>
+</html>
