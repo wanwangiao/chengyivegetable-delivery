@@ -348,23 +348,66 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session配置
+// Session配置 - 優化版本
 app.use(session({
   secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Rolling session - 每次請求重新設定過期時間
   cookie: {
-    secure: false, // 暫時關閉 secure 要求，以便排查問題
+    secure: process.env.NODE_ENV === 'production' && process.env.VERCEL_URL, // 生產環境使用secure
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24小時
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7天有效期
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' // 增強安全性
+  },
+  // Session存儲配置
+  name: 'chengyi.sid', // 自定義session name，增強安全性
+  // 錯誤處理
+  genid: () => {
+    const crypto = require('crypto');
+    return crypto.randomBytes(16).toString('hex'); // 更安全的session ID生成
   }
 }));
+
+// Session健康檢查和錯誤處理中間件
+app.use((req, res, next) => {
+  // 檢查Session是否正常運作
+  if (!req.session) {
+    console.warn('⚠️ Session未初始化，重新創建...');
+    req.session = {};
+  }
+  
+  // Session活動追蹤（用於debug）
+  if (req.session && (req.session.adminPassword || req.session.driverId)) {
+    req.session.lastActivity = new Date();
+    
+    // Debug log (只在開發環境)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔐 Session活動: ${req.session.adminPassword ? 'Admin' : 'Driver'} - ${req.path}`);
+    }
+  }
+  
+  next();
+});
 
 // 將 LINE 綁定狀態傳遞至所有模板
 app.use((req, res, next) => {
   res.locals.sessionLine = req.session ? req.session.line : null;
   next();
 });
+
+// Session清理中間件（用於logout等操作）
+function cleanupSession(req) {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session清理失敗:', err);
+      } else {
+        console.log('✅ Session已清理');
+      }
+    });
+  }
+}
 
 // 設置全局變數供路由使用
 app.use((req, res, next) => {
@@ -648,10 +691,7 @@ app.post('/driver/login', async (req, res) => {
 });
 
 // 🚛 外送員工作台
-app.get('/driver/dashboard', (req, res) => {
-  if (!req.session.driverId) {
-    return res.redirect('/driver/login');
-  }
+app.get('/driver/dashboard', ensureDriverPage, (req, res) => {
   
   res.render('driver_dashboard', {
     driver: {
@@ -662,10 +702,7 @@ app.get('/driver/dashboard', (req, res) => {
 });
 
 // 🚀 外送員PWA工作台
-app.get('/driver', (req, res) => {
-  if (!req.session.driverId) {
-    return res.redirect('/driver/login');
-  }
+app.get('/driver', ensureDriverPage, (req, res) => {
   
   res.render('driver_pwa', {
     driver: {
@@ -676,10 +713,7 @@ app.get('/driver', (req, res) => {
 });
 
 // 🚛 外送員通訊中心
-app.get('/driver/chat', (req, res) => {
-  if (!req.session.driverId) {
-    return res.redirect('/driver/login');
-  }
+app.get('/driver/chat', ensureDriverPage, (req, res) => {
   
   res.render('driver_chat', {
     driver: {
@@ -692,16 +726,13 @@ app.get('/driver/chat', (req, res) => {
 
 // 🚛 外送員登出
 app.get('/driver/logout', (req, res) => {
-  req.session.driverId = null;
-  req.session.driverName = null;
+  console.log(`🚛 外送員登出: ${req.session.driverName || 'Unknown'}`);
+  cleanupSession(req);
   res.redirect('/driver/login');
 });
 
 // 🛰️ 外送員GPS追蹤工作台
-app.get('/driver/dashboard-gps', (req, res) => {
-  if (!req.session.driverId) {
-    return res.redirect('/driver/login');
-  }
+app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
   
   res.render('driver_dashboard_gps', {
     driver: {
@@ -1616,20 +1647,76 @@ app.post('/admin/login', validateAdminPassword, (req, res) => {
   res.render('admin_login', { error: '密碼錯誤' });
 });
 
-// 登出
+// 管理員登出
 app.get('/admin/logout', (req, res) => {
-  req.session.isAdmin = false;
-  req.session.destroy(() => {
-    res.redirect('/admin/login');
-  });
+  console.log('🔐 管理員登出');
+  cleanupSession(req);
+  res.redirect('/admin/login');
 });
 
-// 管理員驗證中介
+// 管理員驗證中介 - 增強版本
 function ensureAdmin(req, res, next) {
-  if (req.session && req.session.isAdmin) {
+  // Session健康檢查
+  if (!req.session) {
+    console.warn('⚠️ ensureAdmin: Session不存在，重定向到登入');
+    return res.redirect('/admin/login');
+  }
+  
+  // 檢查管理員權限
+  if (req.session.isAdmin) {
+    // 更新最後活動時間
+    req.session.lastActivity = new Date();
+    
+    // 檢查Session是否過期（額外安全檢查）
+    if (req.session.lastActivity && 
+        (new Date() - new Date(req.session.lastActivity)) > 7 * 24 * 60 * 60 * 1000) {
+      console.warn('⚠️ ensureAdmin: Session已過期，清理並重定向');
+      cleanupSession(req);
+      return res.redirect('/admin/login');
+    }
     return next();
   }
   return res.redirect('/admin/login');
+}
+
+// 外送員驗證中介 - 統一Session檢查
+function ensureDriver(req, res, next) {
+  // Session健康檢查
+  if (!req.session) {
+    console.warn('⚠️ ensureDriver: Session不存在');
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  // 檢查外送員權限
+  if (req.session.driverId) {
+    // 更新最後活動時間
+    req.session.lastActivity = new Date();
+    
+    // 檢查Session是否過期（額外安全檢查）
+    if (req.session.lastActivity && 
+        (new Date() - new Date(req.session.lastActivity)) > 7 * 24 * 60 * 60 * 1000) {
+      console.warn('⚠️ ensureDriver: Session已過期，清理並返回錯誤');
+      cleanupSession(req);
+      return res.status(401).json({ success: false, message: 'Session已過期，請重新登入' });
+    }
+    
+    return next();
+  }
+  
+  return res.status(401).json({ success: false, message: '請先登入' });
+}
+
+// 外送員頁面驗證中介（用於頁面路由）
+function ensureDriverPage(req, res, next) {
+  // Session健康檢查
+  if (!req.session || !req.session.driverId) {
+    console.warn('⚠️ ensureDriverPage: Session不存在或未登入，重定向到登入');
+    return res.redirect('/driver/login');
+  }
+  
+  // 更新最後活動時間
+  req.session.lastActivity = new Date();
+  return next();
 }
 
 // ---------------- LINE 登入與綁定 ----------------
