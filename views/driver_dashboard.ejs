@@ -48,6 +48,14 @@
             </div>
         </div>
 
+        <!-- 區域密度即時顯示 -->
+        <div class="density-section">
+            <h3>📊 區域訂單密度</h3>
+            <div class="density-grid" id="density-display">
+                <!-- 動態載入區域密度 -->
+            </div>
+        </div>
+
         <!-- 標籤切換 -->
         <div class="tabs-section">
             <div class="tabs">
@@ -161,8 +169,60 @@
             document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
-        // 智能路線推薦算法 - 批次配送優化（最多15筆）
+        // 外送員歷史偏好分析（基於配送記錄）
+        function getDrivenPreferences() {
+            // 模擬外送員歷史配送數據分析
+            // 實際實現應從後端API獲取個人配送統計
+            return {
+                preferredAreas: {
+                    '三峽區': { familiarity: 9, successRate: 0.95, avgTime: 7 },
+                    '北大特區': { familiarity: 8, successRate: 0.92, avgTime: 11 },
+                    '樹林區': { familiarity: 6, successRate: 0.88, avgTime: 18 },
+                    '鶯歌區': { familiarity: 4, successRate: 0.85, avgTime: 22 },
+                    '土城區': { familiarity: 3, successRate: 0.80, avgTime: 25 }
+                },
+                workingTime: {
+                    peakHours: ['11:00-14:00', '17:00-20:00'],
+                    preferredShift: 'morning' // morning, afternoon, evening
+                },
+                deliveryStyle: {
+                    prefersBatch: true,        // 偏好批次配送
+                    maxBatchSize: 4,           // 最大批次數量
+                    avgItemsPerOrder: 2.3      // 平均每單商品數
+                }
+            };
+        }
+
+        // 即時區域密度分析
+        function calculateAreaDensity(orders) {
+            const density = {};
+            const totalOrders = orders.length;
+            
+            orders.forEach(order => {
+                const area = getAreaFromAddress(order.address);
+                density[area] = (density[area] || 0) + 1;
+            });
+            
+            // 計算密度百分比和狀態
+            Object.keys(density).forEach(area => {
+                const count = density[area];
+                const percentage = (count / totalOrders * 100).toFixed(1);
+                density[area] = {
+                    count: count,
+                    percentage: percentage,
+                    status: count >= 3 ? 'hot' : count >= 2 ? 'warm' : 'cold',
+                    icon: count >= 3 ? '🔥' : count >= 2 ? '⚡' : '❄️'
+                };
+            });
+            
+            return density;
+        }
+
+        // 智能路線推薦算法 - 增強版
         function smartRouteRecommendation(orders) {
+            // 獲取外送員偏好和區域密度
+            const driverPrefs = getDrivenPreferences();
+            const areaDensity = calculateAreaDensity(orders);
             // 區域配送效率分析
             const areaEfficiency = {
                 '三峽區': { 
@@ -207,70 +267,93 @@
                 areaGroups[area].push(order);
             });
             
-            // 為每個訂單計算綜合推薦分數
+            // 為每個訂單計算綜合推薦分數 - 個人化版本
             orders.forEach(order => {
                 const area = getAreaFromAddress(order.address);
                 const areaInfo = areaEfficiency[area] || { priority: 6, avgTime: 25, capacity: 1, efficiency: 2 };
                 const areaOrderCount = areaGroups[area].length;
+                const driverAreaPref = driverPrefs.preferredAreas[area] || { familiarity: 2, successRate: 0.75, avgTime: 30 };
+                const densityInfo = areaDensity[area] || { count: 0, status: 'cold', icon: '❄️' };
                 
                 // 時間因素計算
                 const waitTime = (Date.now() - new Date(order.packed_at).getTime()) / (1000 * 60); // 分鐘
                 const urgencyScore = Math.min(waitTime / 15, 8); // 15分鐘後開始緊急
                 
-                // 月薪制，移除金額效率計算
+                // 個人化熟悉度獎勵
+                const familiarityBonus = driverAreaPref.familiarity * 1.5; // 最高13.5分
+                
+                // 區域密度獎勵（熱門區域獎勵）
+                const densityBonus = densityInfo.status === 'hot' ? 5 : densityInfo.status === 'warm' ? 3 : 1;
                 
                 // 批次效率獎勵
                 const batchBonus = Math.min(areaOrderCount, areaInfo.capacity) * 2;
                 
-                // 總效率分數計算（月薪制，移除價值效率）
+                // 成功率獎勵
+                const successRateBonus = (driverAreaPref.successRate - 0.8) * 10; // 80%以上有獎勵
+                
+                // 總效率分數計算（個人化推薦）
                 order.recommendScore = (
-                    areaInfo.efficiency * 2 +           // 區域基礎效率 (20分)
+                    areaInfo.efficiency * 1.5 +         // 區域基礎效率 (15分)
                     urgencyScore +                      // 等待緊急度 (8分)
-                    batchBonus                          // 批次獎勵 (10分)
+                    familiarityBonus +                  // 個人熟悉度 (13.5分)
+                    densityBonus +                      // 區域熱門度 (5分)
+                    batchBonus +                        // 批次獎勵 (10分)
+                    Math.max(successRateBonus, 0)       // 成功率獎勵 (2分)
                 );
                 
+                // 添加密度信息到訂單
+                order.densityInfo = densityInfo;
+                
                 // 生成智能推薦原因
-                order.recommendReason = generateRecommendReason(order, area, areaInfo, areaOrderCount, waitTime);
-                order.batchInfo = `${area} (${areaOrderCount}筆)`;
-                order.estimatedTime = areaInfo.avgTime;
+                order.recommendReason = generateRecommendReason(order, area, areaInfo, areaOrderCount, waitTime, driverAreaPref, densityInfo);
+                order.batchInfo = `${densityInfo.icon} ${area} (${areaOrderCount}筆)`;
+                order.estimatedTime = Math.min(areaInfo.avgTime, driverAreaPref.avgTime);
             });
             
             // 智能排序：優先推薦能形成高效批次的訂單
             return optimizeBatchDelivery(orders, areaEfficiency);
         }
         
-        // 生成推薦原因
-        function generateRecommendReason(order, area, areaInfo, areaCount, waitTime) {
+        // 生成推薦原因 - 個人化版本
+        function generateRecommendReason(order, area, areaInfo, areaCount, waitTime, driverPref, densityInfo) {
             let reasons = [];
             
-            // 效率原因
-            if (areaInfo.efficiency >= 8) {
-                reasons.push(`${area}高效區域`);
-            } else if (areaInfo.efficiency >= 5) {
-                reasons.push(`${area}中效區域`);
-            } else {
-                reasons.push(`${area}遠程配送`);
+            // 個人化熟悉度優先
+            if (driverPref && driverPref.familiarity >= 8) {
+                reasons.push(`🎯 您的熟悉區域`);
+            } else if (driverPref && driverPref.familiarity >= 6) {
+                reasons.push(`📍 常配送區域`);
             }
             
-            // 批次原因
+            // 區域熱門度和密度
+            if (densityInfo && densityInfo.status === 'hot') {
+                reasons.push(`${densityInfo.icon} 熱門區域 (${densityInfo.count}筆)`);
+            } else if (densityInfo && densityInfo.status === 'warm') {
+                reasons.push(`${densityInfo.icon} 活躍區域`);
+            }
+            
+            // 個人配送優勢
+            if (driverPref && driverPref.successRate >= 0.9) {
+                reasons.push(`✅ 您的成功率${(driverPref.successRate * 100).toFixed(0)}%`);
+            }
+            
+            // 批次配送機會
             if (areaCount >= 3) {
-                reasons.push(`可批次配送${areaCount}筆`);
+                reasons.push(`📦 可批次${areaCount}筆`);
             } else if (areaCount === 2) {
-                reasons.push(`可搭配同區1筆`);
+                reasons.push(`🔗 可搭配1筆`);
             }
             
-            // 緊急原因
+            // 時間優勢顯示
+            if (driverPref && driverPref.avgTime < areaInfo.avgTime) {
+                reasons.push(`⚡ 您僅需${driverPref.avgTime}分鐘`);
+            }
+            
+            // 緊急度提醒
             if (waitTime > 45) {
-                reasons.push(`包裝超過45分鐘，急需配送`);
+                reasons.push(`🚨 急需配送 (${Math.round(waitTime)}分)`);
             } else if (waitTime > 30) {
-                reasons.push(`包裝已久，建議優先`);
-            }
-            
-            // 訂單商品數量原因
-            if (order.items && order.items.length > 3) {
-                reasons.push(`多商品訂單`);
-            } else if (order.items && order.items.length === 1) {
-                reasons.push(`簡單配送`);
+                reasons.push(`⏰ 包裝已久`);
             }
             
             // 時間效率
@@ -347,6 +430,9 @@
                 } else {
                     // 智能路線推薦排序
                     const sortedOrders = smartRouteRecommendation(data.orders);
+                    
+                    // 更新區域密度顯示
+                    updateDensityDisplay(data.orders);
                     
                     container.innerHTML = sortedOrders.map((order, index) => `
                         <div class="order-card available ${index === 0 ? 'recommended' : ''} ${order.batchLeader ? 'batch-leader' : ''}" onclick="showOrderDetail(${order.id}, 'take')">
@@ -713,6 +799,44 @@
             document.getElementById('order-detail-modal').style.display = 'none';
             currentOrderId = null;
             currentAction = null;
+        }
+
+        // 更新區域密度顯示
+        function updateDensityDisplay(orders) {
+            const density = calculateAreaDensity(orders);
+            const driverPrefs = getDrivenPreferences();
+            const container = document.getElementById('density-display');
+            
+            // 按熟悉度排序區域
+            const sortedAreas = Object.entries(density).sort(([areaA, dataA], [areaB, dataB]) => {
+                const prefA = driverPrefs.preferredAreas[areaA]?.familiarity || 0;
+                const prefB = driverPrefs.preferredAreas[areaB]?.familiarity || 0;
+                return prefB - prefA;
+            });
+            
+            container.innerHTML = sortedAreas.map(([area, data]) => {
+                const driverPref = driverPrefs.preferredAreas[area] || { familiarity: 0 };
+                const familiarityClass = driverPref.familiarity >= 8 ? 'familiar' : driverPref.familiarity >= 6 ? 'known' : 'unfamiliar';
+                
+                return `
+                    <div class="density-card ${data.status} ${familiarityClass}">
+                        <div class="density-header">
+                            <span class="density-icon">${data.icon}</span>
+                            <span class="density-area">${area}</span>
+                            <span class="density-count">${data.count}筆</span>
+                        </div>
+                        <div class="density-details">
+                            <div class="density-bar">
+                                <div class="density-fill" style="width: ${data.percentage}%"></div>
+                            </div>
+                            <div class="density-info">
+                                <span class="density-percentage">${data.percentage}%</span>
+                                ${driverPref.familiarity >= 6 ? `<span class="familiarity-badge">✅ 熟悉</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // 重新整理可接訂單
