@@ -13,7 +13,8 @@
     "quick-deploy": "npm run deploy",
     "smart-deploy": "node smart-deploy.js",
     "claude-deploy": "node claude-hook-deploy.js",
-    "auto-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'"
+    "auto-deploy": "node safe-deploy.js",
+    "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",
