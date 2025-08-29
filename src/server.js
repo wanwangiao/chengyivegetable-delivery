@@ -3228,6 +3228,14 @@ app.post('/api/test/create-orders', async (req, res) => {
 // LINE Bot 整合路由
 // =====================================
 
+// 初始化LINE Bot服務
+try {
+  lineBotService = new LineBotService();
+  console.log('🤖 LINE Bot服務已初始化');
+} catch (error) {
+  console.error('❌ LINE Bot服務初始化失敗:', error);
+}
+
 const OrderNotificationHook = require('./services/OrderNotificationHook');
 const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 
@@ -3358,6 +3366,32 @@ app.put('/api/orders/:orderId/status', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: '狀態不能為空'
+      });
+    }
+    
+    // 示範模式處理
+    if (demoMode) {
+      console.log(`📋 [示範模式] 模擬訂單 #${orderId} 狀態更新: pending → ${status}`);
+      
+      const oldStatus = 'pending'; // 示範模式預設原狀態
+      
+      // 觸發通知Hook (這是重點測試項目)
+      await orderNotificationHook.handleOrderStatusChange(orderId, oldStatus, status, {
+        id: orderId,
+        contact_name: '示範客戶',
+        contact_phone: '0912345678',
+        total_amount: 350,
+        payment_method: 'cash',
+        line_user_id: null // 觸發模擬通知
+      });
+      
+      return res.json({
+        success: true,
+        message: '示範模式：訂單狀態更新成功，已觸發通知測試',
+        orderId: parseInt(orderId),
+        oldStatus,
+        newStatus: status,
+        demoMode: true
       });
     }
     
@@ -3763,11 +3797,5 @@ const server = app.listen(port, () => {
     console.error('❌ LINE通知服務初始化失敗:', error);
   }
   
-  // 初始化LINE Bot服務
-  try {
-    lineBotService = new LineBotService();
-    console.log('🤖 LINE Bot服務已初始化');
-  } catch (error) {
-    console.error('❌ LINE Bot服務初始化失敗:', error);
-  }
+  // LINE Bot服務已在上方初始化
 });
