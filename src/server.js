@@ -400,10 +400,10 @@ app.use(session({
   saveUninitialized: false,
   rolling: true, // Rolling session - 每次請求重新設定過期時間
   cookie: {
-    secure: process.env.NODE_ENV === 'production' && process.env.VERCEL_URL, // 生產環境使用secure
+    secure: false, // 暫時停用 secure 以解決 Vercel 相容性問題
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7天有效期
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' // 增強安全性
+    sameSite: 'lax' // 使用 lax 以提升相容性
   },
   // Session存儲配置
   name: 'chengyi.sid', // 自定義session name，增強安全性
@@ -775,6 +775,16 @@ async function fetchProducts() {
 }
 
 // 前台：首頁，列出商品
+// 簡單測試路由
+app.get('/test', (req, res) => {
+  res.json({ 
+    message: '蔬果外送系統測試成功！', 
+    timestamp: new Date().toISOString(),
+    session: !!req.session,
+    demoMode: demoMode
+  });
+});
+
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
@@ -4023,24 +4033,10 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('unhandledRejection');
 });
 
-// 啟動伺服器
-const server = app.listen(port, () => {
-  console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
-  console.log(`📱 前台網址: http://localhost:${port}`);
-  console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
-  console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
-  console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
-  
-  // 初始化WebSocket服務
-  if (!demoMode) {
-    try {
-      webSocketManager = new WebSocketManager(server);
-      setWebSocketManager(webSocketManager);
-      console.log(`🔌 WebSocket 服務已啟動: ws://localhost:${port}`);
-    } catch (error) {
-      console.error('❌ WebSocket 初始化失敗:', error);
-    }
-  }
+// 初始化服務（適用於 Vercel serverless 環境）
+if (process.env.VERCEL) {
+  // Vercel serverless 環境：立即初始化服務
+  console.log('🔧 Vercel serverless 環境初始化');
   
   // 初始化LINE通知服務
   try {
@@ -4049,6 +4045,37 @@ const server = app.listen(port, () => {
   } catch (error) {
     console.error('❌ LINE通知服務初始化失敗:', error);
   }
-  
-  // LINE Bot服務已在上方初始化
-});
+} else {
+  // 本地開發環境：啟動伺服器
+  const server = app.listen(port, () => {
+    console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
+    console.log(`📱 前台網址: http://localhost:${port}`);
+    console.log(`⚙️  管理後台: http://localhost:${port}/admin`);
+    console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
+    console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
+    
+    // 初始化WebSocket服務
+    if (!demoMode) {
+      try {
+        webSocketManager = new WebSocketManager(server);
+        setWebSocketManager(webSocketManager);
+        console.log(`🔌 WebSocket 服務已啟動: ws://localhost:${port}`);
+      } catch (error) {
+        console.error('❌ WebSocket 初始化失敗:', error);
+      }
+    }
+    
+    // 初始化LINE通知服務
+    try {
+      lineNotificationService = new LineNotificationService();
+      console.log('🔔 LINE通知服務已初始化');
+    } catch (error) {
+      console.error('❌ LINE通知服務初始化失敗:', error);
+    }
+    
+    // LINE Bot服務已在上方初始化
+  });
+}
+
+// 導出 app 供 Vercel serverless 使用
+module.exports = app;
