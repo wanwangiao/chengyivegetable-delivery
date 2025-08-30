@@ -1,0 +1,2197 @@
+{
+  "timestamp": "2025-08-30T06:40:30.320Z",
+  "testConfig": {
+    "totalOrders": 100,
+    "batchSizeRange": "15-30",
+    "description": "外送員每次接15-30單不等，直到送完"
+  },
+  "result": {
+    "totalOrders": 100,
+    "totalBatches": 5,
+    "totalApiCalls": 88,
+    "totalUsage": {
+      "staticMaps": 5,
+      "geocoding": 71,
+      "directions": 7,
+      "jsApiLoads": 5,
+      "placesApi": 0
+    },
+    "costs": {
+      "staticMaps": 0.01,
+      "geocoding": 0.355,
+      "directions": 0.035,
+      "jsApiLoads": 0.035,
+      "placesApi": 0
+    },
+    "totalCost": 0.43500000000000005,
+    "netCost": 0,
+    "twdCost": 0
+  },
+  "detailedBatches": [
+    {
+      "batchNumber": 1,
+      "orderCount": 26,
+      "orders": [
+        {
+          "id": 1,
+          "customer_name": "林小芳",
+          "customer_phone": "0927325387",
+          "address": "新北市三峽區學勤路456號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T16:56:57.653Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "customer_name": "王小明",
+          "customer_phone": "0965831914",
+          "address": "新北市三峽區和平街89號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T12:50:35.347Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "customer_name": "張小美",
+          "customer_phone": "0948953778",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T10:03:37.883Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "customer_name": "黃大頭",
+          "customer_phone": "0915636576",
+          "address": "新北市三峽區文化路101號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T07:02:39.206Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "customer_name": "吳建國",
+          "customer_phone": "0945302171",
+          "address": "新北市三峽區中山路123號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T19:15:36.745Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "customer_name": "王小明",
+          "customer_phone": "0903652776",
+          "address": "新北市三峽區中山路123號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T09:37:30.306Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "customer_name": "李小華",
+          "customer_phone": "0975127580",
+          "address": "新北市三峽區學府路678號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T12:16:40.744Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0957949166",
+          "address": "新北市土城區中央路456號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T13:54:04.082Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "customer_name": "林小芳",
+          "customer_phone": "0929889126",
+          "address": "新北市三峽區和平街89號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T12:35:26.792Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "customer_name": "吳建國",
+          "customer_phone": "0999401504",
+          "address": "新北市三峽區和平街89號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T19:39:08.061Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "customer_name": "林小芳",
+          "customer_phone": "0990187715",
+          "address": "新北市三峽區學成路345號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T14:21:38.993Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "customer_name": "張小美",
+          "customer_phone": "0990443219",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T20:35:28.292Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "customer_name": "張小美",
+          "customer_phone": "0943486187",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T18:24:52.289Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "customer_name": "吳建國",
+          "customer_phone": "0954463046",
+          "address": "新北市鶯歌區中山路345號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T18:45:58.490Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "customer_name": "陳小強",
+          "customer_phone": "0925689108",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T20:41:58.818Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "customer_name": "黃大頭",
+          "customer_phone": "0984009084",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T16:12:54.484Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "customer_name": "張小美",
+          "customer_phone": "0956652158",
+          "address": "新北市樹林區中正路234號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T01:36:37.924Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "customer_name": "張小美",
+          "customer_phone": "0904288608",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T17:46:13.941Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "customer_name": "王小明",
+          "customer_phone": "0993781957",
+          "address": "新北市樹林區中正路234號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T09:52:28.432Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0996256644",
+          "address": "新北市三峽區和平街89號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T01:34:18.452Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "customer_name": "王小明",
+          "customer_phone": "0931267608",
+          "address": "新北市三峽區學成路345號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T12:33:15.565Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "customer_name": "許志明",
+          "customer_phone": "0930014709",
+          "address": "新北市三峽區學府路678號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T02:06:55.670Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "customer_name": "李小華",
+          "customer_phone": "0902082133",
+          "address": "新北市鶯歌區中山路345號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T12:37:53.692Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0907768529",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T15:00:55.943Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "customer_name": "王小明",
+          "customer_phone": "0924006399",
+          "address": "新北市土城區學府路234號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T14:03:43.605Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "customer_name": "許志明",
+          "customer_phone": "0932021412",
+          "address": "新北市三峽區大學路123號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T06:23:55.185Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        }
+      ],
+      "apiUsage": {
+        "staticMaps": 1,
+        "geocoding": 17,
+        "directions": 2,
+        "jsApiLoads": 1,
+        "placesApi": 0
+      }
+    },
+    {
+      "batchNumber": 2,
+      "orderCount": 15,
+      "orders": [
+        {
+          "id": 27,
+          "customer_name": "黃大頭",
+          "customer_phone": "0976440203",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T01:14:40.422Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "customer_name": "林小芳",
+          "customer_phone": "0918917854",
+          "address": "新北市三峽區民權街45號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T22:21:03.482Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "customer_name": "劉小花",
+          "customer_phone": "0918154344",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T20:38:22.322Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "customer_name": "張小美",
+          "customer_phone": "0964189129",
+          "address": "新北市樹林區中山路156號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T17:23:17.258Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 31,
+          "customer_name": "黃大頭",
+          "customer_phone": "0967707022",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T03:37:18.668Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "customer_name": "黃大頭",
+          "customer_phone": "0980782984",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-30T03:12:02.341Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0990664908",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T08:45:01.110Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "customer_name": "李小華",
+          "customer_phone": "0977815802",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T22:45:24.382Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0970221134",
+          "address": "新北市樹林區中山路156號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T00:47:15.396Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0913555391",
+          "address": "新北市三峽區復興路67號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-30T06:33:28.416Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "customer_name": "吳建國",
+          "customer_phone": "0917083048",
+          "address": "新北市三峽區北大路234號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-30T04:29:27.308Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "customer_name": "許志明",
+          "customer_phone": "0995620639",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T09:45:55.380Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 39,
+          "customer_name": "王小明",
+          "customer_phone": "0928765705",
+          "address": "新北市三峽區復興路67號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T20:06:14.954Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "customer_name": "林小芳",
+          "customer_phone": "0917511040",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T20:25:42.316Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 41,
+          "customer_name": "黃大頭",
+          "customer_phone": "0950799233",
+          "address": "新北市土城區學府路234號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T22:40:47.786Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        }
+      ],
+      "apiUsage": {
+        "staticMaps": 1,
+        "geocoding": 10,
+        "directions": 1,
+        "jsApiLoads": 1,
+        "placesApi": 0
+      }
+    },
+    {
+      "batchNumber": 3,
+      "orderCount": 21,
+      "orders": [
+        {
+          "id": 42,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0959588242",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T12:48:09.477Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 43,
+          "customer_name": "林小芳",
+          "customer_phone": "0918776844",
+          "address": "新北市三峽區和平街89號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T16:08:51.833Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 44,
+          "customer_name": "林小芳",
+          "customer_phone": "0916196889",
+          "address": "新北市三峽區中正路234號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T22:02:45.055Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 45,
+          "customer_name": "劉小花",
+          "customer_phone": "0982747477",
+          "address": "新北市三峽區三樹路567號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T09:25:35.511Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 46,
+          "customer_name": "林小芳",
+          "customer_phone": "0919476834",
+          "address": "新北市鶯歌區中山路345號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T13:40:26.395Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 47,
+          "customer_name": "吳建國",
+          "customer_phone": "0999312638",
+          "address": "新北市三峽區中正路234號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T10:08:13.992Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 48,
+          "customer_name": "劉小花",
+          "customer_phone": "0904030917",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T10:37:46.875Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 49,
+          "customer_name": "劉小花",
+          "customer_phone": "0976183391",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T21:22:59.142Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 50,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0985376977",
+          "address": "新北市三峽區三樹路567號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T13:38:08.296Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 51,
+          "customer_name": "林小芳",
+          "customer_phone": "0925118808",
+          "address": "新北市三峽區北大路234號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T16:25:57.979Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 52,
+          "customer_name": "黃大頭",
+          "customer_phone": "0994332471",
+          "address": "新北市鶯歌區中山路345號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T00:35:17.375Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 53,
+          "customer_name": "許志明",
+          "customer_phone": "0995334782",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T23:30:31.114Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 54,
+          "customer_name": "林小芳",
+          "customer_phone": "0931245574",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T22:36:29.874Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 55,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0954163345",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T19:17:44.929Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 56,
+          "customer_name": "李小華",
+          "customer_phone": "0961544879",
+          "address": "新北市樹林區中正路234號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T21:05:44.250Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 57,
+          "customer_name": "劉小花",
+          "customer_phone": "0984915785",
+          "address": "新北市三峽區大學路123號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T13:30:18.142Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 58,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0972877819",
+          "address": "新北市三峽區中正路234號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T01:30:42.204Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 59,
+          "customer_name": "劉小花",
+          "customer_phone": "0960823324",
+          "address": "新北市三峽區大學路123號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T10:20:41.033Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "customer_name": "黃大頭",
+          "customer_phone": "0924626731",
+          "address": "新北市三峽區北大路234號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T18:55:01.938Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 61,
+          "customer_name": "吳建國",
+          "customer_phone": "0943978779",
+          "address": "新北市三峽區中正路234號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T03:31:22.148Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 62,
+          "customer_name": "許志明",
+          "customer_phone": "0912343441",
+          "address": "新北市三峽區民權街45號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T03:00:34.695Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        }
+      ],
+      "apiUsage": {
+        "staticMaps": 1,
+        "geocoding": 15,
+        "directions": 1,
+        "jsApiLoads": 1,
+        "placesApi": 0
+      }
+    },
+    {
+      "batchNumber": 4,
+      "orderCount": 26,
+      "orders": [
+        {
+          "id": 63,
+          "customer_name": "李小華",
+          "customer_phone": "0911207639",
+          "address": "新北市三峽區學府路678號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T10:14:32.031Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "customer_name": "王小明",
+          "customer_phone": "0981560381",
+          "address": "新北市三峽區復興路67號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T20:48:14.130Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "customer_name": "李小華",
+          "customer_phone": "0976577817",
+          "address": "新北市土城區中央路456號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T07:20:47.762Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 66,
+          "customer_name": "黃大頭",
+          "customer_phone": "0913820708",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T13:04:25.821Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 67,
+          "customer_name": "陳小強",
+          "customer_phone": "0924011512",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T09:35:42.074Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 68,
+          "customer_name": "劉小花",
+          "customer_phone": "0904820718",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T02:15:14.885Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 69,
+          "customer_name": "林小芳",
+          "customer_phone": "0962852555",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T14:56:09.420Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 70,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0992843059",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T03:22:10.612Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 71,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0920443654",
+          "address": "新北市土城區中山路167號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T00:27:07.495Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 72,
+          "customer_name": "黃大頭",
+          "customer_phone": "0915103467",
+          "address": "新北市樹林區中正路234號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T17:12:51.395Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 73,
+          "customer_name": "劉小花",
+          "customer_phone": "0947520177",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T00:31:11.657Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 74,
+          "customer_name": "張小美",
+          "customer_phone": "0933846329",
+          "address": "新北市樹林區中山路156號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T20:10:11.922Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 75,
+          "customer_name": "許志明",
+          "customer_phone": "0985107609",
+          "address": "新北市三峽區中正路234號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T11:14:22.462Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 76,
+          "customer_name": "黃大頭",
+          "customer_phone": "0907153200",
+          "address": "新北市樹林區文化路78號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-30T01:33:35.996Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 77,
+          "customer_name": "劉小花",
+          "customer_phone": "0957096253",
+          "address": "新北市土城區中山路167號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T01:01:20.386Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 78,
+          "customer_name": "黃大頭",
+          "customer_phone": "0943224584",
+          "address": "新北市三峽區中山路123號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T07:46:48.442Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 79,
+          "customer_name": "張小美",
+          "customer_phone": "0954158341",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T11:48:42.080Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 80,
+          "customer_name": "王小明",
+          "customer_phone": "0956144754",
+          "address": "新北市土城區中山路167號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T23:35:37.259Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 81,
+          "customer_name": "張小美",
+          "customer_phone": "0922334216",
+          "address": "新北市三峽區學勤路456號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T01:01:26.781Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 82,
+          "customer_name": "吳建國",
+          "customer_phone": "0939381521",
+          "address": "新北市樹林區中山路156號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T18:38:31.163Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 83,
+          "customer_name": "許志明",
+          "customer_phone": "0915546454",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T21:37:17.353Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 84,
+          "customer_name": "林小芳",
+          "customer_phone": "0927522081",
+          "address": "新北市鶯歌區文化路123號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T07:19:49.101Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 85,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0929175396",
+          "address": "新北市三峽區北大路234號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T20:06:25.614Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 86,
+          "customer_name": "黃大頭",
+          "customer_phone": "0961392848",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T01:23:16.132Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 87,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0960070914",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-29T06:21:20.298Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 88,
+          "customer_name": "林小芳",
+          "customer_phone": "0954392511",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T17:43:33.606Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        }
+      ],
+      "apiUsage": {
+        "staticMaps": 1,
+        "geocoding": 18,
+        "directions": 2,
+        "jsApiLoads": 1,
+        "placesApi": 0
+      }
+    },
+    {
+      "batchNumber": 5,
+      "orderCount": 12,
+      "orders": [
+        {
+          "id": 89,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0973943401",
+          "address": "新北市三峽區復興路67號",
+          "area": "三峽區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T20:27:00.865Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 90,
+          "customer_name": "陳小強",
+          "customer_phone": "0975867276",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T06:56:28.465Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 91,
+          "customer_name": "黃大頭",
+          "customer_phone": "0921554881",
+          "address": "新北市土城區中央路456號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T03:20:59.854Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 92,
+          "customer_name": "吳建國",
+          "customer_phone": "0910229020",
+          "address": "新北市土城區中央路456號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-27T00:32:36.701Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 93,
+          "customer_name": "李小華",
+          "customer_phone": "0971107781",
+          "address": "新北市土城區學府路234號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T16:32:24.818Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 3,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 94,
+          "customer_name": "李小華",
+          "customer_phone": "0989705892",
+          "address": "新北市鶯歌區育英街67號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-30T04:28:23.816Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 95,
+          "customer_name": "楊淑芬",
+          "customer_phone": "0967924143",
+          "address": "新北市土城區金城路89號",
+          "area": "土城區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-28T20:49:44.471Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 96,
+          "customer_name": "劉小花",
+          "customer_phone": "0929287505",
+          "address": "新北市鶯歌區中正路78號",
+          "area": "鶯歌區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-26T20:02:51.997Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 97,
+          "customer_name": "吳建國",
+          "customer_phone": "0909289715",
+          "address": "新北市樹林區民生街56號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T08:39:18.617Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 1,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 98,
+          "customer_name": "吳建國",
+          "customer_phone": "0997912309",
+          "address": "新北市三峽區學府路678號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-24T07:10:31.361Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 99,
+          "customer_name": "陳小強",
+          "customer_phone": "0925245750",
+          "address": "新北市三峽區大學路123號",
+          "area": "北大特區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-25T06:14:38.139Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 2,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        },
+        {
+          "id": 100,
+          "customer_name": "張小美",
+          "customer_phone": "0959029723",
+          "address": "新北市樹林區保安街90號",
+          "area": "樹林區",
+          "delivery_fee": 50,
+          "created_at": "2025-08-23T10:47:16.004Z",
+          "items": [
+            {
+              "product_name": "高麗菜",
+              "quantity": 1,
+              "price": 30
+            },
+            {
+              "product_name": "白蘿蔔",
+              "quantity": 2,
+              "price": 25
+            }
+          ]
+        }
+      ],
+      "apiUsage": {
+        "staticMaps": 1,
+        "geocoding": 11,
+        "directions": 1,
+        "jsApiLoads": 1,
+        "placesApi": 0
+      }
+    }
+  ]
+}

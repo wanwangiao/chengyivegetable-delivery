@@ -614,7 +614,7 @@ async function optimizeDeliveryRoute(orders) {
             orders: orders,
             timeSaved: 0,
             totalDistance: orders.length * 2,
-            routeUrl: generateMockMapboxUrl(orders)
+            routeUrl: generateMockGoogleMapsUrl(orders)
         };
     }
 }
