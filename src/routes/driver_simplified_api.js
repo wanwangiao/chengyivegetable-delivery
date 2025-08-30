@@ -573,6 +573,212 @@ function generateMockGoogleDirectionsUrl(orders) {
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints}&travelmode=driving`;
 }
 
+// ========== 訂單鎖定系統API ==========
+
+// 鎖定訂單API
+router.post('/lock-orders', async (req, res) => {
+    try {
+        const { orderIds, lockDuration = 30 } = req.body;
+        const driverId = req.session?.driverId || 1; // 示範模式使用預設ID
+        
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: '請提供有效的訂單ID列表'
+            });
+        }
+        
+        console.log(`[訂單鎖定] 司機 ${driverId} 鎖定訂單 ${orderIds.join(', ')} 共 ${lockDuration} 秒`);
+        
+        if (demoMode) {
+            // 示範模式：模擬鎖定成功
+            const mockResponse = {
+                success: true,
+                message: `成功鎖定 ${orderIds.length} 筆訂單`,
+                lockedOrders: orderIds,
+                lockDuration: lockDuration,
+                lockExpiry: new Date(Date.now() + lockDuration * 1000).toISOString(),
+                driverId: driverId
+            };
+            
+            res.json(mockResponse);
+        } else {
+            // 真實資料庫操作
+            const client = await db.connect();
+            try {
+                await client.query('BEGIN');
+                
+                // 檢查訂單是否已被鎖定或接取
+                const checkQuery = `
+                    SELECT id, status, locked_by, locked_at
+                    FROM orders 
+                    WHERE id = ANY($1::int[])
+                    AND (status = 'available' OR (status = 'locked' AND locked_by = $2))
+                `;
+                const checkResult = await client.query(checkQuery, [orderIds, driverId]);
+                
+                if (checkResult.rows.length !== orderIds.length) {
+                    await client.query('ROLLBACK');
+                    return res.status(400).json({
+                        success: false,
+                        message: '部分訂單已被其他司機鎖定或接取'
+                    });
+                }
+                
+                // 鎖定訂單
+                const lockQuery = `
+                    UPDATE orders 
+                    SET 
+                        status = 'temporarily_locked',
+                        locked_by = $1,
+                        locked_at = CURRENT_TIMESTAMP,
+                        lock_expires_at = CURRENT_TIMESTAMP + INTERVAL '${lockDuration} seconds'
+                    WHERE id = ANY($2::int[])
+                `;
+                await client.query(lockQuery, [driverId, orderIds]);
+                
+                await client.query('COMMIT');
+                
+                res.json({
+                    success: true,
+                    message: `成功鎖定 ${orderIds.length} 筆訂單`,
+                    lockedOrders: orderIds,
+                    lockDuration: lockDuration,
+                    lockExpiry: new Date(Date.now() + lockDuration * 1000).toISOString()
+                });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        }
+    } catch (error) {
+        console.error('Error locking orders:', error);
+        res.status(500).json({ 
+            success: false,
+            message: '鎖定訂單失敗',
+            error: error.message 
+        });
+    }
+});
+
+// 解鎖訂單API  
+router.post('/unlock-orders', async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        const driverId = req.session?.driverId || 1;
+        
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: '請提供有效的訂單ID列表'
+            });
+        }
+        
+        console.log(`[訂單解鎖] 司機 ${driverId} 解鎖訂單 ${orderIds.join(', ')}`);
+        
+        if (demoMode) {
+            // 示範模式：模擬解鎖成功
+            const mockResponse = {
+                success: true,
+                message: `成功解鎖 ${orderIds.length} 筆訂單`,
+                unlockedOrders: orderIds
+            };
+            
+            res.json(mockResponse);
+        } else {
+            // 真實資料庫操作
+            const unlockQuery = `
+                UPDATE orders 
+                SET 
+                    status = 'available',
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    lock_expires_at = NULL
+                WHERE id = ANY($1::int[]) 
+                AND locked_by = $2
+                AND status = 'temporarily_locked'
+                RETURNING id
+            `;
+            
+            const result = await db.query(unlockQuery, [orderIds, driverId]);
+            
+            res.json({
+                success: true,
+                message: `成功解鎖 ${result.rows.length} 筆訂單`,
+                unlockedOrders: result.rows.map(row => row.id)
+            });
+        }
+    } catch (error) {
+        console.error('Error unlocking orders:', error);
+        res.status(500).json({ 
+            success: false,
+            message: '解鎖訂單失敗',
+            error: error.message 
+        });
+    }
+});
+
+// 檢查訂單鎖定狀態API
+router.get('/check-locks', async (req, res) => {
+    try {
+        const driverId = req.session?.driverId || 1;
+        
+        console.log(`[檢查鎖定] 檢查司機 ${driverId} 的鎖定狀態`);
+        
+        if (demoMode) {
+            // 示範模式：返回空的鎖定列表
+            const mockResponse = {
+                success: true,
+                driverId: driverId,
+                lockedOrders: [],
+                lockCount: 0
+            };
+            
+            res.json(mockResponse);
+        } else {
+            // 檢查並清理過期的鎖定
+            const cleanupQuery = `
+                UPDATE orders 
+                SET 
+                    status = 'available',
+                    locked_by = NULL,
+                    locked_at = NULL,
+                    lock_expires_at = NULL
+                WHERE status = 'temporarily_locked' 
+                AND lock_expires_at < CURRENT_TIMESTAMP
+            `;
+            await db.query(cleanupQuery);
+            
+            // 查詢當前司機的鎖定訂單
+            const checkQuery = `
+                SELECT id, locked_at, lock_expires_at
+                FROM orders 
+                WHERE locked_by = $1 
+                AND status = 'temporarily_locked'
+                AND lock_expires_at > CURRENT_TIMESTAMP
+            `;
+            
+            const result = await db.query(checkQuery, [driverId]);
+            
+            res.json({
+                success: true,
+                driverId: driverId,
+                lockedOrders: result.rows,
+                lockCount: result.rows.length
+            });
+        }
+    } catch (error) {
+        console.error('Error checking locks:', error);
+        res.status(500).json({ 
+            success: false,
+            message: '檢查鎖定狀態失敗',
+            error: error.message 
+        });
+    }
+});
+
 // 發送LINE通知 (需要LINE Notify Token)
 async function sendLineNotification(customerName, orderId) {
     if (!process.env.LINE_NOTIFY_TOKEN) return;

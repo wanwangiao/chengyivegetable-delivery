@@ -30,45 +30,114 @@
             padding: 20px;
         }
         
-        /* 地區選擇按鈕 */
-        .area-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
-            justify-content: center;
-        }
-        
-        .area-btn {
+        /* 統一訂單池樣式 */
+        .unified-order-pool {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 15px 25px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .pool-header h2 {
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+        
+        .pool-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        /* 標題按鈕組 */
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .btn-select {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-select:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-lock {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-lock:hover {
+            background: #e67e22;
+        }
+        
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #c0392b;
+        }
+        
+        /* 鎖定狀態指示 */
+        .order-card.locked {
+            border: 2px solid #f39c12;
+            background: linear-gradient(135deg, #fff8e1 0%, #ffe0b2 100%);
             position: relative;
-            min-width: 120px;
         }
         
-        .area-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        
-        .area-btn.active {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            transform: scale(1.05);
-        }
-        
-        .area-count {
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
+        .order-card.locked::after {
+            content: "🔒 30秒";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f39c12;
+            color: white;
             padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        /* 區域分組樣式 */
+        .area-group {
+            margin-bottom: 25px;
+        }
+        
+        .area-group-header {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .area-group-header h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .area-order-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 10px;
             font-size: 12px;
-            margin-left: 8px;
+        }
+        
+        .area-orders {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 15px;
         }
         
         /* 主要內容區域 */
@@ -466,39 +535,44 @@
             </div>
         </div>
 
-        <!-- 地區選擇器 -->
-        <div class="area-selector">
-            <button class="area-btn" data-area="三峽區" onclick="selectArea('三峽區')">
-                📍 三峽區 <span class="area-count" id="count-三峽區">0</span>
-            </button>
-            <button class="area-btn" data-area="樹林區" onclick="selectArea('樹林區')">
-                📍 樹林區 <span class="area-count" id="count-樹林區">0</span>
-            </button>
-            <button class="area-btn" data-area="鶯歌區" onclick="selectArea('鶯歌區')">
-                📍 鶯歌區 <span class="area-count" id="count-鶯歌區">0</span>
-            </button>
-            <button class="area-btn" data-area="土城區" onclick="selectArea('土城區')">
-                📍 土城區 <span class="area-count" id="count-土城區">0</span>
-            </button>
-            <button class="area-btn" data-area="北大特區" onclick="selectArea('北大特區')">
-                📍 北大特區 <span class="area-count" id="count-北大特區">0</span>
-            </button>
+        <!-- 統一訂單池 - 按地區顯示 -->
+        <div class="unified-order-pool">
+            <div class="pool-header">
+                <h2>🌐 統一接單池 - 跨區域選擇</h2>
+                <p>依照訂單數量排序，支援跨區域批量選擇</p>
+            </div>
         </div>
 
         <!-- 主要內容區域 -->
         <div class="main-content">
-            <!-- 選擇的地區訂單 -->
+            <!-- 統一訂單選擇區 -->
             <div class="orders-section">
                 <div class="section-header">
-                    <h2 class="section-title" id="area-title">請選擇地區查看訂單</h2>
-                    <button class="btn btn-accept" onclick="acceptSelectedOrders()" id="accept-btn" style="display: none;">
-                        ✅ 接受選中的訂單
-                    </button>
+                    <h2 class="section-title">📦 可接訂單 (<span id="total-available-count">0</span>)</h2>
+                    <div class="header-actions">
+                        <!-- 基本選擇按鈕 -->
+                        <button class="btn btn-select" onclick="enterSelectionMode()" id="select-btn">
+                            ✅ 選擇訂單
+                        </button>
+                        
+                        <!-- 鎖定狀態按鈕組 -->
+                        <div id="lock-action-group" style="display: none;">
+                            <button class="btn btn-lock" onclick="lockSelectedOrders()" id="lock-btn">
+                                🔒 鎖定選中 (<span id="selected-count">0</span>)
+                            </button>
+                            <button class="btn btn-optimize" onclick="optimizeAndAccept()" id="optimize-btn" style="display: none;">
+                                🧭 路線優化
+                            </button>
+                            <button class="btn btn-cancel" onclick="cancelLock()" id="cancel-lock-btn" style="display: none;">
+                                ❌ 取消鎖定
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="orders-list" id="area-orders">
-                    <div class="empty-state">
-                        <div class="empty-icon">📋</div>
-                        <p>請點選上方地區按鈕查看訂單</p>
+                <div class="orders-list" id="unified-orders">
+                    <div class="loading" id="orders-loading">
+                        <div class="loading-spinner"></div>
+                        載入全域訂單中...
                     </div>
                 </div>
             </div>
@@ -555,6 +629,13 @@
         let currentInteractiveUrl = null;
         let googleMapsLoaded = false;
         
+        // 新增：訂單鎖定系統變數
+        let isSelectionMode = false;
+        let lockedOrders = [];
+        let lockTimer = null;
+        let lockTimeRemaining = 30;
+        let allAvailableOrders = [];
+        
         // Google Maps API 初始化
         function initGoogleMapsAPI() {
             googleMapsLoaded = true;
@@ -564,13 +645,13 @@
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', function() {
             initDashboard();
-            loadOrderCounts();
+            loadUnifiedOrderPool(); // 改為載入統一訂單池
             loadMyDeliveryOrders();
             updateStats();
             
             // 每30秒更新一次
             setInterval(() => {
-                loadOrderCounts();
+                loadUnifiedOrderPool();
                 updateStats();
             }, 30000);
         });
@@ -597,22 +678,395 @@
             });
         }
 
-        // 選擇地區
-        async function selectArea(area) {
-            // 更新按鈕狀態
-            document.querySelectorAll('.area-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-area="${area}"]`).classList.add('active');
+        // ========== 新的訂單鎖定系統功能 ==========
+        
+        // 載入統一訂單池
+        async function loadUnifiedOrderPool() {
+            const container = document.getElementById('unified-orders');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入全域訂單...</div>';
             
-            currentArea = area;
+            try {
+                // 載入所有地區的訂單數據
+                const [countsResponse, ordersPromises] = await Promise.all([
+                    fetch('/api/driver/order-counts'),
+                    Promise.all(['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'].map(area =>
+                        fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`)
+                    ))
+                ]);
+                
+                const countsData = await countsResponse.json();
+                const ordersData = await Promise.all(ordersPromises.map(res => res.json()));
+                
+                // 整合所有訂單並按區域分組
+                allAvailableOrders = [];
+                let totalCount = 0;
+                
+                const areaGroups = [];
+                ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'].forEach((area, index) => {
+                    const areaOrders = ordersData[index].orders || [];
+                    totalCount += areaOrders.length;
+                    allAvailableOrders = allAvailableOrders.concat(areaOrders.map(order => ({
+                        ...order,
+                        area: area
+                    })));
+                    
+                    if (areaOrders.length > 0) {
+                        areaGroups.push({
+                            area: area,
+                            count: areaOrders.length,
+                            orders: areaOrders
+                        });
+                    }
+                });
+                
+                // 按訂單數量排序（多到少）
+                areaGroups.sort((a, b) => b.count - a.count);
+                
+                // 更新總數量
+                document.getElementById('total-available-count').textContent = totalCount;
+                
+                // 渲染訂單池
+                renderUnifiedOrderPool(areaGroups);
+                
+            } catch (error) {
+                console.error('載入統一訂單池失敗:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p>載入失敗，請重試</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 渲染統一訂單池
+        function renderUnifiedOrderPool(areaGroups) {
+            const container = document.getElementById('unified-orders');
+            
+            if (areaGroups.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>目前沒有可接的訂單</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = areaGroups.map(group => `
+                <div class="area-group">
+                    <div class="area-group-header">
+                        <h4>📍 ${group.area}</h4>
+                        <span class="area-order-count">${group.count} 筆訂單</span>
+                    </div>
+                    <div class="area-orders">
+                        ${group.orders.map(order => `
+                            <div class="order-card ${selectedOrders.includes(order.id) ? 'selected' : ''} ${lockedOrders.includes(order.id) ? 'locked' : ''}" 
+                                 data-order-id="${order.id}" 
+                                 onclick="${isSelectionMode ? `toggleOrderSelection(${order.id})` : 'void(0)'}">
+                                <div class="order-header">
+                                    <span class="order-number">#${order.id}</span>
+                                    <span class="order-area">${group.area}</span>
+                                </div>
+                                <div class="order-customer">
+                                    👤 ${order.customer_name} | 📞 ${order.customer_phone}
+                                </div>
+                                <div class="order-address">
+                                    📍 ${order.address}
+                                </div>
+                                <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
+                                    🛒 ${order.items ? order.items.length : 1} 項商品 | 💰 配送費 $${order.delivery_fee || 50}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 進入選擇模式
+        function enterSelectionMode() {
+            isSelectionMode = true;
             selectedOrders = [];
             
-            // 更新標題
-            document.getElementById('area-title').textContent = `📍 ${area} 可接訂單`;
+            // 更新UI狀態
+            document.getElementById('select-btn').style.display = 'none';
+            document.getElementById('lock-action-group').style.display = 'flex';
             
-            // 載入該地區訂單
-            await loadAreaOrders(area);
+            // 更新訂單卡片點擊狀態
+            document.querySelectorAll('.order-card').forEach(card => {
+                card.style.cursor = 'pointer';
+            });
+            
+            showNotification('已進入選擇模式，點擊訂單進行選擇', 'info');
+        }
+        
+        // 切換訂單選擇
+        function toggleOrderSelection(orderId) {
+            if (!isSelectionMode) return;
+            
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+            const isSelected = selectedOrders.includes(orderId);
+            
+            if (isSelected) {
+                selectedOrders = selectedOrders.filter(id => id !== orderId);
+                orderCard.classList.remove('selected');
+            } else {
+                selectedOrders.push(orderId);
+                orderCard.classList.add('selected');
+            }
+            
+            // 更新選中數量顯示
+            document.getElementById('selected-count').textContent = selectedOrders.length;
+            
+            // 更新鎖定按鈕狀態
+            const lockBtn = document.getElementById('lock-btn');
+            if (selectedOrders.length > 0) {
+                lockBtn.style.display = 'inline-block';
+                lockBtn.textContent = `🔒 鎖定選中 (${selectedOrders.length})`;
+            } else {
+                lockBtn.style.display = 'inline-block';
+                lockBtn.textContent = '🔒 鎖定選中 (0)';
+            }
+        }
+        
+        // 鎖定選中的訂單
+        async function lockSelectedOrders() {
+            if (selectedOrders.length === 0) {
+                showNotification('請先選擇要鎖定的訂單', 'warning');
+                return;
+            }
+            
+            try {
+                // 調用後端API鎖定訂單
+                const response = await fetch('/api/driver/lock-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: selectedOrders,
+                        lockDuration: 30
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    lockedOrders = [...selectedOrders];
+                    
+                    // 啟動30秒倒計時
+                    startLockTimer();
+                    
+                    // 更新UI狀態
+                    updateLockUI();
+                    
+                    // 視覺反饋：將選中的訂單標記為鎖定狀態
+                    selectedOrders.forEach(orderId => {
+                        const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                        if (card) {
+                            card.classList.add('locked');
+                        }
+                    });
+                    
+                    showNotification(`🔒 已鎖定 ${selectedOrders.length} 筆訂單，30秒內請完成操作`, 'success');
+                } else {
+                    showNotification('鎖定失敗：' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('鎖定訂單失敗:', error);
+                showNotification('鎖定失敗，請檢查網路連線', 'error');
+            }
+        }
+        
+        // 更新鎖定狀態UI
+        function updateLockUI() {
+            document.getElementById('lock-btn').style.display = 'none';
+            document.getElementById('optimize-btn').style.display = 'inline-block';
+            document.getElementById('cancel-lock-btn').style.display = 'inline-block';
+        }
+        
+        // 啟動鎖定計時器
+        function startLockTimer() {
+            lockTimeRemaining = 30;
+            
+            lockTimer = setInterval(() => {
+                lockTimeRemaining--;
+                
+                // 更新鎖定卡片的倒計時顯示
+                updateLockTimeDisplay();
+                
+                if (lockTimeRemaining <= 0) {
+                    // 時間到，自動解鎖
+                    autoUnlockOrders();
+                }
+            }, 1000);
+        }
+        
+        // 更新鎖定時間顯示
+        function updateLockTimeDisplay() {
+            const lockCards = document.querySelectorAll('.order-card.locked');
+            lockCards.forEach(card => {
+                // 更新::after的內容（透過CSS變數）
+                card.style.setProperty('--lock-time', `"🔒 ${lockTimeRemaining}秒"`);
+            });
+        }
+        
+        // 自動解鎖訂單
+        function autoUnlockOrders() {
+            clearInterval(lockTimer);
+            lockTimer = null;
+            
+            // 清除鎖定狀態
+            lockedOrders.forEach(orderId => {
+                const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                if (card) {
+                    card.classList.remove('locked');
+                }
+            });
+            
+            lockedOrders = [];
+            selectedOrders = [];
+            isSelectionMode = false;
+            
+            // 恢復初始UI狀態
+            document.getElementById('select-btn').style.display = 'inline-block';
+            document.getElementById('lock-action-group').style.display = 'none';
+            
+            showNotification('⏰ 鎖定時間已到，訂單已自動釋放', 'warning');
+            
+            // 重新載入訂單池
+            loadUnifiedOrderPool();
+        }
+        
+        // 取消鎖定
+        async function cancelLock() {
+            if (lockTimer) {
+                clearInterval(lockTimer);
+                lockTimer = null;
+            }
+            
+            try {
+                // 調用後端API釋放鎖定
+                const response = await fetch('/api/driver/unlock-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: lockedOrders
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 清除鎖定狀態
+                    lockedOrders.forEach(orderId => {
+                        const card = document.querySelector(`[data-order-id="${orderId}"]`);
+                        if (card) {
+                            card.classList.remove('locked', 'selected');
+                        }
+                    });
+                    
+                    lockedOrders = [];
+                    selectedOrders = [];
+                    isSelectionMode = false;
+                    
+                    // 恢復初始UI狀態
+                    document.getElementById('select-btn').style.display = 'inline-block';
+                    document.getElementById('lock-action-group').style.display = 'none';
+                    
+                    showNotification('✅ 鎖定已取消，訂單回到可選狀態', 'success');
+                    
+                    // 重新載入訂單池
+                    loadUnifiedOrderPool();
+                }
+                
+            } catch (error) {
+                console.error('取消鎖定失敗:', error);
+                showNotification('取消鎖定失敗，請檢查網路連線', 'error');
+            }
+        }
+        
+        // 路線優化並接取訂單
+        async function optimizeAndAccept() {
+            if (lockedOrders.length === 0) {
+                showNotification('沒有鎖定的訂單可以優化', 'warning');
+                return;
+            }
+            
+            if (lockTimer) {
+                clearInterval(lockTimer);
+                lockTimer = null;
+            }
+            
+            showNotification('🧭 正在優化路線並接取訂單...', 'info');
+            
+            try {
+                // 先接取訂單
+                const acceptResponse = await fetch('/api/driver/batch-accept-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: lockedOrders
+                    })
+                });
+                
+                const acceptResult = await acceptResponse.json();
+                
+                if (acceptResult.success) {
+                    // 接取成功，進行路線優化
+                    const optimizeResponse = await fetch('/api/driver/optimize-route', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            orderIds: lockedOrders
+                        })
+                    });
+                    
+                    const optimizeResult = await optimizeResponse.json();
+                    
+                    if (optimizeResult.success) {
+                        showNotification(`🎉 成功接取 ${lockedOrders.length} 筆訂單並完成路線優化！預計節省 ${optimizeResult.timeSaved || 10} 分鐘`, 'success');
+                        
+                        // 清除狀態
+                        lockedOrders = [];
+                        selectedOrders = [];
+                        isSelectionMode = false;
+                        
+                        // 恢復UI
+                        document.getElementById('select-btn').style.display = 'inline-block';
+                        document.getElementById('lock-action-group').style.display = 'none';
+                        
+                        // 重新載入數據
+                        await Promise.all([
+                            loadUnifiedOrderPool(),
+                            loadMyDeliveryOrders()
+                        ]);
+                        
+                        // 顯示路線地圖
+                        if (optimizeResult.routeUrl) {
+                            setTimeout(() => {
+                                showRouteMap(optimizeResult.optimizedOrders, optimizeResult.totalDistance, optimizeResult.timeSaved);
+                            }, 1500);
+                        }
+                    } else {
+                        showNotification('路線優化失敗：' + optimizeResult.message, 'error');
+                    }
+                } else {
+                    showNotification('接取訂單失敗：' + acceptResult.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('優化並接取失敗:', error);
+                showNotification('操作失敗，請檢查網路連線', 'error');
+            }
         }
 
         // 載入地區訂單數量
