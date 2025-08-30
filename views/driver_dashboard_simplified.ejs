@@ -17,9 +17,10 @@
     <!-- Sortable.js for drag & drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
-    <!-- Mapbox GL JS -->
-    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <!-- Google Maps JavaScript API -->
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE&libraries=geometry,places&callback=initGoogleMapsAPI&language=zh-TW&region=TW">
+    </script>
     
     <style>
         /* 簡化樣式 */
@@ -393,7 +394,7 @@
             background: #f0f0f0;
         }
         
-        .mapbox-container {
+        .google-maps-container {
             width: 100%;
             height: 400px;
             flex-grow: 1;
@@ -420,7 +421,7 @@
                 max-height: 95vh;
             }
             
-            .mapbox-container {
+            .google-maps-container {
                 height: 300px;
             }
             
@@ -529,7 +530,7 @@
                 <h3>🗺️ 路線優化地圖</h3>
                 <button class="map-close-btn" onclick="closeMapModal()">&times;</button>
             </div>
-            <div id="mapbox-container" class="mapbox-container"></div>
+            <div id="google-maps-container" class="google-maps-container"></div>
             <div class="map-modal-footer">
                 <p id="map-info">載入中...</p>
                 <button class="btn btn-primary" onclick="openExternalMap()" id="external-map-btn" style="display: none;">
@@ -549,12 +550,16 @@
         let selectedOrders = [];
         let myDeliveryOrders = [];
         let sortableInstance = null;
-        let mapboxMap = null;
+        let googleMap = null;
         let currentRouteUrl = null;
         let currentInteractiveUrl = null;
+        let googleMapsLoaded = false;
         
-        // Mapbox access token (真實有效的 token)
-        const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiY2hlbmd5aXZlZ2V0YWJsZSIsImEiOiJjbWV4bGZjNmYxMmxjMmxvYTFhNzQ4ZWFnIn0.SdmzkXZK95R5kUgX6-22LA';
+        // Google Maps API 初始化
+        function initGoogleMapsAPI() {
+            googleMapsLoaded = true;
+            console.log('Google Maps API 已載入');
+        }
 
         // 頁面載入完成
         document.addEventListener('DOMContentLoaded', function() {
@@ -962,19 +967,31 @@
             }, 3000);
         }
 
-        // ========== Mapbox 地圖功能 ==========
+        // ========== Google Maps 地圖功能 ==========
 
         // 顯示路線地圖
         function showRouteMap(orders, totalDistance, timeSaved) {
             document.getElementById('map-modal').style.display = 'flex';
             
-            // 設置Mapbox access token
-            if (typeof mapboxgl !== 'undefined') {
-                mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+            // 檢查Google Maps API是否載入
+            if (typeof google === 'undefined' || !googleMapsLoaded) {
+                console.warn('Google Maps API not loaded, fallback to external link');
+                document.getElementById('google-maps-container').innerHTML = `
+                    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🗺️</div>
+                        <p>載入Google Maps中...</p>
+                        <p style="font-size: 12px;">請點擊下方「開啟外部導航」按鈕查看路線</p>
+                    </div>
+                `;
+                setTimeout(() => {
+                    if (typeof google !== 'undefined' && googleMapsLoaded) {
+                        initGoogleMapsRoute(orders);
+                    }
+                }, 2000);
             } else {
-                console.warn('Mapbox GL JS not loaded, fallback to external link');
-                openExternalMap();
-                return;
+                setTimeout(() => {
+                    initGoogleMapsRoute(orders);
+                }, 300);
             }
             
             // 初始化地圖信息
@@ -983,40 +1000,39 @@
             
             // 顯示外部地圖按鈕
             document.getElementById('external-map-btn').style.display = 'inline-block';
-            
-            // 生成模擬地圖（在沒有真實Mapbox token時）
-            setTimeout(() => {
-                initMapboxRoute(orders);
-            }, 300);
         }
 
-        // 初始化Mapbox路線地圖
-        function initMapboxRoute(orders) {
-            const mapContainer = document.getElementById('mapbox-container');
+        // 初始化Google Maps路線地圖
+        function initGoogleMapsRoute(orders) {
+            const mapContainer = document.getElementById('google-maps-container');
             
-            if (mapboxMap) {
-                mapboxMap.remove();
+            if (!mapContainer) {
+                console.error('Google Maps 容器未找到');
+                return;
             }
             
             try {
-                // 創建新地圖實例
-                mapboxMap = new mapboxgl.Map({
-                    container: 'mapbox-container',
-                    style: 'mapbox://styles/mapbox/streets-v11',
-                    center: [121.37, 24.93], // 三峽區中心
-                    zoom: 12
+                // 清除旧地圖
+                if (googleMap) {
+                    googleMap = null;
+                }
+                
+                // 創建新Google Maps實例
+                googleMap = new google.maps.Map(mapContainer, {
+                    center: { lat: 24.93, lng: 121.37 }, // 三峽區中心
+                    zoom: 12,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    zoomControl: true,
+                    streetViewControl: false,
+                    fullscreenControl: true,
+                    mapTypeControl: false
                 });
                 
-                // 添加導航控制
-                mapboxMap.addControl(new mapboxgl.NavigationControl());
-                
-                // 地圖載入完成後添加標記
-                mapboxMap.on('load', function() {
-                    addRouteMarkers(orders);
-                });
+                // 添加路線標記
+                addGoogleMapsRouteMarkers(orders);
                 
             } catch (error) {
-                console.error('Mapbox初始化失敗:', error);
+                console.error('Google Maps初始化失敗:', error);
                 mapContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: #666;">
                         <div style="font-size: 48px; margin-bottom: 20px;">🗺️</div>
@@ -1027,48 +1043,98 @@
             }
         }
 
-        // 添加路線標記
-        function addRouteMarkers(orders) {
-            if (!mapboxMap || !orders || orders.length === 0) return;
+        // 添加Google Maps路線標記
+        function addGoogleMapsRouteMarkers(orders) {
+            if (!googleMap || !orders || orders.length === 0) return;
             
-            const bounds = new mapboxgl.LngLatBounds();
+            const bounds = new google.maps.LatLngBounds();
+            const infoWindow = new google.maps.InfoWindow();
             
             // 為每個訂單添加標記
             orders.forEach((order, index) => {
                 // 生成模擬座標（實際應用中應該從geocoding獲取）
                 const lng = 121.37 + (Math.random() - 0.5) * 0.02;
                 const lat = 24.93 + (Math.random() - 0.5) * 0.02;
+                const position = { lat: lat, lng: lng };
+                
+                // 決定標記顏色和標籤
+                let markerColor = '#007bff'; // 預設藍色
+                let label = (index + 1).toString();
+                
+                if (index === 0) {
+                    markerColor = '#28a745'; // 起點綠色
+                    label = 'A';
+                } else if (index === orders.length - 1) {
+                    markerColor = '#dc3545'; // 終點紅色
+                    label = 'Z';
+                } else {
+                    label = String.fromCharCode(66 + index - 1); // B, C, D...
+                }
                 
                 // 創建標記
-                const marker = new mapboxgl.Marker({
-                    color: index === 0 ? '#28a745' : (index === orders.length - 1 ? '#dc3545' : '#007bff')
-                })
-                .setLngLat([lng, lat])
-                .setPopup(new mapboxgl.Popup({ offset: 25 })
-                    .setHTML(`
-                        <div style="padding: 5px;">
-                            <strong>${index === 0 ? '起點' : (index === orders.length - 1 ? '終點' : '第' + index + '站')}</strong><br>
-                            <small>${order.address}</small><br>
-                            <small>客戶：${order.customer_name}</small>
-                        </div>
-                    `))
-                .addTo(mapboxMap);
+                const marker = new google.maps.Marker({
+                    position: position,
+                    map: googleMap,
+                    title: `${index === 0 ? '起點' : (index === orders.length - 1 ? '終點' : '第' + index + '站')} - ${order.customer_name}`,
+                    label: {
+                        text: label,
+                        color: 'white',
+                        fontWeight: 'bold'
+                    },
+                    icon: {
+                        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="20" cy="20" r="18" fill="${markerColor}" stroke="white" stroke-width="2"/>
+                                <text x="20" y="26" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" font-weight="bold">${label}</text>
+                            </svg>
+                        `)}`,
+                        scaledSize: new google.maps.Size(40, 40),
+                        anchor: new google.maps.Point(20, 20)
+                    }
+                });
                 
-                bounds.extend([lng, lat]);
+                // 添加點擊事件顯示信息窗
+                marker.addListener('click', () => {
+                    const content = `
+                        <div style="padding: 10px; max-width: 250px;">
+                            <h4 style="margin: 0 0 10px 0; color: ${markerColor};">${index === 0 ? '🚀 起點' : (index === orders.length - 1 ? '🏁 終點' : '📍 第' + index + '站')}</h4>
+                            <p style="margin: 5px 0;"><strong>客戶：</strong>${order.customer_name}</p>
+                            <p style="margin: 5px 0;"><strong>地址：</strong>${order.address}</p>
+                            <p style="margin: 5px 0;"><strong>電話：</strong>${order.customer_phone || '未提供'}</p>
+                            ${order.items && order.items.length > 0 ? 
+                                `<p style="margin: 5px 0;"><strong>商品：</strong>${order.items.map(item => `${item.product_name} x${item.quantity}`).join(', ')}</p>` 
+                                : ''}
+                        </div>
+                    `;
+                    infoWindow.setContent(content);
+                    infoWindow.open(googleMap, marker);
+                });
+                
+                bounds.extend(position);
             });
             
             // 調整地圖視野以包含所有標記
             if (orders.length > 1) {
-                mapboxMap.fitBounds(bounds, { padding: 50 });
+                googleMap.fitBounds(bounds);
+                
+                // 設定最小縮放級別
+                google.maps.event.addListenerOnce(googleMap, 'bounds_changed', function() {
+                    if (googleMap.getZoom() > 15) {
+                        googleMap.setZoom(15);
+                    }
+                });
+            } else if (orders.length === 1) {
+                googleMap.setCenter(bounds.getCenter());
+                googleMap.setZoom(14);
             }
         }
 
         // 關閉地圖模態框
         function closeMapModal() {
             document.getElementById('map-modal').style.display = 'none';
-            if (mapboxMap) {
-                mapboxMap.remove();
-                mapboxMap = null;
+            if (googleMap) {
+                // Google Maps 不需要手動移除，只需設為 null
+                googleMap = null;
             }
         }
 
