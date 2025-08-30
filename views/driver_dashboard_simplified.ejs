@@ -23,11 +23,64 @@
     </script>
     
     <style>
-        /* 簡化樣式 */
+        /* ========== 全域樣式 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: #f5f5f5;
+            overflow-x: hidden;
+        }
+        
+        /* ========== 模式切換系統 ========== */
+        .app-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .mode-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 接單模式 */
+        .order-selection-mode {
+            transform: translateX(0);
+            background: #f5f5f5;
+            overflow-y: auto;
+        }
+        
+        .order-selection-mode.hidden {
+            transform: translateX(-100%);
+        }
+        
+        /* 導航模式 */
+        .navigation-mode {
+            transform: translateX(100%);
+            background: #000;
+            color: #fff;
+        }
+        
+        .navigation-mode.active {
+            transform: translateX(0);
+        }
+        
+        /* ========== 接單模式樣式 ========== */
         .simplified-dashboard {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            min-height: 100vh;
         }
         
         /* 統一訂單池樣式 */
@@ -499,24 +552,313 @@
                 gap: 10px;
             }
         }
+        
+        /* ========== 導航模式樣式 (Uber風格) ========== */
+        
+        /* 地圖容器 - 佔80%螢幕 */
+        .nav-map-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80vh;
+            z-index: 1;
+        }
+        
+        .nav-google-map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* GPS定位按鈕 */
+        .nav-gps-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            border: none;
+            color: #00d4aa;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+        
+        .nav-gps-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.05);
+        }
+        
+        /* 返回按鈕 */
+        .back-to-orders-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+        
+        .back-to-orders-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        /* 底部狀態列 - 佔20%螢幕 */
+        .nav-bottom-status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            z-index: 5;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-bottom-status-bar:hover {
+            background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
+        }
+        
+        /* 狀態列內容 */
+        .nav-status-content {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+        
+        .nav-delivery-info {
+            flex: 1;
+        }
+        
+        .nav-delivery-info h3 {
+            color: #00d4aa;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .nav-delivery-info .nav-distance {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+        
+        .nav-delivery-info .nav-eta {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .nav-pull-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 212, 170, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00d4aa;
+            font-size: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        /* 可拉升的訂單面板 */
+        .nav-orders-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-radius: 25px 25px 0 0;
+            transform: translateY(65vh);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 15;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .nav-orders-panel.expanded {
+            transform: translateY(0);
+        }
+        
+        /* 面板拖拉手柄 */
+        .nav-panel-handle {
+            width: 50px;
+            height: 5px;
+            background: #555;
+            border-radius: 3px;
+            margin: 15px auto;
+            cursor: pointer;
+        }
+        
+        /* 訂單列表 */
+        .nav-orders-header {
+            padding: 0 25px 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .nav-orders-header h2 {
+            color: #00d4aa;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .nav-orders-summary {
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        .nav-orders-list {
+            padding: 20px 25px;
+            overflow-y: auto;
+            height: calc(85vh - 120px);
+        }
+        
+        /* 正在配送的訂單 */
+        .nav-current-order {
+            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-current-order::before {
+            content: '✓';
+            position: absolute;
+            left: -10px;
+            top: -10px;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            color: #00d4aa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .nav-current-order h3 {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 8px;
+            margin-left: 20px;
+        }
+        
+        .nav-current-order .nav-order-address {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-left: 20px;
+        }
+        
+        /* 完成配送按鈕 */
+        .nav-complete-delivery-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 212, 170, 0.3);
+        }
+        
+        .nav-complete-delivery-btn:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 170, 0.4);
+        }
+        
+        /* 手勢提示 */
+        .nav-gesture-hint {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            animation: fadeInOut 3s infinite;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* 模式切換按鈕 */
+        .start-delivery-btn {
+            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 212, 170, 0.3);
+        }
+        
+        .start-delivery-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 212, 170, 0.4);
+        }
+        
+        .start-delivery-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
-    <!-- 頂部導航 -->
-    <header class="driver-header">
-        <div class="header-content">
-            <div class="driver-info">
-                <h1>🍃 承億蔬菜外送</h1>
-                <p>外送員：<%= driver.name %></p>
-            </div>
-            <div class="header-actions">
-                <span class="status online">🟢 上線中</span>
-                <a href="/driver/logout" class="logout-btn">登出</a>
-            </div>
-        </div>
-    </header>
+    <!-- App 容器 -->
+    <div class="app-container">
+        
+        <!-- ========== 接單模式 ========== -->
+        <div class="mode-container order-selection-mode" id="order-mode">
+            <!-- 頂部導航 -->
+            <header class="driver-header">
+                <div class="header-content">
+                    <div class="driver-info">
+                        <h1>🍃 承億蔬菜外送</h1>
+                        <p>外送員：<%= driver.name %></p>
+                    </div>
+                    <div class="header-actions">
+                        <span class="status online">🟢 上線中</span>
+                        <a href="/driver/logout" class="logout-btn">登出</a>
+                    </div>
+                </div>
+            </header>
 
-    <main class="simplified-dashboard">
+            <main class="simplified-dashboard">
         <!-- 統計面板 -->
         <div class="stats-panel">
             <div class="stats-grid">
@@ -595,7 +937,61 @@
                 </div>
             </div>
         </div>
+        
+        <!-- 開始配送按鈕 -->
+        <button class="start-delivery-btn" onclick="switchToNavigationMode()" id="start-delivery-btn" disabled>
+            🚀 開始配送 (請先接取訂單)
+        </button>
     </main>
+        </div>
+        
+        <!-- ========== 導航模式 (Uber風格) ========== -->
+        <div class="mode-container navigation-mode" id="navigation-mode">
+            <!-- 返回接單按鈕 -->
+            <button class="back-to-orders-btn" onclick="switchToOrderMode()">← 返回接單</button>
+            
+            <!-- Google Maps 地圖容器 -->
+            <div class="nav-map-container">
+                <div class="nav-google-map" id="nav-google-map"></div>
+                <button class="nav-gps-button" onclick="getCurrentLocationForNav()">📍</button>
+            </div>
+            
+            <!-- 底部狀態列 -->
+            <div class="nav-bottom-status-bar" onclick="toggleNavOrdersPanel()">
+                <div class="nav-status-content">
+                    <div class="nav-delivery-info">
+                        <h3 id="nav-current-customer">準備配送</h3>
+                        <div class="nav-distance" id="nav-remaining-distance">點擊開始導航</div>
+                        <div class="nav-eta" id="nav-estimated-time">等待GPS定位...</div>
+                    </div>
+                    <div class="nav-pull-indicator">↑</div>
+                </div>
+            </div>
+            
+            <!-- 手勢提示 -->
+            <div class="nav-gesture-hint">👆 點擊或向上滑動查看所有訂單</div>
+            
+            <!-- 可拉升的訂單面板 -->
+            <div class="nav-orders-panel" id="nav-orders-panel">
+                <div class="nav-panel-handle" onclick="toggleNavOrdersPanel()"></div>
+                
+                <div class="nav-orders-header">
+                    <h2>今日配送</h2>
+                    <div class="nav-orders-summary" id="nav-orders-summary">準備開始配送</div>
+                </div>
+                
+                <div class="nav-orders-list" id="nav-orders-list">
+                    <!-- 動態載入配送訂單 -->
+                </div>
+            </div>
+            
+            <!-- 完成配送按鈕 -->
+            <button class="nav-complete-delivery-btn" onclick="completeCurrentDelivery()" id="nav-complete-btn" style="display: none;">
+                ✅ 完成此筆配送
+            </button>
+        </div>
+        
+    </div>
 
     <!-- 路線地圖容器 -->
     <div id="map-modal" class="map-modal" style="display: none;">
@@ -635,6 +1031,15 @@
         let lockTimer = null;
         let lockTimeRemaining = 30;
         let allAvailableOrders = [];
+        
+        // 新增：導航模式變數
+        let currentMode = 'order'; // 'order' 或 'navigation'
+        let navigationMap = null;
+        let directionsService = null;
+        let directionsRenderer = null;
+        let currentPosition = null;
+        let navOrdersPanel = null;
+        let isNavPanelExpanded = false;
         
         // Google Maps API 初始化
         function initGoogleMapsAPI() {
@@ -1616,6 +2021,296 @@
                 closeMapModal();
             }
         });
+        
+        // ========== 新增：App模式切換系統 ==========
+        
+        // 切換到導航模式
+        function switchToNavigationMode() {
+            if (myDeliveryOrders.length === 0) {
+                showNotification('請先接取訂單再開始配送', 'warning');
+                return;
+            }
+            
+            currentMode = 'navigation';
+            
+            // 添加切換動畫
+            const orderMode = document.getElementById('order-mode');
+            const navMode = document.getElementById('navigation-mode');
+            
+            orderMode.classList.add('hidden');
+            navMode.classList.add('active');
+            
+            // 初始化導航模式
+            setTimeout(() => {
+                initNavigationMode();
+            }, 300);
+            
+            showNotification('已切換到導航模式', 'success');
+        }
+        
+        // 切換到接單模式
+        function switchToOrderMode() {
+            currentMode = 'order';
+            
+            const orderMode = document.getElementById('order-mode');
+            const navMode = document.getElementById('navigation-mode');
+            
+            orderMode.classList.remove('hidden');
+            navMode.classList.remove('active');
+            
+            showNotification('已返回接單模式', 'info');
+        }
+        
+        // 初始化導航模式
+        function initNavigationMode() {
+            if (!googleMapsLoaded) {
+                showNotification('Google Maps 尚未載入，請稍候...', 'warning');
+                return;
+            }
+            
+            initNavigationMap();
+            loadNavigationOrders();
+            getCurrentLocationForNav();
+        }
+        
+        // 初始化導航地圖
+        function initNavigationMap() {
+            const mapContainer = document.getElementById('nav-google-map');
+            if (!mapContainer) return;
+            
+            // 預設位置（新北市三峽區）
+            const defaultCenter = { lat: 24.9342, lng: 121.3706 };
+            
+            navigationMap = new google.maps.Map(mapContainer, {
+                zoom: 15,
+                center: defaultCenter,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                styles: [
+                    {
+                        "featureType": "all",
+                        "elementType": "geometry.fill",
+                        "stylers": [{"color": "#1a1a1a"}]
+                    },
+                    {
+                        "featureType": "water",
+                        "elementType": "geometry",
+                        "stylers": [{"color": "#2d2d2d"}]
+                    },
+                    {
+                        "featureType": "road",
+                        "elementType": "geometry",
+                        "stylers": [{"color": "#404040"}]
+                    }
+                ]
+            });
+            
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: false,
+                polylineOptions: {
+                    strokeColor: '#00d4aa',
+                    strokeWeight: 4
+                }
+            });
+            directionsRenderer.setMap(navigationMap);
+            
+            console.log('導航地圖已初始化');
+        }
+        
+        // 載入導航訂單
+        function loadNavigationOrders() {
+            const navOrdersList = document.getElementById('nav-orders-list');
+            const navOrdersSummary = document.getElementById('nav-orders-summary');
+            
+            if (myDeliveryOrders.length === 0) {
+                navOrdersList.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>暫無配送訂單</p></div>';
+                navOrdersSummary.textContent = '暫無配送任務';
+                return;
+            }
+            
+            // 更新摘要
+            const completed = myDeliveryOrders.filter(order => order.status === 'completed').length;
+            const remaining = myDeliveryOrders.length - completed;
+            navOrdersSummary.textContent = `已完成 ${completed} 筆 • 剩餘 ${remaining} 筆`;
+            
+            // 渲染訂單列表
+            let ordersHtml = '';
+            
+            // 正在配送的訂單
+            const currentOrder = myDeliveryOrders.find(order => order.status === 'delivering');
+            if (currentOrder) {
+                ordersHtml += `
+                    <div class="nav-current-order">
+                        <h3>📍 正在配送 - ${currentOrder.customer_name}</h3>
+                        <div class="nav-order-address">${currentOrder.delivery_address}</div>
+                    </div>
+                `;
+                
+                // 更新底部狀態
+                document.getElementById('nav-current-customer').textContent = currentOrder.customer_name;
+                
+                // 顯示完成配送按鈕
+                document.getElementById('nav-complete-btn').style.display = 'block';
+            }
+            
+            // 待配送訂單
+            const pendingOrders = myDeliveryOrders.filter(order => order.status === 'accepted');
+            if (pendingOrders.length > 0) {
+                ordersHtml += '<div class="pending-orders"><h3>📦 即將配送</h3>';
+                pendingOrders.forEach(order => {
+                    ordersHtml += `
+                        <div class="pending-order">
+                            <h4>${order.customer_name}</h4>
+                            <div class="nav-order-address">${order.delivery_address}</div>
+                        </div>
+                    `;
+                });
+                ordersHtml += '</div>';
+            }
+            
+            navOrdersList.innerHTML = ordersHtml;
+            
+            // 如果有當前訂單，顯示路線
+            if (currentOrder) {
+                showDeliveryRoute(currentOrder.delivery_address);
+            }
+        }
+        
+        // 獲取當前位置（導航模式）
+        function getCurrentLocationForNav() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        navigationMap.setCenter(currentPosition);
+                        
+                        // 添加當前位置標記
+                        new google.maps.Marker({
+                            position: currentPosition,
+                            map: navigationMap,
+                            title: '我的位置',
+                            icon: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="10" cy="10" r="8" fill="#00d4aa" stroke="#fff" stroke-width="2"/>
+                                        <circle cx="10" cy="10" r="3" fill="#fff"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(20, 20)
+                            }
+                        });
+                    },
+                    (error) => {
+                        console.log('無法獲取位置:', error);
+                        document.getElementById('nav-estimated-time').textContent = '無法獲取GPS位置';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000
+                    }
+                );
+            }
+        }
+        
+        // 顯示配送路線
+        function showDeliveryRoute(destinationAddress) {
+            if (!currentPosition) {
+                showNotification('正在定位中，請稍候...', 'info');
+                return;
+            }
+            
+            const request = {
+                origin: currentPosition,
+                destination: destinationAddress,
+                travelMode: google.maps.TravelMode.DRIVING,
+                avoidHighways: false,
+                avoidTolls: false
+            };
+            
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    
+                    // 更新距離和時間資訊
+                    const route = result.routes[0].legs[0];
+                    document.getElementById('nav-remaining-distance').textContent = 
+                        `剩餘 ${route.distance.text}`;
+                    document.getElementById('nav-estimated-time').textContent = 
+                        `預計 ${route.duration.text} 抵達`;
+                } else {
+                    showNotification('路線規劃失敗，請檢查地址', 'error');
+                }
+            });
+        }
+        
+        // 切換導航訂單面板
+        function toggleNavOrdersPanel() {
+            const panel = document.getElementById('nav-orders-panel');
+            isNavPanelExpanded = !isNavPanelExpanded;
+            panel.classList.toggle('expanded', isNavPanelExpanded);
+        }
+        
+        // 完成當前配送
+        function completeCurrentDelivery() {
+            const currentOrder = myDeliveryOrders.find(order => order.status === 'delivering');
+            if (!currentOrder) {
+                showNotification('沒有正在配送的訂單', 'warning');
+                return;
+            }
+            
+            if (confirm(`確認完成配送給 ${currentOrder.customer_name}？`)) {
+                // 更新訂單狀態
+                currentOrder.status = 'completed';
+                currentOrder.completed_time = new Date().toISOString();
+                
+                showNotification('✅ 配送完成！', 'success');
+                
+                // 重新載入導航訂單
+                setTimeout(() => {
+                    loadNavigationOrders();
+                    updateStartDeliveryButton();
+                    
+                    // 如果還有待配送訂單，自動切換到下一個
+                    const nextOrder = myDeliveryOrders.find(order => order.status === 'accepted');
+                    if (nextOrder) {
+                        nextOrder.status = 'delivering';
+                        showNotification(`開始配送給 ${nextOrder.customer_name}`, 'info');
+                        showDeliveryRoute(nextOrder.delivery_address);
+                    } else {
+                        showNotification('所有訂單已完成！可以返回接單模式', 'success');
+                        document.getElementById('nav-complete-btn').style.display = 'none';
+                    }
+                }, 1000);
+            }
+        }
+        
+        // 更新開始配送按鈕狀態
+        function updateStartDeliveryButton() {
+            const btn = document.getElementById('start-delivery-btn');
+            if (myDeliveryOrders.length > 0) {
+                btn.disabled = false;
+                btn.textContent = `🚀 開始配送 (${myDeliveryOrders.length} 筆訂單)`;
+            } else {
+                btn.disabled = true;
+                btn.textContent = '🚀 開始配送 (請先接取訂單)';
+            }
+        }
+        
+        // 修改現有函數，在接取訂單後更新按鈕
+        const originalAcceptOrders = acceptSelectedOrders;
+        window.acceptSelectedOrders = function() {
+            const result = originalAcceptOrders.apply(this, arguments);
+            updateStartDeliveryButton();
+            return result;
+        };
+        
     </script>
 </body>
 </html>
