@@ -1,0 +1,2775 @@
+{
+  "summary": {
+    "test_duration_seconds": 23.266,
+    "total_api_calls": 393,
+    "estimated_cost_usd": 1.1040000000000008,
+    "calls_per_second": "16.89"
+  },
+  "api_breakdown": {
+    "geocoding": 100,
+    "directions": 6,
+    "staticMaps": 287,
+    "placesNearby": 0,
+    "distanceMatrix": 0
+  },
+  "detailed_calls": [
+    {
+      "timestamp": "2025-08-30T03:45:00.932Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區和平路452號",
+      "estimated_cost": 0.005,
+      "call_number": 1
+    },
+    {
+      "timestamp": "2025-08-30T03:45:01.205Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區大學路339號",
+      "estimated_cost": 0.005,
+      "call_number": 2
+    },
+    {
+      "timestamp": "2025-08-30T03:45:01.486Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區民生路137號",
+      "estimated_cost": 0.005,
+      "call_number": 3
+    },
+    {
+      "timestamp": "2025-08-30T03:45:01.705Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區中山路488號",
+      "estimated_cost": 0.005,
+      "call_number": 4
+    },
+    {
+      "timestamp": "2025-08-30T03:45:01.950Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區信義路439號",
+      "estimated_cost": 0.005,
+      "call_number": 5
+    },
+    {
+      "timestamp": "2025-08-30T03:45:02.154Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區建國路57號",
+      "estimated_cost": 0.005,
+      "call_number": 6
+    },
+    {
+      "timestamp": "2025-08-30T03:45:02.325Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區民生路343號",
+      "estimated_cost": 0.005,
+      "call_number": 7
+    },
+    {
+      "timestamp": "2025-08-30T03:45:02.575Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區復興路215號",
+      "estimated_cost": 0.005,
+      "call_number": 8
+    },
+    {
+      "timestamp": "2025-08-30T03:45:02.763Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區學成路492號",
+      "estimated_cost": 0.005,
+      "call_number": 9
+    },
+    {
+      "timestamp": "2025-08-30T03:45:02.982Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區復興路395號",
+      "estimated_cost": 0.005,
+      "call_number": 10
+    },
+    {
+      "timestamp": "2025-08-30T03:45:03.201Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區文化路228號",
+      "estimated_cost": 0.005,
+      "call_number": 11
+    },
+    {
+      "timestamp": "2025-08-30T03:45:03.498Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區民族路445號",
+      "estimated_cost": 0.005,
+      "call_number": 12
+    },
+    {
+      "timestamp": "2025-08-30T03:45:03.748Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區復興路10號",
+      "estimated_cost": 0.005,
+      "call_number": 13
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.009Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區學成路482號",
+      "estimated_cost": 0.005,
+      "call_number": 14
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.228Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區建國路60號",
+      "estimated_cost": 0.005,
+      "call_number": 15
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.509Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區建國路351號",
+      "estimated_cost": 0.005,
+      "call_number": 16
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.650Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區自由路175號",
+      "estimated_cost": 0.005,
+      "call_number": 17
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.790Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區中山路30號",
+      "estimated_cost": 0.005,
+      "call_number": 18
+    },
+    {
+      "timestamp": "2025-08-30T03:45:04.926Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中山路142號",
+      "estimated_cost": 0.005,
+      "call_number": 19
+    },
+    {
+      "timestamp": "2025-08-30T03:45:05.161Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區復興路261號",
+      "estimated_cost": 0.005,
+      "call_number": 20
+    },
+    {
+      "timestamp": "2025-08-30T03:45:05.458Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區復興路99號",
+      "estimated_cost": 0.005,
+      "call_number": 21
+    },
+    {
+      "timestamp": "2025-08-30T03:45:05.708Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區自由路72號",
+      "estimated_cost": 0.005,
+      "call_number": 22
+    },
+    {
+      "timestamp": "2025-08-30T03:45:05.864Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區和平路405號",
+      "estimated_cost": 0.005,
+      "call_number": 23
+    },
+    {
+      "timestamp": "2025-08-30T03:45:06.078Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區民族路343號",
+      "estimated_cost": 0.005,
+      "call_number": 24
+    },
+    {
+      "timestamp": "2025-08-30T03:45:06.344Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區光明路4號",
+      "estimated_cost": 0.005,
+      "call_number": 25
+    },
+    {
+      "timestamp": "2025-08-30T03:45:06.531Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區信義路497號",
+      "estimated_cost": 0.005,
+      "call_number": 26
+    },
+    {
+      "timestamp": "2025-08-30T03:45:06.734Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區自由路215號",
+      "estimated_cost": 0.005,
+      "call_number": 27
+    },
+    {
+      "timestamp": "2025-08-30T03:45:06.917Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區中山路390號",
+      "estimated_cost": 0.005,
+      "call_number": 28
+    },
+    {
+      "timestamp": "2025-08-30T03:45:07.198Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區光明路262號",
+      "estimated_cost": 0.005,
+      "call_number": 29
+    },
+    {
+      "timestamp": "2025-08-30T03:45:07.323Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區信義路377號",
+      "estimated_cost": 0.005,
+      "call_number": 30
+    },
+    {
+      "timestamp": "2025-08-30T03:45:07.542Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區自由路8號",
+      "estimated_cost": 0.005,
+      "call_number": 31
+    },
+    {
+      "timestamp": "2025-08-30T03:45:07.745Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區學成路70號",
+      "estimated_cost": 0.005,
+      "call_number": 32
+    },
+    {
+      "timestamp": "2025-08-30T03:45:08.027Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區信義路45號",
+      "estimated_cost": 0.005,
+      "call_number": 33
+    },
+    {
+      "timestamp": "2025-08-30T03:45:08.230Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區學成路498號",
+      "estimated_cost": 0.005,
+      "call_number": 34
+    },
+    {
+      "timestamp": "2025-08-30T03:45:08.464Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區民族路48號",
+      "estimated_cost": 0.005,
+      "call_number": 35
+    },
+    {
+      "timestamp": "2025-08-30T03:45:08.730Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區和平路298號",
+      "estimated_cost": 0.005,
+      "call_number": 36
+    },
+    {
+      "timestamp": "2025-08-30T03:45:08.949Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區中華路16號",
+      "estimated_cost": 0.005,
+      "call_number": 37
+    },
+    {
+      "timestamp": "2025-08-30T03:45:09.168Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區民生路107號",
+      "estimated_cost": 0.005,
+      "call_number": 38
+    },
+    {
+      "timestamp": "2025-08-30T03:45:09.371Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區信義路260號",
+      "estimated_cost": 0.005,
+      "call_number": 39
+    },
+    {
+      "timestamp": "2025-08-30T03:45:09.590Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區文化路452號",
+      "estimated_cost": 0.005,
+      "call_number": 40
+    },
+    {
+      "timestamp": "2025-08-30T03:45:09.824Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中正路20號",
+      "estimated_cost": 0.005,
+      "call_number": 41
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.060Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區信義路53號",
+      "estimated_cost": 0.005,
+      "call_number": 42
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.200Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區民生路254號",
+      "estimated_cost": 0.005,
+      "call_number": 43
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.419Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區中正路193號",
+      "estimated_cost": 0.005,
+      "call_number": 44
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.716Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區光明路342號",
+      "estimated_cost": 0.005,
+      "call_number": 45
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.856Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區光明路485號",
+      "estimated_cost": 0.005,
+      "call_number": 46
+    },
+    {
+      "timestamp": "2025-08-30T03:45:10.982Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中正路339號",
+      "estimated_cost": 0.005,
+      "call_number": 47
+    },
+    {
+      "timestamp": "2025-08-30T03:45:11.091Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區光明路290號",
+      "estimated_cost": 0.005,
+      "call_number": 48
+    },
+    {
+      "timestamp": "2025-08-30T03:45:11.310Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區民生路129號",
+      "estimated_cost": 0.005,
+      "call_number": 49
+    },
+    {
+      "timestamp": "2025-08-30T03:45:11.576Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區光明路157號",
+      "estimated_cost": 0.005,
+      "call_number": 50
+    },
+    {
+      "timestamp": "2025-08-30T03:45:11.810Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區中正路81號",
+      "estimated_cost": 0.005,
+      "call_number": 51
+    },
+    {
+      "timestamp": "2025-08-30T03:45:11.952Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區中華路481號",
+      "estimated_cost": 0.005,
+      "call_number": 52
+    },
+    {
+      "timestamp": "2025-08-30T03:45:12.202Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區大學路140號",
+      "estimated_cost": 0.005,
+      "call_number": 53
+    },
+    {
+      "timestamp": "2025-08-30T03:45:12.327Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區建國路359號",
+      "estimated_cost": 0.005,
+      "call_number": 54
+    },
+    {
+      "timestamp": "2025-08-30T03:45:12.561Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區中華路308號",
+      "estimated_cost": 0.005,
+      "call_number": 55
+    },
+    {
+      "timestamp": "2025-08-30T03:45:12.717Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區信義路422號",
+      "estimated_cost": 0.005,
+      "call_number": 56
+    },
+    {
+      "timestamp": "2025-08-30T03:45:13.009Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區大學路323號",
+      "estimated_cost": 0.005,
+      "call_number": 57
+    },
+    {
+      "timestamp": "2025-08-30T03:45:13.228Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區文化路228號",
+      "estimated_cost": 0.005,
+      "call_number": 58
+    },
+    {
+      "timestamp": "2025-08-30T03:45:13.400Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區大學路455號",
+      "estimated_cost": 0.005,
+      "call_number": 59
+    },
+    {
+      "timestamp": "2025-08-30T03:45:13.697Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區自由路234號",
+      "estimated_cost": 0.005,
+      "call_number": 60
+    },
+    {
+      "timestamp": "2025-08-30T03:45:13.853Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中華路266號",
+      "estimated_cost": 0.005,
+      "call_number": 61
+    },
+    {
+      "timestamp": "2025-08-30T03:45:14.135Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區復興路177號",
+      "estimated_cost": 0.005,
+      "call_number": 62
+    },
+    {
+      "timestamp": "2025-08-30T03:45:14.323Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區和平路3號",
+      "estimated_cost": 0.005,
+      "call_number": 63
+    },
+    {
+      "timestamp": "2025-08-30T03:45:14.526Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中華路268號",
+      "estimated_cost": 0.005,
+      "call_number": 64
+    },
+    {
+      "timestamp": "2025-08-30T03:45:14.682Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區和平路258號",
+      "estimated_cost": 0.005,
+      "call_number": 65
+    },
+    {
+      "timestamp": "2025-08-30T03:45:14.885Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區文化路339號",
+      "estimated_cost": 0.005,
+      "call_number": 66
+    },
+    {
+      "timestamp": "2025-08-30T03:45:15.042Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區民族路445號",
+      "estimated_cost": 0.005,
+      "call_number": 67
+    },
+    {
+      "timestamp": "2025-08-30T03:45:15.277Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中正路7號",
+      "estimated_cost": 0.005,
+      "call_number": 68
+    },
+    {
+      "timestamp": "2025-08-30T03:45:15.417Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區光明路422號",
+      "estimated_cost": 0.005,
+      "call_number": 69
+    },
+    {
+      "timestamp": "2025-08-30T03:45:15.651Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區信義路385號",
+      "estimated_cost": 0.005,
+      "call_number": 70
+    },
+    {
+      "timestamp": "2025-08-30T03:45:15.960Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區自由路51號",
+      "estimated_cost": 0.005,
+      "call_number": 71
+    },
+    {
+      "timestamp": "2025-08-30T03:45:16.132Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區中山路487號",
+      "estimated_cost": 0.005,
+      "call_number": 72
+    },
+    {
+      "timestamp": "2025-08-30T03:45:16.351Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區中正路233號",
+      "estimated_cost": 0.005,
+      "call_number": 73
+    },
+    {
+      "timestamp": "2025-08-30T03:45:16.569Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區建國路273號",
+      "estimated_cost": 0.005,
+      "call_number": 74
+    },
+    {
+      "timestamp": "2025-08-30T03:45:16.679Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區中華路54號",
+      "estimated_cost": 0.005,
+      "call_number": 75
+    },
+    {
+      "timestamp": "2025-08-30T03:45:16.850Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區和平路256號",
+      "estimated_cost": 0.005,
+      "call_number": 76
+    },
+    {
+      "timestamp": "2025-08-30T03:45:17.054Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區民權街151號",
+      "estimated_cost": 0.005,
+      "call_number": 77
+    },
+    {
+      "timestamp": "2025-08-30T03:45:17.335Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區和平路185號",
+      "estimated_cost": 0.005,
+      "call_number": 78
+    },
+    {
+      "timestamp": "2025-08-30T03:45:17.585Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區學成路461號",
+      "estimated_cost": 0.005,
+      "call_number": 79
+    },
+    {
+      "timestamp": "2025-08-30T03:45:17.867Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區復興路90號",
+      "estimated_cost": 0.005,
+      "call_number": 80
+    },
+    {
+      "timestamp": "2025-08-30T03:45:18.003Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區自由路160號",
+      "estimated_cost": 0.005,
+      "call_number": 81
+    },
+    {
+      "timestamp": "2025-08-30T03:45:18.206Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區中華路338號",
+      "estimated_cost": 0.005,
+      "call_number": 82
+    },
+    {
+      "timestamp": "2025-08-30T03:45:18.316Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區建國路43號",
+      "estimated_cost": 0.005,
+      "call_number": 83
+    },
+    {
+      "timestamp": "2025-08-30T03:45:18.534Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區自由路425號",
+      "estimated_cost": 0.005,
+      "call_number": 84
+    },
+    {
+      "timestamp": "2025-08-30T03:45:18.737Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區光明路356號",
+      "estimated_cost": 0.005,
+      "call_number": 85
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.030Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區光明路217號",
+      "estimated_cost": 0.005,
+      "call_number": 86
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.187Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區民權街387號",
+      "estimated_cost": 0.005,
+      "call_number": 87
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.343Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區建國路83號",
+      "estimated_cost": 0.005,
+      "call_number": 88
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.452Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區文化路397號",
+      "estimated_cost": 0.005,
+      "call_number": 89
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.655Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區學成路215號",
+      "estimated_cost": 0.005,
+      "call_number": 90
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.858Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市鶯歌區大學路74號",
+      "estimated_cost": 0.005,
+      "call_number": 91
+    },
+    {
+      "timestamp": "2025-08-30T03:45:19.968Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區中山路176號",
+      "estimated_cost": 0.005,
+      "call_number": 92
+    },
+    {
+      "timestamp": "2025-08-30T03:45:20.156Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區大學路312號",
+      "estimated_cost": 0.005,
+      "call_number": 93
+    },
+    {
+      "timestamp": "2025-08-30T03:45:20.390Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區復興路49號",
+      "estimated_cost": 0.005,
+      "call_number": 94
+    },
+    {
+      "timestamp": "2025-08-30T03:45:20.671Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區復興路412號",
+      "estimated_cost": 0.005,
+      "call_number": 95
+    },
+    {
+      "timestamp": "2025-08-30T03:45:20.828Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區大學路227號",
+      "estimated_cost": 0.005,
+      "call_number": 96
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.104Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市樹林區復興路108號",
+      "estimated_cost": 0.005,
+      "call_number": 97
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.323Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市板橋區民權街438號",
+      "estimated_cost": 0.005,
+      "call_number": 98
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.479Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市土城區建國路179號",
+      "estimated_cost": 0.005,
+      "call_number": 99
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.589Z",
+      "type": "geocoding",
+      "description": "解析地址: 新北市三峽區信義路271號",
+      "estimated_cost": 0.005,
+      "call_number": 100
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次1 - 查看20筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 1
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次1 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 2
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次2 - 查看21筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 3
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次2 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 4
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次3 - 查看13筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 5
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次3 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 6
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次4 - 查看30筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 7
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次4 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 8
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.870Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次5 - 查看12筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 9
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.871Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次5 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 10
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.871Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次6 - 查看4筆訂單位置",
+      "estimated_cost": 0.002,
+      "call_number": 11
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.871Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次6 - 接單確認地圖",
+      "estimated_cost": 0.002,
+      "call_number": 12
+    },
+    {
+      "timestamp": "2025-08-30T03:45:21.871Z",
+      "type": "directions",
+      "description": "路線規劃: 20個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 1
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.178Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次1 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 13
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.178Z",
+      "type": "directions",
+      "description": "路線規劃: 21個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 2
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.538Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次2 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 14
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.538Z",
+      "type": "directions",
+      "description": "路線規劃: 13個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 3
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.944Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次3 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 15
+    },
+    {
+      "timestamp": "2025-08-30T03:45:22.944Z",
+      "type": "directions",
+      "description": "路線規劃: 30個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 4
+    },
+    {
+      "timestamp": "2025-08-30T03:45:23.413Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次4 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 16
+    },
+    {
+      "timestamp": "2025-08-30T03:45:23.413Z",
+      "type": "directions",
+      "description": "路線規劃: 12個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 5
+    },
+    {
+      "timestamp": "2025-08-30T03:45:23.710Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次5 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 17
+    },
+    {
+      "timestamp": "2025-08-30T03:45:23.710Z",
+      "type": "directions",
+      "description": "路線規劃: 4個點 (最佳化)",
+      "estimated_cost": 0.005,
+      "call_number": 6
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 批次6 - 優化路線地圖",
+      "estimated_cost": 0.002,
+      "call_number": 18
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 19
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 20
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 21
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 22
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 23
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 24
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.189Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 25
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 26
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 27
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 28
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 29
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 30
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 31
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 32
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 33
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 34
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 35
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 36
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 37
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 38
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 39
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 40
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 41
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 42
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 43
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 44
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 45
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 46
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 47
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 48
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 49
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 50
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 51
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 52
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 53
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 54
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 55
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 56
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 57
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 58
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.190Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 59
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 60
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 61
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 62
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 63
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 64
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 65
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 66
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 67
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 68
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 69
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 70
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 71
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 72
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 73
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 74
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 75
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 76
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 77
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 78
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 79
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 80
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 81
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 82
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 83
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 84
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 85
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 86
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 87
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 88
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.191Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 89
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 90
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 91
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 92
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 93
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 94
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 95
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 96
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 97
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 98
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 99
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 100
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 101
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 許文華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 102
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 許文華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 103
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 104
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 105
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 106
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 107
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 108
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 109
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 110
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 111
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 112
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 113
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 114
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 115
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 116
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.192Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 117
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 118
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 119
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 120
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 121
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 122
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 123
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 124
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 125
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 126
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 127
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 128
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 129
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 130
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 131
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 132
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 133
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 134
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 135
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 136
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 137
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 138
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 139
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 140
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 141
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 142
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 143
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 144
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 145
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 陳雅婷 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 146
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 147
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 148
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 149
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 150
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 151
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 152
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.193Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 153
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 154
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 155
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 156
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 157
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 158
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 159
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 160
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 161
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 162
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 163
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 164
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 165
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 166
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 167
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 168
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 169
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 170
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 171
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 172
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 173
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 174
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 175
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 176
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 177
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 178
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 179
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 180
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 181
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 182
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 183
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 184
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 185
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 186
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 187
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 188
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 189
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蔡雅芳 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 190
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 191
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 192
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 193
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 194
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.194Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 195
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 196
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 197
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 198
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 199
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 200
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 201
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 202
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 鄭美玲 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 203
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 204
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 205
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 206
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 207
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 李美華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 208
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 209
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 210
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 211
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 212
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 213
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 214
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 215
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 216
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 217
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 林建宏 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 218
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 219
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 黃淑芬 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 220
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 221
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 222
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 223
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 224
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 225
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 226
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 227
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 228
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 229
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 薛文斌 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 230
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 231
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 232
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 許文華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 233
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 許文華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 234
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.195Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 許文華 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 235
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 236
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 237
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 238
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 239
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 240
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 張志偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 241
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 242
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 243
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 洪建成 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 244
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 245
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 246
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 賴美珠 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 247
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 248
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 249
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 250
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 251
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 游志強 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 252
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 253
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 郭大偉 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 254
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 255
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 256
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 257
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 258
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 吳承恩 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 259
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 260
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 蕭志豪 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 261
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 262
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.196Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 王小明 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 263
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 264
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 265
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 謝淑媛 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 266
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 267
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 劉怡君 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 268
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 269
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 270
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 271
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 272
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 何雅真 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 273
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 274
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 客戶追蹤 - 楊明智 查看配送位置",
+      "estimated_cost": 0.002,
+      "call_number": 275
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 每日配送統計 - 所有訂單分布圖",
+      "estimated_cost": 0.002,
+      "call_number": 276
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 地區分析 - 三峽區 (22筆)",
+      "estimated_cost": 0.002,
+      "call_number": 277
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 地區分析 - 鶯歌區 (21筆)",
+      "estimated_cost": 0.002,
+      "call_number": 278
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 地區分析 - 土城區 (23筆)",
+      "estimated_cost": 0.002,
+      "call_number": 279
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 地區分析 - 樹林區 (24筆)",
+      "estimated_cost": 0.002,
+      "call_number": 280
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 地區分析 - 板橋區 (10筆)",
+      "estimated_cost": 0.002,
+      "call_number": 281
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-1 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 282
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.197Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-2 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 283
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.198Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-3 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 284
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.198Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-4 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 285
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.198Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-1 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 286
+    },
+    {
+      "timestamp": "2025-08-30T03:45:24.198Z",
+      "type": "staticMaps",
+      "description": "靜態地圖: 外送員 driver-2 績效分析",
+      "estimated_cost": 0.002,
+      "call_number": 287
+    }
+  ],
+  "cost_analysis": {
+    "geocoding_cost": 0.5,
+    "directions_cost": 0.03,
+    "static_maps_cost": 0.5740000000000001,
+    "distance_matrix_cost": 0,
+    "total_cost": 1.1040000000000008
+  }
+}

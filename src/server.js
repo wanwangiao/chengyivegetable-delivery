@@ -25,6 +25,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { createAgentSystem } = require('./agents'),
       driverApiRoutes = require('./routes/driver_api'),
       { router: driverSimplifiedApiRoutes, setDatabasePool: setDriverSimplifiedDatabasePool } = require('./routes/driver_simplified_api'),
+      driverMobileApiRoutes = require('./routes/driver_mobile_api'),
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
@@ -543,6 +544,9 @@ app.use((req, res, next) => {
 // 簡化版外送員API路由 (優先處理)
 app.use('/api/driver', driverSimplifiedApiRoutes);
 
+// 移動端外送員API路由
+app.use('/api/driver-mobile', driverMobileApiRoutes);
+
 // 外送員API路由 (原有功能)
 app.use('/api/driver', driverApiRoutes);
 
@@ -831,6 +835,18 @@ app.post('/driver/login', async (req, res) => {
 app.get('/driver/dashboard', ensureDriverPage, (req, res) => {
   
   res.render('driver_dashboard_simplified', {
+    driver: {
+      id: req.session.driverId,
+      name: req.session.driverName || '外送員'
+    }
+  });
+});
+
+// 移動端外送員介面
+app.get('/driver/mobile', ensureDriverPage, (req, res) => {
+  res.render('driver_mobile_interface', { 
+    title: '外送員配送介面',
+    demoMode: req.app.locals.demoMode,
     driver: {
       id: req.session.driverId,
       name: req.session.driverName || '外送員'

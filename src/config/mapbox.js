@@ -1,7 +1,7 @@
 // Mapbox configuration
 const MAPBOX_CONFIG = {
     // 免費版 Mapbox access token (需要從 Mapbox 帳戶獲取)
-    ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiZGVtby11c2VyIiwiYSI6ImNrcTM4YjNmNjBmNDUyeG5pdjE1NGRqZDIifQ.DemoTokenForTesting',
+    ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY2hlbmd5aXZlZ2V0YWJsZSIsImEiOiJjbWV4bGZjNmYxMmxjMmxvYTFhNzQ4ZWFnIn0.SdmzkXZK95R5kUgX6-22LA',
     
     // API 端點
     GEOCODING_URL: 'https://api.mapbox.com/geocoding/v5/mapbox.places',

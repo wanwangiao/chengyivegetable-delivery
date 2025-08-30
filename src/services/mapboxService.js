@@ -104,8 +104,7 @@ class MapboxService {
                     access_token: this.accessToken,
                     overview: 'full',
                     geometries: 'geojson',
-                    steps: true,
-                    optimize: true // 啟用路線優化
+                    steps: true
                 }
             });
 

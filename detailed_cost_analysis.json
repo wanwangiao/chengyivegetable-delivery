@@ -1,0 +1,179 @@
+{
+  "test_summary": {
+    "test_duration_seconds": 23.266,
+    "total_api_calls": 393,
+    "estimated_cost_usd": 1.1040000000000008,
+    "calls_per_second": "16.89"
+  },
+  "api_usage": {
+    "geocoding": 100,
+    "directions": 6,
+    "staticMaps": 287,
+    "placesNearby": 0,
+    "distanceMatrix": 0
+  },
+  "scaling_analysis": [
+    {
+      "stage": "起步階段",
+      "daily_orders": 15,
+      "monthly_orders": 450,
+      "description": "每日15單",
+      "api_calls": {
+        "geocoding": 450,
+        "directions": 27,
+        "static_maps": 1292
+      },
+      "costs": {
+        "total_usage_cost": 4.968999999999999,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    },
+    {
+      "stage": "成長階段",
+      "daily_orders": 50,
+      "monthly_orders": 1500,
+      "description": "每日50單",
+      "api_calls": {
+        "geocoding": 1500,
+        "directions": 90,
+        "static_maps": 4305
+      },
+      "costs": {
+        "total_usage_cost": 16.56,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    },
+    {
+      "stage": "擴張階段",
+      "daily_orders": 100,
+      "monthly_orders": 3000,
+      "description": "每日100單",
+      "api_calls": {
+        "geocoding": 3000,
+        "directions": 180,
+        "static_maps": 8610
+      },
+      "costs": {
+        "total_usage_cost": 33.12,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    },
+    {
+      "stage": "成熟階段",
+      "daily_orders": 200,
+      "monthly_orders": 6000,
+      "description": "每日200單",
+      "api_calls": {
+        "geocoding": 6000,
+        "directions": 360,
+        "static_maps": 17220
+      },
+      "costs": {
+        "total_usage_cost": 66.24,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    },
+    {
+      "stage": "規模化階段",
+      "daily_orders": 300,
+      "monthly_orders": 9000,
+      "description": "每日300單",
+      "api_calls": {
+        "geocoding": 9000,
+        "directions": 540,
+        "static_maps": 25830
+      },
+      "costs": {
+        "total_usage_cost": 99.36000000000001,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    },
+    {
+      "stage": "企業化階段",
+      "daily_orders": 500,
+      "monthly_orders": 15000,
+      "description": "每日500單",
+      "api_calls": {
+        "geocoding": 15000,
+        "directions": 900,
+        "static_maps": 43050
+      },
+      "costs": {
+        "total_usage_cost": 165.60000000000002,
+        "actual_monthly_cost": 0,
+        "annual_cost": 0
+      }
+    }
+  ],
+  "key_findings": [
+    "1. 客戶追蹤地圖是最大的API消耗項目 (287/393 次調用)",
+    "2. 每100筆訂單產生約393次API調用",
+    "3. 平均每筆訂單產生3.9次API調用",
+    "4. 靜態地圖載入佔總費用的52%",
+    "5. 路線優化只佔總費用的2.7%，非常經濟",
+    "6. 直到月訂單達到18,000筆前都完全免費",
+    "7. 即使達到月15,000筆訂單，年費用僅$1,776"
+  ],
+  "optimization_suggestions": [
+    {
+      "suggestion": "客戶追蹤頻率優化",
+      "impact": "減少30-50%地圖載入",
+      "method": "實現智能追蹤，只在配送狀態變更時更新"
+    },
+    {
+      "suggestion": "地圖快取機制",
+      "impact": "減少20-30%重複調用",
+      "method": "在前端快取相同區域的地圖圖片"
+    },
+    {
+      "suggestion": "批次路線優化",
+      "impact": "提升配送效率",
+      "method": "優先選擇同區域訂單，減少路線複雜度"
+    },
+    {
+      "suggestion": "動態地圖載入",
+      "impact": "按需載入減少無效調用",
+      "method": "只在用戶主動查看時載入地圖"
+    }
+  ],
+  "provider_comparison": [
+    {
+      "name": "Google Maps",
+      "geocoding_price": 0.005,
+      "directions_price": 0.005,
+      "static_maps_price": 0.002,
+      "free_credit": 200,
+      "notes": "業界標準，功能最完整"
+    },
+    {
+      "name": "Mapbox",
+      "geocoding_price": 0.0005,
+      "directions_price": 0.0005,
+      "static_maps_price": 0.0005,
+      "free_credit": 0,
+      "monthly_fee": 5,
+      "notes": "基本月費制，超量計費"
+    },
+    {
+      "name": "HERE Maps",
+      "geocoding_price": 0.001,
+      "directions_price": 0.001,
+      "static_maps_price": 0.0008,
+      "free_calls": 250000,
+      "notes": "大量免費額度，適合高用量"
+    },
+    {
+      "name": "Azure Maps",
+      "geocoding_price": 0.005,
+      "directions_price": 0.005,
+      "static_maps_price": 0.0025,
+      "free_credit": 0,
+      "notes": "微軟生態系整合"
+    }
+  ]
+}

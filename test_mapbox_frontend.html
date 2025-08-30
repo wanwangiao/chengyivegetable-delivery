@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapbox 前端測試頁面</title>
+    <!-- Mapbox GL JS -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        h1 { color: #333; }
+        #map { 
+            width: 100%; 
+            height: 400px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            margin: 20px 0;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover { background: #0056b3; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Mapbox 地圖功能測試</h1>
+    
+    <div class="controls">
+        <button class="btn" onclick="testBasicMap()">測試基本地圖</button>
+        <button class="btn" onclick="testAddMarkers()">添加標記</button>
+        <button class="btn" onclick="testRouteOptimization()">測試路線優化</button>
+        <button class="btn" onclick="clearMap()">清除地圖</button>
+    </div>
+    
+    <div id="status" class="status">
+        準備就緒 - 點擊按鈕開始測試
+    </div>
+    
+    <div id="map"></div>
+    
+    <div id="results">
+        <h3>測試結果：</h3>
+        <ul id="result-list"></ul>
+    </div>
+
+    <script>
+        // Mapbox access token
+        const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiY2hlbmd5aXZlZ2V0YWJsZSIsImEiOiJjbWV4bGZjNmYxMmxjMmxvYTFhNzQ4ZWFnIn0.SdmzkXZK95R5kUgX6-22LA';
+        mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+        
+        let map = null;
+        let markers = [];
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function addResult(message, success = true) {
+            const resultList = document.getElementById('result-list');
+            const li = document.createElement('li');
+            li.textContent = `${success ? '✅' : '❌'} ${message}`;
+            li.style.color = success ? '#155724' : '#721c24';
+            resultList.appendChild(li);
+        }
+        
+        function testBasicMap() {
+            updateStatus('正在初始化基本地圖...', 'info');
+            
+            try {
+                if (map) {
+                    map.remove();
+                }
+                
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [121.37, 24.93], // 三峽區中心
+                    zoom: 12
+                });
+                
+                map.addControl(new mapboxgl.NavigationControl());
+                
+                map.on('load', function() {
+                    updateStatus('✅ 基本地圖載入成功', 'success');
+                    addResult('基本地圖功能正常', true);
+                });
+                
+                map.on('error', function(e) {
+                    updateStatus('❌ 地圖載入失敗: ' + e.error, 'error');
+                    addResult('基本地圖載入失敗: ' + e.error, false);
+                });
+                
+            } catch (error) {
+                updateStatus('❌ 地圖初始化失敗: ' + error.message, 'error');
+                addResult('地圖初始化失敗: ' + error.message, false);
+            }
+        }
+        
+        function testAddMarkers() {
+            if (!map) {
+                updateStatus('❌ 請先初始化地圖', 'error');
+                return;
+            }
+            
+            updateStatus('正在添加測試標記...', 'info');
+            
+            // 清除現有標記
+            clearMarkers();
+            
+            const testLocations = [
+                { lng: 121.365, lat: 24.936, name: '測試點 A', color: '#28a745' },
+                { lng: 121.370, lat: 24.933, name: '測試點 B', color: '#007bff' },
+                { lng: 121.373, lat: 24.937, name: '測試點 C', color: '#dc3545' }
+            ];
+            
+            testLocations.forEach((location, index) => {
+                const marker = new mapboxgl.Marker({ color: location.color })
+                    .setLngLat([location.lng, location.lat])
+                    .setPopup(new mapboxgl.Popup({ offset: 25 })
+                        .setHTML(`
+                            <div style="padding: 5px;">
+                                <strong>${location.name}</strong><br>
+                                <small>座標: ${location.lng}, ${location.lat}</small>
+                            </div>
+                        `))
+                    .addTo(map);
+                
+                markers.push(marker);
+            });
+            
+            // 調整視野包含所有標記
+            const bounds = new mapboxgl.LngLatBounds();
+            testLocations.forEach(location => {
+                bounds.extend([location.lng, location.lat]);
+            });
+            map.fitBounds(bounds, { padding: 50 });
+            
+            updateStatus('✅ 標記添加成功', 'success');
+            addResult(`成功添加 ${testLocations.length} 個標記`, true);
+        }
+        
+        function clearMarkers() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+        }
+        
+        async function testRouteOptimization() {
+            updateStatus('正在測試路線優化...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:3004/api/driver/optimize-route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: ['demo-1', 'demo-2', 'demo-3']
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('✅ 路線優化測試成功', 'success');
+                    addResult(`路線優化成功，預計節省 ${result.timeSaved} 分鐘`, true);
+                    addResult(`優化了 ${result.optimizedOrders.length} 個訂單`, true);
+                    
+                    // 顯示優化後的路線
+                    if (result.routeUrl) {
+                        addResult('靜態地圖URL生成成功', true);
+                    }
+                    if (result.interactiveUrl) {
+                        addResult('互動地圖URL生成成功', true);
+                    }
+                } else {
+                    throw new Error(result.message || '未知錯誤');
+                }
+                
+            } catch (error) {
+                updateStatus('❌ 路線優化測試失敗: ' + error.message, 'error');
+                addResult('路線優化測試失敗: ' + error.message, false);
+            }
+        }
+        
+        function clearMap() {
+            if (map) {
+                clearMarkers();
+                map.remove();
+                map = null;
+                updateStatus('地圖已清除', 'info');
+                addResult('地圖清除成功', true);
+            }
+        }
+        
+        // 頁面載入時顯示初始狀態
+        window.addEventListener('load', function() {
+            updateStatus('🗺️ Mapbox 測試頁面已載入，請開始測試', 'info');
+            addResult('測試頁面初始化完成', true);
+        });
+    </script>
+</body>
+</html>
