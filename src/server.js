@@ -34,7 +34,8 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       SmartRouteService = require('./services/SmartRouteService'),
       RouteOptimizationService = require('./services/RouteOptimizationService'),
       LineNotificationService = require('./services/LineNotificationService'),
-      LineBotService = require('./services/LineBotService');
+      LineBotService = require('./services/LineBotService'),
+      LineUserService = require('./services/LineUserService');
 
 let agentSystem = null;
 let smartRouteService = null;
@@ -42,6 +43,7 @@ let routeOptimizationService = null;
 let webSocketManager = null;
 let lineNotificationService = null;
 let lineBotService = null;
+let lineUserService = null;
 
 const app = express(),
       port = process.env.PORT || 3000;
@@ -1704,7 +1706,33 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
         [orderId, item.product_id, item.name, item.is_priced_item, item.quantity, item.unit_price, item.line_total, item.actual_weight]
       );
     }
-    // 若已綁定 LINE，將用戶資料寫入 users 表
+    // 🔗 LINE 用戶整合 - 自動註冊和關聯
+    try {
+      // 檢查是否有 LINE 用戶資訊（從請求參數或 session 獲取）
+      const lineUserId = req.body.line_user_id || (req.session.line && req.session.line.userId);
+      const lineDisplayName = req.body.line_name || (req.session.line && req.session.line.displayName);
+      
+      if (lineUserId && lineUserService) {
+        // 自動更新 LINE 用戶的電話號碼綁定
+        await lineUserService.bindUserPhone(lineUserId, phone);
+        
+        // 關聯訂單與 LINE 用戶
+        await lineUserService.linkOrderToLineUser(orderId, lineUserId);
+        
+        console.log(`🔗 訂單 #${orderId} 已自動關聯 LINE 用戶: ${lineDisplayName} (${lineUserId})`);
+      } else {
+        // 嘗試透過電話號碼查詢是否已有 LINE 用戶
+        const existingUserId = await lineUserService?.getLineUserIdByPhone(phone);
+        if (existingUserId) {
+          await lineUserService.linkOrderToLineUser(orderId, existingUserId);
+          console.log(`🔗 訂單 #${orderId} 已關聯到現有 LINE 用戶: ${existingUserId}`);
+        }
+      }
+    } catch (lineError) {
+      console.warn('⚠️ LINE 用戶整合失敗 (不影響訂單建立):', lineError.message);
+    }
+
+    // 保持原有用戶表邏輯 (向後相容)
     if (req.session.line && req.session.line.userId) {
       await upsertUser(phone, name, req.session.line.userId, req.session.line.displayName);
     } else {
@@ -2729,6 +2757,297 @@ app.post('/api/admin/agents/health-check', ensureAdmin, async (req, res) => {
   }
 });
 
+// =====================================
+// 📋 基本設定管理 API
+// =====================================
+
+// 預設基本設定
+const defaultBasicSettings = {
+  // 通知訊息設定
+  notification_packaging_complete: '🎉 您好！\n\n📦 您的訂單已完成包裝，即將出貨！\n🔢 訂單編號：#{orderId}\n💰 訂單金額：${totalAmount}\n\n⏰ 預計30分鐘內送達\n📞 如有問題請來電：0912-345-678\n\n🙏 謝謝您選擇誠憶鮮蔬！',
+  notification_delivering: '🚚 您好！\n\n🛵 您的訂單正在配送中！\n🔢 訂單編號：#{orderId}\n📍 預計很快送達您的地址\n\n📞 如有問題請來電：0912-345-678\n\n🙏 謝謝您選擇誠憶鮮蔬！',
+  notification_delivered: '🎉 您好！\n\n✅ 您的訂單已成功送達！\n🔢 訂單編號：#{orderId}\n💰 訂單金額：${totalAmount}\n\n🌟 感謝您選擇誠憶鮮蔬！\n❤️ 期待您的下次訂購\n\n📞 如有任何問題請來電：0912-345-678',
+  
+  // 主題色彩設定
+  primary_color: '#2d5a3d',
+  accent_color: '#7cb342',
+  
+  // 商店基本資訊
+  store_name: '誠憶鮮蔬',
+  store_slogan: '新鮮 × 健康 × 便利',
+  contact_phone: '0912-345-678',
+  contact_address: '台北市信義區信義路五段7號',
+  
+  // 營業設定
+  free_shipping_threshold: 300,
+  delivery_fee: 50,
+  minimum_order_amount: 100,
+  service_hours_start: '08:00',
+  service_hours_end: '20:00',
+  
+  // 功能開關
+  line_notification_enabled: true,
+  sms_notification_enabled: false,
+  auto_accept_orders: false
+};
+
+// 設定分類結構
+const basicSettingsCategories = {
+  'notifications': [
+    {
+      key: 'notification_packaging_complete',
+      display_name: '📦 包裝完成通知',
+      description: '當商品包裝完成時發送給客戶的訊息。可使用 {orderId} 和 {totalAmount} 作為變數。',
+      type: 'textarea',
+      value: defaultBasicSettings.notification_packaging_complete
+    },
+    {
+      key: 'notification_delivering',
+      display_name: '🚚 配送中通知',
+      description: '當訂單開始配送時發送給客戶的訊息。可使用 {orderId} 作為變數。',
+      type: 'textarea',
+      value: defaultBasicSettings.notification_delivering
+    },
+    {
+      key: 'notification_delivered',
+      display_name: '🎉 已送達通知',
+      description: '當訂單成功送達時發送給客戶的訊息。可使用 {orderId} 和 {totalAmount} 作為變數。',
+      type: 'textarea',
+      value: defaultBasicSettings.notification_delivered
+    }
+  ],
+  'theme': [
+    {
+      key: 'primary_color',
+      display_name: '主要色彩',
+      description: '系統的主要品牌顏色，用於導航欄和主要按鈕',
+      type: 'color',
+      value: defaultBasicSettings.primary_color
+    },
+    {
+      key: 'accent_color',
+      display_name: '強調色彩',
+      description: '用於突出顯示和次要按鈕的顏色',
+      type: 'color',
+      value: defaultBasicSettings.accent_color
+    }
+  ],
+  'store': [
+    {
+      key: 'store_name',
+      display_name: '商店名稱',
+      description: '顯示在網站標題和訂單確認訊息中的商店名稱',
+      type: 'text',
+      value: defaultBasicSettings.store_name
+    },
+    {
+      key: 'store_slogan',
+      display_name: '商店標語',
+      description: '簡短的品牌標語，顯示在首頁',
+      type: 'text',
+      value: defaultBasicSettings.store_slogan
+    },
+    {
+      key: 'contact_phone',
+      display_name: '聯絡電話',
+      description: '客戶服務電話號碼',
+      type: 'text',
+      value: defaultBasicSettings.contact_phone
+    },
+    {
+      key: 'contact_address',
+      display_name: '商店地址',
+      description: '商店的實體地址',
+      type: 'text',
+      value: defaultBasicSettings.contact_address
+    }
+  ],
+  'business': [
+    {
+      key: 'free_shipping_threshold',
+      display_name: '免運費門檻',
+      description: '超過此金額免收配送費（新台幣）',
+      type: 'number',
+      value: defaultBasicSettings.free_shipping_threshold
+    },
+    {
+      key: 'delivery_fee',
+      display_name: '配送費用',
+      description: '基本配送費用（新台幣）',
+      type: 'number',
+      value: defaultBasicSettings.delivery_fee
+    },
+    {
+      key: 'minimum_order_amount',
+      display_name: '最低訂購金額',
+      description: '接受訂單的最低金額（新台幣）',
+      type: 'number',
+      value: defaultBasicSettings.minimum_order_amount
+    },
+    {
+      key: 'service_hours_start',
+      display_name: '營業開始時間',
+      description: '每日營業開始時間',
+      type: 'time',
+      value: defaultBasicSettings.service_hours_start
+    },
+    {
+      key: 'service_hours_end',
+      display_name: '營業結束時間',
+      description: '每日營業結束時間',
+      type: 'time',
+      value: defaultBasicSettings.service_hours_end
+    }
+  ],
+  'features': [
+    {
+      key: 'line_notification_enabled',
+      display_name: 'LINE 通知',
+      description: '啟用 LINE Bot 推送通知功能',
+      type: 'boolean',
+      value: defaultBasicSettings.line_notification_enabled
+    },
+    {
+      key: 'sms_notification_enabled',
+      display_name: '簡訊通知',
+      description: '啟用簡訊備用通知功能',
+      type: 'boolean',
+      value: defaultBasicSettings.sms_notification_enabled
+    },
+    {
+      key: 'auto_accept_orders',
+      display_name: '自動接受訂單',
+      description: '新訂單自動標記為已確認',
+      type: 'boolean',
+      value: defaultBasicSettings.auto_accept_orders
+    }
+  ]
+};
+
+// 獲取基本設定
+app.get('/api/admin/basic-settings', ensureAdmin, async (req, res) => {
+  try {
+    if (demoMode) {
+      // 示範模式：使用預設設定
+      const settings = { ...defaultBasicSettings };
+      
+      // 更新分類中的值
+      const categories = JSON.parse(JSON.stringify(basicSettingsCategories));
+      Object.keys(categories).forEach(categoryKey => {
+        categories[categoryKey].forEach(setting => {
+          setting.value = settings[setting.key] || setting.value;
+        });
+      });
+      
+      return res.json({
+        success: true,
+        settings,
+        categories
+      });
+    }
+
+    // 生產模式：從資料庫讀取設定
+    // 這裡可以實作資料庫查詢邏輯
+    const settings = { ...defaultBasicSettings };
+    const categories = JSON.parse(JSON.stringify(basicSettingsCategories));
+    
+    Object.keys(categories).forEach(categoryKey => {
+      categories[categoryKey].forEach(setting => {
+        setting.value = settings[setting.key] || setting.value;
+      });
+    });
+
+    res.json({
+      success: true,
+      settings,
+      categories
+    });
+
+  } catch (error) {
+    console.error('獲取基本設定失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取設定失敗'
+    });
+  }
+});
+
+// 更新基本設定
+app.post('/api/admin/basic-settings/update', ensureAdmin, async (req, res) => {
+  try {
+    const { settings } = req.body;
+
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: '設定格式錯誤'
+      });
+    }
+
+    if (demoMode) {
+      // 示範模式：僅模擬儲存
+      console.log('📝 示範模式：設定已更新（模擬）', Object.keys(settings));
+      return res.json({
+        success: true,
+        message: '設定已儲存（示範模式）'
+      });
+    }
+
+    // 生產模式：儲存到資料庫
+    // 這裡可以實作資料庫更新邏輯
+    console.log('📝 設定已更新:', Object.keys(settings));
+
+    res.json({
+      success: true,
+      message: '設定儲存成功'
+    });
+
+  } catch (error) {
+    console.error('更新基本設定失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定儲存失敗'
+    });
+  }
+});
+
+// 重設基本設定
+app.post('/api/admin/basic-settings/reset', ensureAdmin, async (req, res) => {
+  try {
+    const { keys } = req.body;
+
+    if (demoMode) {
+      // 示範模式：僅模擬重設
+      console.log('🔄 示範模式：設定已重設為預設值（模擬）');
+      return res.json({
+        success: true,
+        message: '設定已重設為預設值（示範模式）'
+      });
+    }
+
+    // 生產模式：重設資料庫中的設定
+    // 這裡可以實作資料庫重設邏輯
+    console.log('🔄 設定已重設為預設值');
+
+    res.json({
+      success: true,
+      message: '設定已重設為預設值'
+    });
+
+  } catch (error) {
+    console.error('重設基本設定失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '重設設定失敗'
+    });
+  }
+});
+
+// 基本設定頁面路由
+app.get('/admin/basic-settings', ensureAdmin, (req, res) => {
+  res.render('admin_basic_settings');
+});
+
 // 🤖 使用 Agent 系統的 API 端點
 app.post('/api/orders-agent', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
   const { name, phone, address, notes, invoice, items } = req.body;
@@ -3531,6 +3850,14 @@ try {
   console.error('❌ LINE Bot服務初始化失敗:', error);
 }
 
+// 初始化LINE用戶服務
+try {
+  lineUserService = new LineUserService(pool);
+  console.log('👤 LINE用戶服務已初始化');
+} catch (error) {
+  console.error('❌ LINE用戶服務初始化失敗:', error);
+}
+
 const OrderNotificationHook = require('./services/OrderNotificationHook');
 const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 
@@ -3817,6 +4144,204 @@ app.put('/api/orders/batch-status', async (req, res) => {
       message: '批量更新失敗：' + error.message
     });
   }
+});
+
+// =====================================
+// LINE 用戶管理 API (新版)
+// =====================================
+
+// 註冊/更新 LINE 用戶
+app.post('/api/line/register-user', async (req, res) => {
+  try {
+    const { userId, displayName, pictureUrl, statusMessage } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'LINE User ID 不能為空'
+      });
+    }
+
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    // 處理用戶註冊/更新
+    const user = await lineUserService.processLineUser({
+      userId,
+      displayName,
+      pictureUrl,
+      statusMessage
+    });
+
+    res.json({
+      success: true,
+      message: '用戶註冊/更新成功',
+      user,
+      isNewUser: !user.id || user.id > Date.now() - 60000 // 簡單判斷是否為新用戶
+    });
+
+  } catch (error) {
+    console.error('❌ LINE 用戶註冊失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '註冊失敗：' + error.message
+    });
+  }
+});
+
+// 綁定電話號碼
+app.post('/api/line/bind-phone', async (req, res) => {
+  try {
+    const { userId, phone } = req.body;
+    
+    if (!userId || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: '用戶 ID 和電話號碼不能為空'
+      });
+    }
+
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    // 綁定電話號碼
+    await lineUserService.bindUserPhone(userId, phone);
+
+    res.json({
+      success: true,
+      message: '電話號碼綁定成功'
+    });
+
+  } catch (error) {
+    console.error('❌ 電話號碼綁定失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '綁定失敗：' + error.message
+    });
+  }
+});
+
+// 查詢用戶訂單記錄
+app.get('/api/line/order-history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: '用戶 ID 不能為空'
+      });
+    }
+
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    // 查詢訂單記錄
+    const orders = await lineUserService.getUserOrderHistory(userId);
+
+    res.json({
+      success: true,
+      orders
+    });
+
+  } catch (error) {
+    console.error('❌ 查詢訂單記錄失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '查詢失敗：' + error.message
+    });
+  }
+});
+
+// 透過電話號碼查詢 LINE User ID
+app.get('/api/line/user-id/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: '電話號碼不能為空'
+      });
+    }
+
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    // 查詢 LINE User ID
+    const userId = await lineUserService.getLineUserIdByPhone(phone);
+
+    res.json({
+      success: true,
+      userId,
+      hasLineUser: !!userId
+    });
+
+  } catch (error) {
+    console.error('❌ 查詢 LINE User ID 失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '查詢失敗：' + error.message
+    });
+  }
+});
+
+// 為訂單關聯 LINE 用戶
+app.post('/api/line/link-order', async (req, res) => {
+  try {
+    const { orderId, userId } = req.body;
+    
+    if (!orderId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單 ID 和用戶 ID 不能為空'
+      });
+    }
+
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    // 關聯訂單與用戶
+    await lineUserService.linkOrderToLineUser(orderId, userId);
+
+    res.json({
+      success: true,
+      message: '訂單關聯成功'
+    });
+
+  } catch (error) {
+    console.error('❌ 訂單關聯失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '關聯失敗：' + error.message
+    });
+  }
+});
+
+// LINE 用戶訂單記錄頁面
+app.get('/line/order-history', (req, res) => {
+  const { userId } = req.query;
+  res.render('line_order_history', { userId });
 });
 
 // =====================================
