@@ -1,0 +1,131 @@
+{
+  "timestamp": "2025-08-31T15:56:58.857Z",
+  "summary": {
+    "total": 19,
+    "passed": 19,
+    "failed": 0,
+    "successRate": "100.0%"
+  },
+  "testResults": [
+    {
+      "input": "100 公克",
+      "output": "0.1 公斤",
+      "expected": "0.1 公斤",
+      "passed": true
+    },
+    {
+      "input": "500 公克",
+      "output": "0.5 公斤",
+      "expected": "0.5 公斤",
+      "passed": true
+    },
+    {
+      "input": "1200 公克",
+      "output": "1.2 公斤",
+      "expected": "1.2 公斤",
+      "passed": true
+    },
+    {
+      "input": "600 公克",
+      "output": "1 斤",
+      "expected": "1 斤",
+      "passed": true
+    },
+    {
+      "input": "300 公克",
+      "output": "0.5 斤",
+      "expected": "0.5 斤",
+      "passed": true
+    },
+    {
+      "input": "900 公克",
+      "output": "1.5 斤",
+      "expected": "1.5 斤",
+      "passed": true
+    },
+    {
+      "input": "600 公克",
+      "output": "1 台斤",
+      "expected": "1 台斤",
+      "passed": true
+    },
+    {
+      "input": "1800 公克",
+      "output": "3 台斤",
+      "expected": "3 台斤",
+      "passed": true
+    },
+    {
+      "input": "1 公斤",
+      "output": "1000 公克",
+      "expected": "1000 公克",
+      "passed": true
+    },
+    {
+      "input": "0.5 公斤",
+      "output": "500 公克",
+      "expected": "500 公克",
+      "passed": true
+    },
+    {
+      "input": "2.3 公斤",
+      "output": "2300 公克",
+      "expected": "2300 公克",
+      "passed": true
+    },
+    {
+      "input": "1 斤",
+      "output": "600 公克",
+      "expected": "600 公克",
+      "passed": true
+    },
+    {
+      "input": "2 斤",
+      "output": "1200 公克",
+      "expected": "1200 公克",
+      "passed": true
+    },
+    {
+      "input": "0.5 斤",
+      "output": "300 公克",
+      "expected": "300 公克",
+      "passed": true
+    },
+    {
+      "input": "1 台斤",
+      "output": "600 公克",
+      "expected": "600 公克",
+      "passed": true
+    },
+    {
+      "input": "1.5 台斤",
+      "output": "900 公克",
+      "expected": "900 公克",
+      "passed": true
+    },
+    {
+      "input": "250 公克",
+      "output": "0.417 斤",
+      "expected": "0.417 斤",
+      "passed": true
+    },
+    {
+      "input": "333 公克",
+      "output": "0.333 公斤",
+      "expected": "0.333 公斤",
+      "passed": true
+    },
+    {
+      "input": "123 公克",
+      "output": "0.205 台斤",
+      "expected": "0.205 台斤",
+      "passed": true
+    }
+  ],
+  "recommendation": "建議在系統中加入公克單位支援，特別是對於小包裝商品、調味料、茶葉等精緻商品。",
+  "implementationFiles": [
+    "src/utils/unitConverter.js - 單位換算工具類",
+    "views/admin_products.ejs - 商品管理頁面加入公克選項",
+    "src/routes/orders.js - 訂單處理加入單位換算邏輯"
+  ]
+}

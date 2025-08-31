@@ -35,7 +35,8 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       RouteOptimizationService = require('./services/RouteOptimizationService'),
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService'),
-      LineUserService = require('./services/LineUserService');
+      LineUserService = require('./services/LineUserService'),
+      UnitConverter = require('./utils/unitConverter');
 
 let agentSystem = null;
 let smartRouteService = null;
@@ -698,14 +699,19 @@ async function upsertUser(phone, name, lineUserId, lineDisplayName) {
   }
 }
 
-// 示範產品資料
+// 示範產品資料（包含公克單位商品）
 const demoProducts = [
-  { id: 1, name: '🥬 有機高麗菜', price: 80, is_priced_item: false, unit_hint: '每顆' },
-  { id: 2, name: '🍅 新鮮番茄', price: null, is_priced_item: true, unit_hint: '每公斤' },
-  { id: 3, name: '🥬 青江菜', price: 40, is_priced_item: false, unit_hint: '每把' },
-  { id: 4, name: '🥕 胡蘿蔔', price: null, is_priced_item: true, unit_hint: '每公斤' },
-  { id: 5, name: '🥒 小黃瓜', price: 60, is_priced_item: false, unit_hint: '每包' },
-  { id: 6, name: '🧅 洋蔥', price: null, is_priced_item: true, unit_hint: '每公斤' }
+  { id: 1, name: '🥬 有機高麗菜', price: 80, is_priced_item: false, unit_hint: '每顆', unit: '顆' },
+  { id: 2, name: '🍅 新鮮番茄', price: 45, is_priced_item: true, unit_hint: '每公斤', unit: '公斤' },
+  { id: 3, name: '🥬 青江菜', price: 40, is_priced_item: false, unit_hint: '每把', unit: '把' },
+  { id: 4, name: '🥕 胡蘿蔔', price: 30, is_priced_item: true, unit_hint: '每斤', unit: '斤' },
+  { id: 5, name: '🥒 小黃瓜', price: 60, is_priced_item: false, unit_hint: '每包', unit: '包' },
+  { id: 6, name: '🧅 洋蔥', price: 25, is_priced_item: true, unit_hint: '每台斤', unit: '台斤' },
+  // 新增公克單位商品
+  { id: 7, name: '🌶️ 辣椒', price: 0.5, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
+  { id: 8, name: '🧄 蒜頭', price: 0.3, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
+  { id: 9, name: '🍄 香菇', price: 1.2, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
+  { id: 10, name: '🫚 薑', price: 0.4, is_priced_item: true, unit_hint: '每公克', unit: '公克' }
 ];
 
 // 取得產品資料
@@ -1789,6 +1795,80 @@ app.get('/api/products', asyncWrapper(async (req, res) => {
     });
   }
 }));
+
+// API：單位換算服務
+app.post('/api/unit-convert', (req, res) => {
+  try {
+    const { value, fromUnit, toUnit } = req.body;
+    
+    if (!value || !fromUnit || !toUnit) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必要參數'
+      });
+    }
+    
+    const convertedValue = UnitConverter.convert(value, fromUnit, toUnit);
+    const formatted = UnitConverter.formatWeight(convertedValue, toUnit);
+    
+    res.json({
+      success: true,
+      original: {
+        value: value,
+        unit: fromUnit,
+        display: UnitConverter.formatWeight(value, fromUnit)
+      },
+      converted: {
+        value: convertedValue,
+        unit: toUnit,
+        display: formatted
+      },
+      conversionRate: convertedValue / value
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: '換算失敗：' + error.message
+    });
+  }
+});
+
+// API：取得支援的單位列表
+app.get('/api/supported-units', (req, res) => {
+  res.json({
+    success: true,
+    units: UnitConverter.getSupportedUnits(),
+    conversionRates: UnitConverter.CONVERSION_RATES
+  });
+});
+
+// API：批量單位換算
+app.post('/api/batch-convert', (req, res) => {
+  try {
+    const { items, targetUnit } = req.body;
+    
+    if (!Array.isArray(items) || !targetUnit) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必要參數'
+      });
+    }
+    
+    const results = UnitConverter.batchConvert(items, targetUnit);
+    
+    res.json({
+      success: true,
+      targetUnit: targetUnit,
+      results: results
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: '批量換算失敗：' + error.message
+    });
+  }
+});
+
 // 前台：訂單成功頁（供外部連結使用）
 app.get('/order-success', async (req, res) => {
   const id = parseInt(req.query.id, 10);

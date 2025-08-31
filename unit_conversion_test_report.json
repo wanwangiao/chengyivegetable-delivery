@@ -1,0 +1,137 @@
+{
+  "timestamp": "2025-08-31T05:48:51.223Z",
+  "unitConversionTests": [
+    {
+      "name": "斤轉公斤",
+      "input": 2,
+      "inputUnit": "斤",
+      "expected": 1.2,
+      "actual": 1.2,
+      "outputUnit": "公斤",
+      "formula": "input * 0.6",
+      "passed": true
+    },
+    {
+      "name": "斤轉公斤 (大量)",
+      "input": 10,
+      "inputUnit": "斤",
+      "expected": 6,
+      "actual": 6,
+      "outputUnit": "公斤",
+      "formula": "input * 0.6",
+      "passed": true
+    },
+    {
+      "name": "公斤轉斤",
+      "input": 3,
+      "inputUnit": "公斤",
+      "expected": 5,
+      "actual": 5,
+      "outputUnit": "斤",
+      "formula": "input / 0.6",
+      "passed": true
+    },
+    {
+      "name": "台斤轉公斤",
+      "input": 5,
+      "inputUnit": "台斤",
+      "expected": 3,
+      "actual": 3,
+      "outputUnit": "公斤",
+      "formula": "input * 0.6",
+      "passed": true
+    },
+    {
+      "name": "公斤轉台斤",
+      "input": 2.4,
+      "inputUnit": "公斤",
+      "expected": 4,
+      "actual": 4,
+      "outputUnit": "台斤",
+      "formula": "input / 0.6",
+      "passed": true
+    },
+    {
+      "name": "斤與台斤相等性",
+      "input": 1,
+      "inputUnit": "斤",
+      "expected": 1,
+      "actual": 1,
+      "outputUnit": "台斤",
+      "formula": "1斤 = 1台斤",
+      "passed": true
+    }
+  ],
+  "orderTests": [
+    {
+      "name": "價格計算 - 高麗菜",
+      "quantity": 2.5,
+      "unit": "斤",
+      "pricePerUnit": 30,
+      "expected": 75,
+      "actual": 75,
+      "passed": true
+    },
+    {
+      "name": "價格計算 - 青江菜",
+      "quantity": 1.5,
+      "unit": "公斤",
+      "pricePerUnit": 45,
+      "expected": 67.5,
+      "actual": 67.5,
+      "passed": true
+    },
+    {
+      "name": "價格計算 - 地瓜葉",
+      "quantity": 3,
+      "unit": "台斤",
+      "pricePerUnit": 25,
+      "expected": 75,
+      "actual": 75,
+      "passed": true
+    }
+  ],
+  "inventoryTests": [
+    {
+      "product": "高麗菜",
+      "unit": "斤",
+      "initial": 100,
+      "ordered": 2.5,
+      "expected_remaining": 97.5,
+      "actual_remaining": 97.5,
+      "passed": true
+    },
+    {
+      "product": "青江菜",
+      "unit": "公斤",
+      "initial": 50,
+      "ordered": 1.2,
+      "expected_remaining": 48.8,
+      "actual_remaining": 48.8,
+      "passed": true
+    },
+    {
+      "product": "地瓜葉",
+      "unit": "台斤",
+      "initial": 80,
+      "ordered": 3,
+      "expected_remaining": 77,
+      "actual_remaining": 77,
+      "passed": true
+    },
+    {
+      "product": "蘋果",
+      "unit": "斤",
+      "initial": 200,
+      "ordered": 5,
+      "expected_remaining": 195,
+      "actual_remaining": 195,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0
+  }
+}
