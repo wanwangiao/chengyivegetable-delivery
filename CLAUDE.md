@@ -566,8 +566,32 @@ switchToOrderMode()      // 導航 → 接單
 - **錯誤處理**: 完整的異常捕獲和日誌
 - **容錯設計**: 網路異常時的降級處理
 
+## 🔔 LINE通知系統升級 (2025-08-31)
+
+### 📱 LINE整合功能更新
+- **新增模組**: LineUserService.js - LINE用戶管理服務
+- **通知服務升級**: 擴充LINE通知功能，支援更多事件類型
+- **環境配置**: 新增生產環境配置檔案 (.env.production)
+- **資料庫連線**: 優化PostgreSQL連線設定和錯誤處理
+
+### 🛠️ 技術更新
+- **新增檔案**:
+  - `src/services/LineUserService.js` - LINE用戶服務模組
+  - `.env.production` - 生產環境配置
+  - `.env.production.local` - 本地生產環境配置
+  - `test_db_passwords.js` - 資料庫密碼測試工具
+- **更新檔案**:
+  - `src/server.js` - 大幅擴充伺服器功能 (+529行)
+  - `src/services/LineNotificationService.js` - LINE通知服務升級 (+304行)
+  - `views/admin_basic_settings.ejs` - 管理介面優化
+
+### 📊 Git提交狀態
+- **veg-delivery-platform**: `957ea4f` - LINE通知系統升級
+- **huang-trading-system**: `e5e79bb` - 移除CLAUDE.md檔案
+- **推送狀態**: ✅ 兩個倉庫都已成功推送
+
 ---
-*最後更新: 2025/8/30 晚上11:50*
-*系統狀態: 🚀 外送員App革命性升級完成，三端功能100%就緒*
+*最後更新: 2025/8/31*
+*系統狀態: 🚀 外送員App革命性升級完成，LINE通知系統升級，三端功能100%就緒*
 *🌐 固定網址: https://chengyivegetable.vercel.app*
 *📱 外送員App: https://chengyivegetable.vercel.app/driver*
