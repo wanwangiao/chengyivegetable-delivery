@@ -7,10 +7,10 @@
 
 ## 🌐 最新系統狀態 ✅ (已全面修復)
 
-### 🌐 固定線上網址 (Ultimate版本)
-- **🚀 客戶端前台**: https://chengyivegetable.vercel.app/
-- **🔧 後台管理**: https://chengyivegetable.vercel.app/admin
-- **🚛 司機管理**: https://chengyivegetable.vercel.app/driver
+### 🌐 固定線上網址 (Ultimate版本) ✅
+- **🚀 客戶端前台**: https://chengyivegetable-2025.vercel.app/
+- **🔧 後台管理**: https://chengyivegetable-2025.vercel.app/admin
+- **🚛 外送員PWA**: https://chengyivegetable-2025.vercel.app/driver
 
 ### 🔐 登入資訊
 - **後台管理員密碼**: `shnf830629`
@@ -116,7 +116,7 @@
 - 外送員接單模式運作正常
 
 ---
-*最後更新: 2025/8/29 晚上11:48*
+*最後更新: 2025/9/2 上午12:19:54*
 *系統狀態: ✅ 外送員系統革命性簡化完成 - 100%成功部署*
 *🌐 固定網址: https://chengyivegetable.vercel.app*
 
@@ -671,9 +671,43 @@ switchToOrderMode()      // 導航 → 接單
 香菇 0.5斤 × $1.2/公克 = $360（0.5斤=300公克）
 ```
 
+## 🆕 外送員訂單顯示優化 (2025-09-01)
+
+### 📋 訂單卡片顯示更新
+- **移除顯示**: 配送金額（不再顯示）
+- **新增顯示**: 付款方式資訊
+  - Line Pay 付款
+  - 轉帳付款
+  - 貨到付款（顯示訂單金額）
+
+### ✅ 訂單選取功能新增
+- **勾選框設計**: 訂單左側新增正方形勾選框
+- **視覺反饋**: 選中時顯示打勾，未選中顯示空框
+- **批次操作**: 支援多選訂單進行批次接單
+- **樣式美化**: 專業的checkbox設計，符合現代UI標準
+
+### 🛠️ 技術實作詳情
+#### 修改檔案
+- `views/driver_dashboard_simplified.ejs` 
+  - 新增 getPaymentMethodDisplay() 函數
+  - 修改訂單卡片HTML結構，加入checkbox
+  - 新增checkbox CSS樣式
+  - 更新 toggleOrderSelection() 函數同步checkbox狀態
+
+- `src/routes/driver_simplified_api.js`
+  - 更新 generateDemoOrdersForArea() 加入payment_method和total_amount
+  - 修改資料庫查詢，確保返回payment_method和total欄位
+  - 更新 generateDemoMyOrders() 加入付款方式資料
+
+### 💰 付款方式顯示邏輯
+- **Line Pay / 轉帳付款**: 只顯示付款方式名稱
+- **貨到付款**: 顯示「貨到付款 - NT$ XXX」方便外送員收款
+- **預設值**: 無付款方式資料時預設為貨到付款
+
 ---
-*最後更新: 2025/8/31 - 公克單位換算功能實作完成*
+*最後更新: 2025/9/2 上午12:19:54*
 *系統狀態: 🚀 外送員App革命性升級、LINE通知系統、公克單位換算功能100%就緒*
 *🌐 固定網址: https://chengyivegetable.vercel.app*
 *📱 外送員App: https://chengyivegetable.vercel.app/driver*
 *⚖️ 新功能: 完整支援公克單位換算（公克↔斤↔公斤↔台斤）*
+*💳 最新更新: 訂單顯示付款方式，貨到付款顯示金額*

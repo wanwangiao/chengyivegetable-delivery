@@ -350,6 +350,49 @@
             background: #e8f5e8;
         }
         
+        /* Checkbox 樣式 */
+        .order-checkbox {
+            display: flex;
+            align-items: flex-start;
+            padding-top: 5px;
+        }
+        
+        .order-select-checkbox {
+            display: none;
+        }
+        
+        .checkbox-label {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: block;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            background: white;
+        }
+        
+        .order-select-checkbox:checked + .checkbox-label {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        
+        .order-select-checkbox:checked + .checkbox-label::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .order-card:hover .checkbox-label {
+            border-color: #667eea;
+        }
+        
         .order-header {
             display: flex;
             justify-content: space-between;
@@ -1341,18 +1384,31 @@
                             <div class="order-card ${selectedOrders.includes(order.id) ? 'selected' : ''} ${lockedOrders.includes(order.id) ? 'locked' : ''}" 
                                  data-order-id="${order.id}" 
                                  onclick="${isSelectionMode ? `toggleOrderSelection(${order.id})` : 'void(0)'}">
-                                <div class="order-header">
-                                    <span class="order-number">#${order.id}</span>
-                                    <span class="order-area">${group.area}</span>
-                                </div>
-                                <div class="order-customer">
-                                    👤 ${order.customer_name} | 📞 ${order.customer_phone}
-                                </div>
-                                <div class="order-address">
-                                    📍 ${order.address}
-                                </div>
-                                <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
-                                    🛒 ${order.items ? order.items.length : 1} 項商品 | 💰 配送費 $${order.delivery_fee || 50}
+                                <div style="display: flex; gap: 10px;">
+                                    <div class="order-checkbox">
+                                        <input type="checkbox" 
+                                               id="order-check-area-${order.id}" 
+                                               class="order-select-checkbox"
+                                               ${selectedOrders.includes(order.id) ? 'checked' : ''}
+                                               onclick="event.stopPropagation(); toggleOrderSelection(${order.id})">
+                                        <label for="order-check-area-${order.id}" class="checkbox-label"></label>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div class="order-header">
+                                            <span class="order-number">#${order.id}</span>
+                                            <span class="order-area">${group.area}</span>
+                                        </div>
+                                        <div class="order-customer">
+                                            👤 ${order.customer_name} | 📞 ${order.customer_phone}
+                                        </div>
+                                        <div class="order-address">
+                                            📍 ${order.address}
+                                        </div>
+                                        <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
+                                            🛒 ${order.items ? order.items.length : 1} 項商品 | 
+                                            💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         `).join('')}
@@ -1383,14 +1439,17 @@
             if (!isSelectionMode) return;
             
             const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+            const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
             const isSelected = selectedOrders.includes(orderId);
             
             if (isSelected) {
                 selectedOrders = selectedOrders.filter(id => id !== orderId);
                 orderCard.classList.remove('selected');
+                if (checkbox) checkbox.checked = false;
             } else {
                 selectedOrders.push(orderId);
                 orderCard.classList.add('selected');
+                if (checkbox) checkbox.checked = true;
             }
             
             // 更新選中數量顯示
@@ -1683,18 +1742,31 @@
                 } else {
                     container.innerHTML = data.orders.map(order => `
                         <div class="order-card" data-order-id="${order.id}" onclick="toggleOrderSelection(${order.id})">
-                            <div class="order-header">
-                                <span class="order-number">#${order.id}</span>
-                                <span class="order-area">${area}</span>
-                            </div>
-                            <div class="order-customer">
-                                👤 ${order.customer_name} | 📞 ${order.customer_phone}
-                            </div>
-                            <div class="order-address">
-                                📍 ${order.address}
-                            </div>
-                            <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
-                                🛒 ${order.items ? order.items.length : 1} 項商品 | 💰 配送費 $${order.delivery_fee || 50}
+                            <div style="display: flex; gap: 10px;">
+                                <div class="order-checkbox">
+                                    <input type="checkbox" 
+                                           id="order-check-${order.id}" 
+                                           class="order-select-checkbox"
+                                           ${selectedOrders.includes(order.id) ? 'checked' : ''}
+                                           onclick="event.stopPropagation(); toggleOrderSelection(${order.id})">
+                                    <label for="order-check-${order.id}" class="checkbox-label"></label>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div class="order-header">
+                                        <span class="order-number">#${order.id}</span>
+                                        <span class="order-area">${area}</span>
+                                    </div>
+                                    <div class="order-customer">
+                                        👤 ${order.customer_name} | 📞 ${order.customer_phone}
+                                    </div>
+                                    <div class="order-address">
+                                        📍 ${order.address}
+                                    </div>
+                                    <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
+                                        🛒 ${order.items ? order.items.length : 1} 項商品 | 
+                                        💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `).join('');
@@ -1715,14 +1787,17 @@
         // 切換訂單選擇狀態
         function toggleOrderSelection(orderId) {
             const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+            const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
             const isSelected = selectedOrders.includes(orderId);
             
             if (isSelected) {
                 selectedOrders = selectedOrders.filter(id => id !== orderId);
                 orderCard.classList.remove('selected');
+                if (checkbox) checkbox.checked = false;
             } else {
                 selectedOrders.push(orderId);
                 orderCard.classList.add('selected');
+                if (checkbox) checkbox.checked = true;
             }
             
             updateAcceptButton();
@@ -2098,6 +2173,23 @@
                 document.getElementById('total-earnings').textContent = '$' + (data.todayEarnings || 0);
             } catch (error) {
                 console.error('更新統計失敗:', error);
+            }
+        }
+
+        // 工具函數 - 顯示付款方式
+        function getPaymentMethodDisplay(paymentMethod, totalAmount) {
+            const method = paymentMethod || 'cash'; // 預設為貨到付款
+            switch(method.toLowerCase()) {
+                case 'linepay':
+                case 'line_pay':
+                    return 'Line Pay 付款';
+                case 'transfer':
+                case 'bank_transfer':
+                    return '轉帳付款';
+                case 'cash':
+                case 'cod':
+                default:
+                    return `貨到付款 - NT$ ${totalAmount || 0}`;
             }
         }
 

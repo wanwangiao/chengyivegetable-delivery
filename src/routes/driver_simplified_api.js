@@ -104,6 +104,8 @@ router.get('/area-orders/:area', async (req, res) => {
             
             const query = `
                 SELECT o.*, 
+                       o.total as total_amount,
+                       COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
                                'product_name', oi.product_name,
@@ -205,6 +207,8 @@ router.get('/my-orders', async (req, res) => {
             // 實際資料庫查詢
             const query = `
                 SELECT o.*, 
+                       o.total as total_amount,
+                       COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
                                'product_name', oi.product_name,
@@ -486,18 +490,29 @@ function generateDemoOrdersForArea(area) {
     const areaAddresses = addresses[area] || [];
     const orderCount = Math.min(areaAddresses.length, Math.floor(Math.random() * 5) + 1);
     
-    return Array.from({ length: orderCount }, (_, index) => ({
-        id: Date.now() + Math.random() * 1000 + index,
-        customer_name: customers[index % customers.length],
-        customer_phone: phones[index % phones.length],
-        address: areaAddresses[index % areaAddresses.length],
-        delivery_fee: 50,
-        created_at: new Date(Date.now() - Math.random() * 3600000).toISOString(),
-        items: [
+    const paymentMethods = ['cash', 'linepay', 'transfer'];
+    
+    return Array.from({ length: orderCount }, (_, index) => {
+        const items = [
             { product_name: '高麗菜', quantity: 1, price: 30 },
             { product_name: '白蘿蔔', quantity: 2, price: 25 }
-        ]
-    }));
+        ];
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const deliveryFee = 50;
+        const totalAmount = subtotal + deliveryFee;
+        
+        return {
+            id: Date.now() + Math.random() * 1000 + index,
+            customer_name: customers[index % customers.length],
+            customer_phone: phones[index % phones.length],
+            address: areaAddresses[index % areaAddresses.length],
+            delivery_fee: deliveryFee,
+            total_amount: totalAmount,
+            payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+            created_at: new Date(Date.now() - Math.random() * 3600000).toISOString(),
+            items: items
+        };
+    });
 }
 
 // 生成示範我的訂單
@@ -508,6 +523,8 @@ function generateDemoMyOrders(driverId) {
             customer_name: '張小明',
             customer_phone: '0912345678',
             address: '新北市三峽區民權街123號',
+            total_amount: 80,
+            payment_method: 'cash',
             taken_at: new Date(Date.now() - 1800000).toISOString(),
             items: [{ product_name: '高麗菜', quantity: 1, price: 30 }]
         },
@@ -516,6 +533,8 @@ function generateDemoMyOrders(driverId) {
             customer_name: '李小華',
             customer_phone: '0923456789',
             address: '新北市樹林區中正路456號',
+            total_amount: 100,
+            payment_method: 'linepay',
             taken_at: new Date(Date.now() - 1200000).toISOString(),
             items: [{ product_name: '白蘿蔔', quantity: 2, price: 25 }]
         }
