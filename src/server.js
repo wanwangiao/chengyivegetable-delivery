@@ -879,7 +879,7 @@ app.get('/driver/dashboard-old', ensureDriverPage, (req, res) => {
 // 🚀 外送員PWA工作台
 app.get('/driver', ensureDriverPage, (req, res) => {
   
-  res.render('driver_pwa', {
+  res.render('driver_dashboard_simplified', {
     driver: {
       id: req.session.driverId,
       name: req.session.driverName || '外送員'
