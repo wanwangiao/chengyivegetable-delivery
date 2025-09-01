@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>外送員工作台 - 承億蔬菜</title>
     
     <!-- PWA Meta Tags -->
@@ -836,6 +836,52 @@
             transform: none;
             box-shadow: none;
         }
+        /* PWA 全螢幕模式樣式 */
+        body.fullscreen-mode {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        body.pwa-installed {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overscroll-behavior: contain;
+        }
+        
+        /* 防止橡皮筋效果 */
+        html, body {
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 安裝按鈕動畫 */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+        }
+        
+        #install-pwa-btn:hover {
+            transform: scale(1.1);
+            transition: transform 0.3s ease;
+        }
+        
+        /* iOS安全區域適配 */
+        @supports (padding: env(safe-area-inset-top)) {
+            .simplified-dashboard {
+                padding-top: calc(20px + env(safe-area-inset-top));
+                padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            }
+        }
     </style>
 </head>
 <body>
@@ -1053,6 +1099,8 @@
             loadUnifiedOrderPool(); // 改為載入統一訂單池
             loadMyDeliveryOrders();
             updateStats();
+            initFullscreenMode(); // 初始化全螢幕模式
+            checkPWAInstallation(); // 檢查PWA安裝狀態
             
             // 每30秒更新一次
             setInterval(() => {
@@ -1603,6 +1651,129 @@
             } catch (error) {
                 console.error('接取訂單失敗:', error);
                 showNotification('接取訂單失敗，請檢查網路連線', 'error');
+            }
+        }
+
+        // 全螢幕模式功能
+        function initFullscreenMode() {
+            // 自動觸發全螢幕（在用戶首次點擊時）
+            let fullscreenTriggered = false;
+            document.addEventListener('click', function() {
+                if (!fullscreenTriggered && !document.fullscreenElement) {
+                    fullscreenTriggered = true;
+                    enterFullscreen();
+                }
+            }, { once: true });
+
+            // 監聽全螢幕變化
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => console.log('全螢幕請求失敗:', err));
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+            
+            // iOS Safari 特殊處理
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.height = '100%';
+                window.scrollTo(0, 1);
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        function handleFullscreenChange() {
+            const isFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement ||
+                                document.mozFullScreenElement ||
+                                document.msFullscreenElement;
+            
+            if (isFullscreen) {
+                document.body.classList.add('fullscreen-mode');
+                console.log('進入全螢幕模式');
+            } else {
+                document.body.classList.remove('fullscreen-mode');
+                console.log('退出全螢幕模式');
+            }
+        }
+
+        // PWA 安裝提示
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallPrompt();
+        });
+
+        function showInstallPrompt() {
+            // 顯示安裝提示按鈕
+            const installBtn = document.createElement('button');
+            installBtn.id = 'install-pwa-btn';
+            installBtn.innerHTML = '📱 安裝為App';
+            installBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                z-index: 9999;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+            
+            document.body.appendChild(installBtn);
+            
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`用戶選擇: ${outcome}`);
+                    if (outcome === 'accepted') {
+                        installBtn.remove();
+                    }
+                    deferredPrompt = null;
+                }
+            });
+        }
+
+        function checkPWAInstallation() {
+            // 檢查是否已安裝為PWA
+            if (window.matchMedia('(display-mode: standalone)').matches || 
+                window.matchMedia('(display-mode: fullscreen)').matches ||
+                window.navigator.standalone === true) {
+                console.log('已安裝為PWA');
+                document.body.classList.add('pwa-installed');
+                // 如果是PWA模式，自動進入全螢幕
+                enterFullscreen();
             }
         }
 
