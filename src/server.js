@@ -77,6 +77,7 @@ async function createDatabasePool() {
         connectionTimeoutMillis: 60000,
         idleTimeoutMillis: 30000,
         max: 5,
+        family: 4,  // 強制使用IPv4，解決家庭網路不支援IPv6問題
         // 確保資料庫連線使用 UTF-8 編碼
         options: '--client_encoding=UTF8'
       });
@@ -114,7 +115,8 @@ async function createDatabasePool() {
       },
       connectionTimeoutMillis: 30000,
       idleTimeoutMillis: 30000,
-      max: 5
+      max: 5,
+      family: 4  // 強制IPv4
     });
     
     const testResult = await pool.query('SELECT NOW() as current_time');
@@ -135,7 +137,8 @@ async function createDatabasePool() {
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 30000,
       idleTimeoutMillis: 30000,
-      max: 5
+      max: 5,
+      family: 4  // 強制IPv4
     });
     
     const testResult = await pool.query('SELECT NOW() as current_time');
