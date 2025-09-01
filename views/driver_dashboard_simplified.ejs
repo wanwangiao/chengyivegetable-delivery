@@ -515,6 +515,40 @@
             box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
         }
         
+        /* 確認接單按鈕容器 */
+        .confirm-orders-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .btn-confirm-orders {
+            width: 100%;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn-confirm-orders:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-confirm-orders:active {
+            transform: translateY(0);
+        }
+        
         /* 空狀態 */
         .empty-state {
             text-align: center;
@@ -1086,16 +1120,19 @@
                         <h3 id="my-orders-count">0</h3>
                         <p>進行中</p>
                     </div>
-                    <div class="stat-item">
-                        <h3 id="total-earnings">$0</h3>
-                        <p>今日收入</p>
-                    </div>
-                    <div class="record-query-btn" onclick="openStatsModal()">
+                    <button class="record-query-btn" onclick="openStatsModal()">
                         <span class="query-icon">📊</span>
                         <span>記錄查詢</span>
-                    </div>
+                    </button>
                 </div>
             </div>
+        </div>
+        
+        <!-- 確認接單按鈕（固定在底部） -->
+        <div class="confirm-orders-container" id="confirm-orders-container" style="display: none;">
+            <button class="btn-confirm-orders" onclick="confirmSelectedOrders()">
+                ✅ 確認接單 (<span id="confirm-count">0</span> 筆訂單)
+            </button>
         </div>
 
         <!-- 主要內容區域 -->
@@ -1104,25 +1141,6 @@
             <div class="orders-section">
                 <div class="section-header">
                     <h2 class="section-title">📦 可接訂單 (<span id="total-available-count">0</span>)</h2>
-                    <div class="header-actions">
-                        <!-- 基本選擇按鈕 -->
-                        <button class="btn btn-select" onclick="enterSelectionMode()" id="select-btn">
-                            ✅ 選擇訂單
-                        </button>
-                        
-                        <!-- 鎖定狀態按鈕組 -->
-                        <div id="lock-action-group" style="display: none;">
-                            <button class="btn btn-lock" onclick="lockSelectedOrders()" id="lock-btn">
-                                🔒 鎖定選中 (<span id="selected-count">0</span>)
-                            </button>
-                            <button class="btn btn-optimize" onclick="optimizeAndAccept()" id="optimize-btn" style="display: none;">
-                                🧭 路線優化
-                            </button>
-                            <button class="btn btn-cancel" onclick="cancelLock()" id="cancel-lock-btn" style="display: none;">
-                                ❌ 取消鎖定
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <div class="orders-list" id="unified-orders">
                     <div class="loading" id="orders-loading">
@@ -1436,8 +1454,6 @@
         
         // 切換訂單選擇
         function toggleOrderSelection(orderId) {
-            if (!isSelectionMode) return;
-            
             const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
             const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
             const isSelected = selectedOrders.includes(orderId);
@@ -1452,17 +1468,68 @@
                 if (checkbox) checkbox.checked = true;
             }
             
-            // 更新選中數量顯示
-            document.getElementById('selected-count').textContent = selectedOrders.length;
+            // 更新確認接單按鈕
+            updateConfirmButton();
+        }
+        
+        // 更新確認接單按鈕狀態
+        function updateConfirmButton() {
+            const confirmContainer = document.getElementById('confirm-orders-container');
+            const confirmCount = document.getElementById('confirm-count');
             
-            // 更新鎖定按鈕狀態
-            const lockBtn = document.getElementById('lock-btn');
             if (selectedOrders.length > 0) {
-                lockBtn.style.display = 'inline-block';
-                lockBtn.textContent = `🔒 鎖定選中 (${selectedOrders.length})`;
+                confirmContainer.style.display = 'block';
+                confirmCount.textContent = selectedOrders.length;
             } else {
-                lockBtn.style.display = 'inline-block';
-                lockBtn.textContent = '🔒 鎖定選中 (0)';
+                confirmContainer.style.display = 'none';
+            }
+        }
+        
+        // 確認接單
+        async function confirmSelectedOrders() {
+            if (selectedOrders.length === 0) return;
+            
+            const confirmText = `確定要接取 ${selectedOrders.length} 筆訂單嗎？`;
+            if (!confirm(confirmText)) return;
+            
+            try {
+                showNotification('正在處理訂單...', 'info');
+                
+                const response = await fetch('/api/driver/batch-accept-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: selectedOrders
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(`✅ 成功接取 ${selectedOrders.length} 筆訂單！`, 'success');
+                    
+                    // 清空選擇
+                    selectedOrders = [];
+                    updateConfirmButton();
+                    
+                    // 重新載入數據
+                    await loadUnifiedOrders();
+                    await loadMyDeliveryOrders();
+                    
+                    // 切換到導航模式
+                    if (myDeliveryOrders.length > 0) {
+                        setTimeout(() => {
+                            switchToNavigationMode();
+                        }, 1500);
+                    }
+                } else {
+                    showNotification(`❌ 接單失敗: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('接單錯誤:', error);
+                showNotification('❌ 接單時發生錯誤', 'error');
             }
         }
         
@@ -2769,34 +2836,26 @@
             <div class="detailed-stats">
                 <div class="detailed-stat-item">
                     <div class="stat-label">
+                        <span class="stat-icon">📅</span>
+                        <span>本月完成訂單</span>
+                    </div>
+                    <div class="stat-value" id="modal-month-completed">125</div>
+                </div>
+                
+                <div class="detailed-stat-item">
+                    <div class="stat-label">
                         <span class="stat-icon">✅</span>
                         <span>今日完成訂單</span>
                     </div>
-                    <div class="stat-value" id="modal-today-completed">0</div>
+                    <div class="stat-value" id="modal-today-completed">8</div>
                 </div>
                 
                 <div class="detailed-stat-item">
                     <div class="stat-label">
-                        <span class="stat-icon">💰</span>
-                        <span>今日總收入</span>
+                        <span class="stat-icon">🗺️</span>
+                        <span>本月配送距離</span>
                     </div>
-                    <div class="stat-value" id="modal-today-earnings">$0</div>
-                </div>
-                
-                <div class="detailed-stat-item">
-                    <div class="stat-label">
-                        <span class="stat-icon">📋</span>
-                        <span>總訂單數量</span>
-                    </div>
-                    <div class="stat-value" id="modal-total-orders">0</div>
-                </div>
-                
-                <div class="detailed-stat-item">
-                    <div class="stat-label">
-                        <span class="stat-icon">🎯</span>
-                        <span>成功率</span>
-                    </div>
-                    <div class="stat-value" id="modal-success-rate">95%</div>
+                    <div class="stat-value" id="modal-month-distance">856 公里</div>
                 </div>
                 
                 <div class="detailed-stat-item">
@@ -2804,15 +2863,15 @@
                         <span class="stat-icon">⏱️</span>
                         <span>平均配送時間</span>
                     </div>
-                    <div class="stat-value" id="modal-avg-time">25分鐘</div>
+                    <div class="stat-value" id="modal-avg-time">22 分鐘</div>
                 </div>
                 
                 <div class="detailed-stat-item">
                     <div class="stat-label">
-                        <span class="stat-icon">🗺️</span>
-                        <span>總配送距離</span>
+                        <span class="stat-icon">🎯</span>
+                        <span>準時率</span>
                     </div>
-                    <div class="stat-value" id="modal-distance">0公里</div>
+                    <div class="stat-value" id="modal-success-rate">98%</div>
                 </div>
             </div>
         </div>

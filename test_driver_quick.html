@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>快速測試外送員介面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { max-width: 600px; margin: 0 auto; }
+        .test-result { padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        iframe { width: 100%; height: 800px; border: 2px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>外送員介面功能測試</h1>
+        
+        <div id="test-results"></div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testLogin()">1. 測試登入</button>
+            <button onclick="testInterface()">2. 檢查介面</button>
+            <button onclick="testFeatures()">3. 測試功能</button>
+        </div>
+        
+        <h2>預覽窗口</h2>
+        <iframe id="driver-frame" src="http://localhost:3002/driver"></iframe>
+    </div>
+
+    <script>
+        const iframe = document.getElementById('driver-frame');
+        const results = document.getElementById('test-results');
+        
+        function addResult(text, isSuccess) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = text;
+            results.appendChild(div);
+        }
+        
+        async function testLogin() {
+            addResult('開始測試登入...', true);
+            
+            // 在iframe中執行登入
+            try {
+                iframe.contentWindow.postMessage({
+                    action: 'login',
+                    phone: '0912345678',
+                    password: 'driver123'
+                }, '*');
+                
+                setTimeout(() => {
+                    addResult('✅ 登入測試完成，請檢查iframe', true);
+                }, 2000);
+            } catch (error) {
+                addResult('❌ 登入測試失敗: ' + error.message, false);
+            }
+        }
+        
+        function testInterface() {
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 檢查記錄查詢按鈕
+                const hasRecordBtn = doc.querySelector('.record-query-btn') !== null;
+                addResult(`記錄查詢按鈕: ${hasRecordBtn ? '✅ 有' : '❌ 無'}`, hasRecordBtn);
+                
+                // 檢查是否有收入顯示
+                const bodyText = doc.body.innerText;
+                const hasIncome = bodyText.includes('今日收入') || bodyText.includes('本日收入');
+                addResult(`收入顯示: ${hasIncome ? '❌ 仍在顯示（錯誤）' : '✅ 已移除（正確）'}`, !hasIncome);
+                
+                // 檢查勾選框
+                const hasCheckbox = doc.querySelector('.order-checkbox') !== null;
+                addResult(`訂單勾選框: ${hasCheckbox ? '✅ 有' : '❌ 無'}`, hasCheckbox);
+                
+                // 檢查確認接單按鈕容器
+                const hasConfirmContainer = doc.querySelector('#confirm-orders-container') !== null;
+                addResult(`確認接單按鈕容器: ${hasConfirmContainer ? '✅ 有' : '❌ 無'}`, hasConfirmContainer);
+                
+            } catch (error) {
+                addResult('❌ 介面檢查失敗: ' + error.message, false);
+            }
+        }
+        
+        function testFeatures() {
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 模擬點擊訂單
+                const orderCard = doc.querySelector('.order-card');
+                if (orderCard) {
+                    orderCard.click();
+                    addResult('✅ 成功點擊訂單卡片', true);
+                    
+                    setTimeout(() => {
+                        // 檢查確認按鈕是否顯示
+                        const confirmBtn = doc.querySelector('.btn-confirm-orders');
+                        const isVisible = confirmBtn && confirmBtn.parentElement.style.display !== 'none';
+                        addResult(`確認接單按鈕: ${isVisible ? '✅ 顯示' : '❌ 未顯示'}`, isVisible);
+                    }, 500);
+                } else {
+                    addResult('⚠️ 沒有找到訂單卡片', false);
+                }
+                
+                // 檢查付款方式
+                const hasPayment = doc.body.innerText.includes('Line Pay') || 
+                                  doc.body.innerText.includes('貨到付款') || 
+                                  doc.body.innerText.includes('轉帳付款');
+                addResult(`付款方式顯示: ${hasPayment ? '✅ 有' : '❌ 無'}`, hasPayment);
+                
+            } catch (error) {
+                addResult('❌ 功能測試失敗: ' + error.message, false);
+            }
+        }
+        
+        // 監聽iframe載入完成
+        iframe.onload = function() {
+            addResult('✅ 頁面載入完成', true);
+        };
+    </script>
+</body>
+</html>

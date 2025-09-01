@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>測試外送員介面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .order-card { padding: 15px; margin: 10px 0; border: 1px solid #ccc; background: #f9f9f9; }
+        .checkbox-test { display: flex; gap: 10px; align-items: center; }
+        .order-checkbox input[type="checkbox"] { display: none; }
+        .checkbox-label {
+            width: 24px; height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: block;
+            cursor: pointer;
+            position: relative;
+            background: white;
+        }
+        .order-checkbox input[type="checkbox"]:checked + .checkbox-label {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        .order-checkbox input[type="checkbox"]:checked + .checkbox-label::after {
+            content: '✓';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>外送員介面功能測試</h1>
+    
+    <div class="test-section">
+        <h2>1. 付款方式顯示測試</h2>
+        <div id="payment-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 勾選框測試</h2>
+        <div class="order-card">
+            <div class="checkbox-test">
+                <div class="order-checkbox">
+                    <input type="checkbox" id="test-check-1">
+                    <label for="test-check-1" class="checkbox-label"></label>
+                </div>
+                <div>訂單 #001 - 測試勾選功能</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 測試付款方式顯示函數
+        function getPaymentMethodDisplay(paymentMethod, totalAmount) {
+            const method = paymentMethod || 'cash';
+            switch(method.toLowerCase()) {
+                case 'linepay':
+                case 'line_pay':
+                    return 'Line Pay 付款';
+                case 'transfer':
+                case 'bank_transfer':
+                    return '轉帳付款';
+                case 'cash':
+                case 'cod':
+                default:
+                    return `貨到付款 - NT$ ${totalAmount || 0}`;
+            }
+        }
+
+        // 測試不同付款方式
+        const testOrders = [
+            { id: 1, payment_method: 'linepay', total_amount: 300 },
+            { id: 2, payment_method: 'transfer', total_amount: 450 },
+            { id: 3, payment_method: 'cash', total_amount: 580 },
+            { id: 4, payment_method: null, total_amount: 200 }
+        ];
+
+        const paymentTestDiv = document.getElementById('payment-test');
+        testOrders.forEach(order => {
+            const div = document.createElement('div');
+            div.className = 'order-card';
+            div.innerHTML = `
+                <strong>訂單 #${order.id}</strong><br>
+                付款方式: ${order.payment_method || '未設定'}<br>
+                顯示結果: <span style="color: blue; font-weight: bold;">
+                    ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
+                </span>
+            `;
+            paymentTestDiv.appendChild(div);
+        });
+    </script>
+</body>
+</html>
