@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試前端載入</title>
+    <style>
+        body { font-family: 'Microsoft JhengHei', sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>外送員系統 - 前端載入測試</h1>
+    <button onclick="testLoadUnifiedOrderPool()">測試載入統一訂單池</button>
+    <div id="results"></div>
+
+    <script>
+        async function testLoadUnifiedOrderPool() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">🔄 開始測試...</div>';
+            
+            const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
+            
+            try {
+                console.log('🔄 === 開始載入統一訂單池 ===');
+                
+                // 使用 Promise.allSettled 確保所有請求都完成
+                const areaPromises = areas.map(async (area) => {
+                    try {
+                        console.log(`  🔍 載入 ${area}...`);
+                        const url = `/api/driver/area-orders/${encodeURIComponent(area)}`;
+                        console.log(`  📡 URL: ${url}`);
+                        
+                        const response = await fetch(url);
+                        console.log(`  📊 ${area} 回應狀態: ${response.status}`);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.orders && Array.isArray(data.orders)) {
+                                console.log(`  ✅ ${area}: ${data.orders.length} 筆訂單`);
+                                return {
+                                    area: area,
+                                    orders: data.orders,
+                                    count: data.orders.length,
+                                    status: 'success'
+                                };
+                            } else {
+                                console.log(`  ⚠️ ${area}: 數據格式錯誤`, data);
+                                return {
+                                    area: area,
+                                    orders: [],
+                                    count: 0,
+                                    status: 'data_error',
+                                    error: '數據格式錯誤'
+                                };
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.log(`  ❌ ${area}: HTTP錯誤 ${response.status}`, errorText);
+                            return {
+                                area: area,
+                                orders: [],
+                                count: 0,
+                                status: 'http_error',
+                                error: `HTTP ${response.status}: ${errorText}`
+                            };
+                        }
+                    } catch (fetchError) {
+                        console.error(`  💥 ${area}: 載入失敗`, fetchError);
+                        return {
+                            area: area,
+                            orders: [],
+                            count: 0,
+                            status: 'fetch_error',
+                            error: fetchError.message
+                        };
+                    }
+                });
+                
+                console.log('⏳ 等待所有區域載入完成...');
+                const results = await Promise.allSettled(areaPromises);
+                console.log('📋 所有區域載入結果:', results);
+                
+                // 處理結果
+                let successCount = 0;
+                let totalOrders = 0;
+                let resultHTML = '<h2>測試結果:</h2>';
+                
+                results.forEach((result, index) => {
+                    const area = areas[index];
+                    
+                    if (result.status === 'fulfilled') {
+                        const areaResult = result.value;
+                        if (areaResult.status === 'success') {
+                            successCount++;
+                            totalOrders += areaResult.count;
+                            resultHTML += `<div class="result success">✅ ${area}: ${areaResult.count} 筆訂單載入成功</div>`;
+                        } else {
+                            resultHTML += `<div class="result error">⚠️ ${area}: ${areaResult.error}</div>`;
+                        }
+                    } else {
+                        resultHTML += `<div class="result error">💥 ${area}: Promise被拒絕 - ${result.reason}</div>`;
+                    }
+                });
+                
+                resultHTML += `<div class="result ${successCount === areas.length ? 'success' : 'error'}">
+                    📊 總結: ${successCount}/${areas.length} 個地區成功載入，共 ${totalOrders} 筆訂單
+                </div>`;
+                
+                resultsDiv.innerHTML = resultHTML;
+                console.log('🎉 測試完成');
+                
+            } catch (error) {
+                console.error('🚨 載入統一訂單池失敗:', error);
+                resultsDiv.innerHTML = `<div class="result error">🚨 載入失敗: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

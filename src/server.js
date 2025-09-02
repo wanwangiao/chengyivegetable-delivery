@@ -3812,6 +3812,11 @@ app.get('/test-dashboard', (req, res) => {
   res.render('test_data_dashboard');
 });
 
+// 前端載入測試頁面
+app.get('/test-frontend-loading', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'test_frontend_loading.html'));
+});
+
 // 獲取測試數據統計
 app.get('/api/test/stats', async (req, res) => {
   try {

@@ -73,7 +73,31 @@ router.get('/order-counts', async (req, res) => {
 // 獲取特定地區的訂單
 router.get('/area-orders/:area', async (req, res) => {
     try {
-        const area = decodeURIComponent(req.params.area);
+        // 處理區域名稱解碼，支援多種編碼方式
+        let area = req.params.area;
+        
+        // 確保正確解碼中文字符
+        if (area.includes('%')) {
+            try {
+                area = decodeURIComponent(area);
+            } catch (decodeError) {
+                console.error('URL解碼失敗:', decodeError);
+                // 嘗試其他解碼方式或回傳錯誤
+                return res.status(400).json({ 
+                    success: false, 
+                    message: '地區名稱格式錯誤' 
+                });
+            }
+        }
+        
+        // 標準化地區名稱
+        const validAreas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
+        if (!validAreas.includes(area)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `不支援的地區: ${area}` 
+            });
+        }
         
         if (demoMode) {
             // 示範模式數據
