@@ -1665,25 +1665,39 @@
             showNotification('已進入選擇模式，點擊訂單進行選擇', 'info');
         }
         
-        // 切換訂單選擇
+        // 切換訂單選擇 - 優化狀態管理
         function toggleOrderSelection(orderId) {
+            // 檢查訂單是否已鎖定，如果是則不允許修改
+            if (lockedOrders.includes(orderId)) {
+                showNotification('此訂單已鎖定，無法修改選擇狀態', 'warning');
+                return;
+            }
+            
             const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
             const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
             const isSelected = selectedOrders.includes(orderId);
             
+            // 防止在非選擇模式下操作
+            if (!isSelectionMode && !isSelected) {
+                showNotification('請先進入選擇模式', 'info');
+                return;
+            }
+            
             if (isSelected) {
                 selectedOrders = selectedOrders.filter(id => id !== orderId);
-                orderCard.classList.remove('selected');
+                if (orderCard) orderCard.classList.remove('selected');
                 if (checkbox) checkbox.checked = false;
             } else {
                 selectedOrders.push(orderId);
-                orderCard.classList.add('selected');
+                if (orderCard) orderCard.classList.add('selected');
                 if (checkbox) checkbox.checked = true;
             }
             
-            // 更新確認接單按鈕和購物車
-            updateConfirmButton();
-            updateShoppingCart();
+            // 批次更新UI避免競爭條件
+            setTimeout(() => {
+                updateConfirmButton();
+                updateShoppingCart();
+            }, 0);
         }
         
         // 更新確認接單按鈕狀態
@@ -1804,8 +1818,14 @@
             document.getElementById('cancel-lock-btn').style.display = 'inline-block';
         }
         
-        // 啟動鎖定計時器
+        // 啟動鎖定計時器 - 統一版本
         function startLockTimer() {
+            // 清除任何現有的計時器避免重複
+            if (lockTimer) {
+                clearInterval(lockTimer);
+                lockTimer = null;
+            }
+            
             lockTimeRemaining = 30;
             
             lockTimer = setInterval(() => {
@@ -1814,8 +1834,14 @@
                 // 更新鎖定卡片的倒計時顯示
                 updateLockTimeDisplay();
                 
+                // 更新購物車按鈕顯示
+                const btn = document.getElementById('cart-action-btn');
+                if (btn && cartState === 'locked') {
+                    btn.innerHTML = `🔒 優化路線 (${lockTimeRemaining}秒)`;
+                }
+                
                 if (lockTimeRemaining <= 0) {
-                    // 時間到，自動解鎖
+                    // 時間到，自動解鎖 - 統一清理邏輯
                     autoUnlockOrders();
                 }
             }, 1000);
@@ -1830,7 +1856,7 @@
             });
         }
         
-        // 自動解鎖訂單
+        // 自動解鎖訂單 - 統一清理邏輯
         function autoUnlockOrders() {
             clearInterval(lockTimer);
             lockTimer = null;
@@ -1839,17 +1865,27 @@
             lockedOrders.forEach(orderId => {
                 const card = document.querySelector(`[data-order-id="${orderId}"]`);
                 if (card) {
-                    card.classList.remove('locked');
+                    card.classList.remove('locked', 'selected');
                 }
+                // 同時從選中列表中移除
+                selectedOrders = selectedOrders.filter(id => id !== orderId);
             });
             
+            // 重置所有相關狀態
             lockedOrders = [];
             selectedOrders = [];
             isSelectionMode = false;
+            cartState = 'selection';
             
             // 恢復初始UI狀態
-            document.getElementById('select-btn').style.display = 'inline-block';
-            document.getElementById('lock-action-group').style.display = 'none';
+            const selectBtn = document.getElementById('select-btn');
+            const lockActionGroup = document.getElementById('lock-action-group');
+            if (selectBtn) selectBtn.style.display = 'inline-block';
+            if (lockActionGroup) lockActionGroup.style.display = 'none';
+            
+            // 更新購物車狀態
+            updateCartActionButton();
+            updateShoppingCart();
             
             showNotification('⏰ 鎖定時間已到，訂單已自動釋放', 'warning');
             
@@ -1857,13 +1893,8 @@
             loadUnifiedOrderPool();
         }
         
-        // 取消鎖定
+        // 取消鎖定 - 使用統一清理邏輯
         async function cancelLock() {
-            if (lockTimer) {
-                clearInterval(lockTimer);
-                lockTimer = null;
-            }
-            
             try {
                 // 調用後端API釋放鎖定
                 const response = await fetch('/api/driver/unlock-orders', {
@@ -1879,31 +1910,17 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // 清除鎖定狀態
-                    lockedOrders.forEach(orderId => {
-                        const card = document.querySelector(`[data-order-id="${orderId}"]`);
-                        if (card) {
-                            card.classList.remove('locked', 'selected');
-                        }
-                    });
-                    
-                    lockedOrders = [];
-                    selectedOrders = [];
-                    isSelectionMode = false;
-                    
-                    // 恢復初始UI狀態
-                    document.getElementById('select-btn').style.display = 'inline-block';
-                    document.getElementById('lock-action-group').style.display = 'none';
-                    
+                    // 使用統一的解鎖邏輯
+                    autoUnlockOrders();
                     showNotification('✅ 鎖定已取消，訂單回到可選狀態', 'success');
-                    
-                    // 重新載入訂單池
-                    loadUnifiedOrderPool();
+                } else {
+                    showNotification('取消鎖定失敗：' + result.message, 'error');
                 }
-                
             } catch (error) {
                 console.error('取消鎖定失敗:', error);
-                showNotification('取消鎖定失敗，請檢查網路連線', 'error');
+                showNotification('取消鎖定失敗，請重試', 'error');
+                // 即使API失敗，也進行本地狀態清理
+                autoUnlockOrders();
             }
         }
         
@@ -2269,41 +2286,11 @@
             switchToNavigationMode();
         }
         
-        function startLockTimer() {
-            lockTimeRemaining = 30;
-            
-            lockTimer = setInterval(() => {
-                lockTimeRemaining--;
-                
-                // 更新按鈕顯示
-                const btn = document.getElementById('cart-action-btn');
-                if (btn && cartState === 'locked') {
-                    btn.innerHTML = `🔒 優化路線 (${lockTimeRemaining}秒)`;
-                }
-                
-                if (lockTimeRemaining <= 0) {
-                    clearInterval(lockTimer);
-                    // 自動解鎖
-                    cancelLockFromCart();
-                }
-            }, 1000);
-        }
+        // 使用統一的 startLockTimer 函數 (已在上方定義)
         
         async function cancelLockFromCart() {
-            if (lockTimer) {
-                clearInterval(lockTimer);
-                lockTimer = null;
-            }
-            
-            // 重置狀態
-            cartState = 'selection';
-            lockedOrders = [];
-            updateCartActionButton();
-            
-            showNotification('⏰ 鎖定時間已到，訂單已釋放', 'warning');
-            
-            // 重新載入訂單
-            loadUnifiedOrderPool();
+            // 使用統一的解鎖邏輯
+            autoUnlockOrders();
         }
 
         // 接受選中的訂單
