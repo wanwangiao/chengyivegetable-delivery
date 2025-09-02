@@ -875,6 +875,11 @@ app.get('/driver/logout', (req, res) => {
   res.redirect('/driver/login');
 });
 
+// 📱 手機除錯頁面
+app.get('/debug-mobile', (req, res) => {
+  res.render('debug_mobile');
+});
+
 // 🛰️ 外送員GPS追蹤工作台 (重定向到簡化版)
 app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
   res.redirect('/driver/dashboard');
