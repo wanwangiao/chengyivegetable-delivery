@@ -1428,6 +1428,28 @@
         let isCartOpen = false;
         let cartState = 'selection'; // 'selection', 'locked', 'optimized'
         
+        // 付款方式顯示格式化函數
+        function getPaymentMethodDisplay(paymentMethod, totalAmount) {
+            if (!paymentMethod || paymentMethod === 'cash') {
+                // 貨到付款顯示金額方便外送員收款
+                const amount = totalAmount || 0;
+                return `貨到付款 - NT$ ${amount}`;
+            }
+            
+            switch (paymentMethod.toLowerCase()) {
+                case 'linepay':
+                case 'line_pay':
+                    return 'Line Pay 付款';
+                case 'transfer':
+                case 'bank_transfer':
+                    return '轉帳付款';
+                case 'cash':
+                default:
+                    const amount = totalAmount || 0;
+                    return `貨到付款 - NT$ ${amount}`;
+            }
+        }
+        
         // Google Maps API 初始化
         function initGoogleMapsAPI() {
             googleMapsLoaded = true;
