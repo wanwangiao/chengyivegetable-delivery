@@ -605,6 +605,180 @@
             background: #e74c3c;
         }
         
+        /* 購物車按鈕 - 固定在底部 */
+        .shopping-cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .shopping-cart-btn.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .shopping-cart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 2px solid white;
+        }
+        
+        /* 購物車面板 */
+        .shopping-cart-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .shopping-cart-panel.show {
+            transform: translateY(0);
+        }
+        
+        .cart-panel-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .cart-panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .cart-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .cart-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .cart-order-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .cart-order-item:hover {
+            border-color: #667eea;
+        }
+        
+        .cart-remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cart-panel-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+        
+        .cart-action-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .cart-action-btn.lock {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .cart-action-btn.optimize {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+        
+        .cart-action-btn.start {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        
+        .cart-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .cart-empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .cart-empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
         /* 統計面板 */
         .compact-stats-panel {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1243,6 +1417,31 @@
         </div>
     </div>
 
+    <!-- 購物車按鈕 -->
+    <button class="shopping-cart-btn" id="shopping-cart-btn" onclick="toggleShoppingCart()">
+        🛒
+        <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+    
+    <!-- 購物車面板 -->
+    <div class="shopping-cart-panel" id="shopping-cart-panel">
+        <div class="cart-panel-header">
+            <h3 class="cart-panel-title">🛒 已選擇訂單</h3>
+            <button class="cart-close-btn" onclick="toggleShoppingCart()">×</button>
+        </div>
+        <div class="cart-panel-body" id="cart-panel-body">
+            <div class="cart-empty-state">
+                <div class="cart-empty-icon">🛒</div>
+                <p>尚未選擇任何訂單</p>
+            </div>
+        </div>
+        <div class="cart-panel-footer">
+            <button class="cart-action-btn lock" id="cart-action-btn" onclick="handleCartAction()">
+                🔒 鎖定訂單 (30秒)
+            </button>
+        </div>
+    </div>
+    
     <!-- 通知容器 -->
     <div id="notification-container"></div>
 
@@ -1273,6 +1472,10 @@
         let currentPosition = null;
         let navOrdersPanel = null;
         let isNavPanelExpanded = false;
+        
+        // 購物車系統變數
+        let isCartOpen = false;
+        let cartState = 'selection'; // 'selection', 'locked', 'optimized'
         
         // Google Maps API 初始化
         function initGoogleMapsAPI() {
@@ -1881,6 +2084,243 @@
             } else {
                 acceptBtn.style.display = 'none';
             }
+            updateShoppingCart();
+        }
+        
+        // 購物車系統函數
+        function updateShoppingCart() {
+            const cartBtn = document.getElementById('shopping-cart-btn');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartBody = document.getElementById('cart-panel-body');
+            
+            // 更新購物車按鈕顯示
+            if (selectedOrders.length > 0) {
+                cartBtn.classList.add('show');
+                cartBadge.textContent = selectedOrders.length;
+            } else {
+                cartBtn.classList.remove('show');
+                isCartOpen = false;
+                document.getElementById('shopping-cart-panel').classList.remove('show');
+            }
+            
+            // 更新購物車內容
+            if (selectedOrders.length === 0) {
+                cartBody.innerHTML = `
+                    <div class="cart-empty-state">
+                        <div class="cart-empty-icon">🛒</div>
+                        <p>尚未選擇任何訂單</p>
+                    </div>
+                `;
+            } else {
+                const selectedOrdersData = allAvailableOrders.filter(order => 
+                    selectedOrders.includes(order.id)
+                );
+                
+                cartBody.innerHTML = selectedOrdersData.map(order => `
+                    <div class="cart-order-item" data-cart-order="${order.id}">
+                        <button class="cart-remove-btn" onclick="removeFromCart(${order.id})">×</button>
+                        <div style="margin-right: 30px;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">
+                                訂單 #${order.id}
+                            </div>
+                            <div style="font-size: 14px; color: #666;">
+                                ${order.customerName} - ${order.items[0]?.name || '蔬菜'}
+                            </div>
+                            <div style="font-size: 14px; color: #333; margin-top: 5px;">
+                                📍 ${order.deliveryAddress}
+                            </div>
+                            <div style="font-size: 14px; color: #667eea; margin-top: 5px;">
+                                💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // 更新按鈕狀態
+            updateCartActionButton();
+        }
+        
+        function toggleShoppingCart() {
+            const panel = document.getElementById('shopping-cart-panel');
+            isCartOpen = !isCartOpen;
+            
+            if (isCartOpen) {
+                panel.classList.add('show');
+            } else {
+                panel.classList.remove('show');
+            }
+        }
+        
+        function removeFromCart(orderId) {
+            // 從購物車移除訂單
+            toggleOrderSelection(orderId);
+        }
+        
+        function updateCartActionButton() {
+            const btn = document.getElementById('cart-action-btn');
+            
+            if (!btn) return;
+            
+            switch(cartState) {
+                case 'selection':
+                    btn.className = 'cart-action-btn lock';
+                    btn.innerHTML = '🔒 鎖定訂單 (30秒)';
+                    btn.onclick = handleCartAction;
+                    btn.disabled = selectedOrders.length === 0;
+                    break;
+                case 'locked':
+                    btn.className = 'cart-action-btn optimize';
+                    btn.innerHTML = '🧭 優化路線';
+                    btn.onclick = handleCartAction;
+                    btn.disabled = false;
+                    break;
+                case 'optimized':
+                    btn.className = 'cart-action-btn start';
+                    btn.innerHTML = '🚀 開始配送';
+                    btn.onclick = handleCartAction;
+                    btn.disabled = false;
+                    break;
+            }
+        }
+        
+        async function handleCartAction() {
+            switch(cartState) {
+                case 'selection':
+                    await lockSelectedOrders();
+                    break;
+                case 'locked':
+                    await optimizeLockedOrders();
+                    break;
+                case 'optimized':
+                    await startDeliveryFromCart();
+                    break;
+            }
+        }
+        
+        async function lockSelectedOrders() {
+            if (selectedOrders.length === 0) {
+                showNotification('請先選擇要鎖定的訂單', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/driver/lock-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: selectedOrders
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    lockedOrders = [...selectedOrders];
+                    cartState = 'locked';
+                    updateCartActionButton();
+                    startLockTimer();
+                    showNotification(`🔒 成功鎖定 ${lockedOrders.length} 筆訂單，請在30秒內完成操作`, 'success');
+                }
+            } catch (error) {
+                console.error('鎖定訂單失敗:', error);
+                showNotification('鎖定訂單失敗，請重試', 'error');
+            }
+        }
+        
+        async function optimizeLockedOrders() {
+            if (lockedOrders.length === 0) {
+                showNotification('沒有鎖定的訂單可以優化', 'warning');
+                return;
+            }
+            
+            showNotification('🧭 正在優化路線...', 'info');
+            
+            try {
+                const response = await fetch('/api/driver/optimize-route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderIds: lockedOrders
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    cartState = 'optimized';
+                    updateCartActionButton();
+                    
+                    // 停止鎖定計時器
+                    if (lockTimer) {
+                        clearInterval(lockTimer);
+                        lockTimer = null;
+                    }
+                    
+                    showNotification(`✅ 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
+                    
+                    // 更新我的配送列表
+                    myDeliveryOrders = result.optimizedOrders || [];
+                    updateMyDeliveryList();
+                }
+            } catch (error) {
+                console.error('優化路線失敗:', error);
+                showNotification('優化路線失敗，請重試', 'error');
+            }
+        }
+        
+        async function startDeliveryFromCart() {
+            if (myDeliveryOrders.length === 0) {
+                showNotification('請先優化路線', 'warning');
+                return;
+            }
+            
+            // 關閉購物車
+            toggleShoppingCart();
+            
+            // 切換到導航模式
+            switchToNavigationMode();
+        }
+        
+        function startLockTimer() {
+            lockTimeRemaining = 30;
+            
+            lockTimer = setInterval(() => {
+                lockTimeRemaining--;
+                
+                // 更新按鈕顯示
+                const btn = document.getElementById('cart-action-btn');
+                if (btn && cartState === 'locked') {
+                    btn.innerHTML = `🔒 優化路線 (${lockTimeRemaining}秒)`;
+                }
+                
+                if (lockTimeRemaining <= 0) {
+                    clearInterval(lockTimer);
+                    // 自動解鎖
+                    cancelLockFromCart();
+                }
+            }, 1000);
+        }
+        
+        async function cancelLockFromCart() {
+            if (lockTimer) {
+                clearInterval(lockTimer);
+                lockTimer = null;
+            }
+            
+            // 重置狀態
+            cartState = 'selection';
+            lockedOrders = [];
+            updateCartActionButton();
+            
+            showNotification('⏰ 鎖定時間已到，訂單已釋放', 'warning');
+            
+            // 重新載入訂單
+            loadUnifiedOrderPool();
         }
 
         // 接受選中的訂單
