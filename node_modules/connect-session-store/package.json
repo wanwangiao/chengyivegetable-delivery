@@ -1,0 +1,21 @@
+{
+  "name": "connect-session-store",
+  "version": "0.0.1",
+  "description": "connect session store",
+  "keywords": [
+    "connect",
+    "express",
+    "session"
+  ],
+  "author": "jKey Lu <jkeylu@gmail.com> (http://jkey.lu)",
+  "main": "./lib/connect-session-store.js",
+  "dependencies": {
+    "connect": ">=2.7.3",
+    "connect-redis": "~1.4.5",
+    "connect-file-store": "~0.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jkeylu/connect-session-store.git"
+  }
+}

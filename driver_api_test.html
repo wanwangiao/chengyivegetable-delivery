@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外送員系統 API 測試工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+        }
+        .test-section h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d5f4e6;
+            border: 1px solid #27ae60;
+            color: #27ae60;
+        }
+        .error {
+            background-color: #ffeaa7;
+            border: 1px solid #e17055;
+            color: #e17055;
+        }
+        .loading {
+            background-color: #74b9ff;
+            color: white;
+            text-align: center;
+        }
+        .file-input {
+            border: 2px dashed #3498db;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            background-color: #ecf0f1;
+        }
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            background-color: #e8f4fd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚚 外送員系統 API 測試工具</h1>
+        
+        <!-- 基本設定 -->
+        <div class="test-section">
+            <h2>⚙️ 基本設定</h2>
+            <div class="form-group">
+                <label for="baseUrl">API 基礎網址:</label>
+                <input type="text" id="baseUrl" value="http://localhost:3000/api/driver" placeholder="http://localhost:3000/api/driver">
+            </div>
+            <div class="form-group">
+                <label for="orderId">測試用訂單ID:</label>
+                <input type="number" id="orderId" value="1" placeholder="輸入訂單ID">
+            </div>
+        </div>
+
+        <div class="two-column">
+            <!-- 照片上傳測試 -->
+            <div class="test-section">
+                <h2>📷 照片上傳測試</h2>
+                <div class="form-group">
+                    <label>選擇照片 (最多5張, 每張最大10MB):</label>
+                    <div class="file-input" onclick="document.getElementById('photoFiles').click()">
+                        <p>點擊此處選擇照片</p>
+                        <input type="file" id="photoFiles" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div id="photoPreview" class="file-preview"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="photoType">照片類型:</label>
+                    <select id="photoType">
+                        <option value="delivery">配送完成照片</option>
+                        <option value="before_delivery">配送前照片</option>
+                        <option value="packaging">商品包裝照片</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="photoDescription">照片描述:</label>
+                    <textarea id="photoDescription" placeholder="輸入照片描述..."></textarea>
+                </div>
+                
+                <button onclick="testPhotoUpload()">📤 上傳照片</button>
+                <div id="uploadResponse" class="response" style="display: none;"></div>
+            </div>
+
+            <!-- 問題回報測試 -->
+            <div class="test-section">
+                <h2>🚨 問題回報測試</h2>
+                <div class="form-group">
+                    <label for="problemType">問題類型:</label>
+                    <select id="problemType">
+                        <option value="customer_not_home">客戶不在家</option>
+                        <option value="address_not_found">地址找不到</option>
+                        <option value="payment_issue">付款問題</option>
+                        <option value="damaged_goods">商品損壞</option>
+                        <option value="other">其他問題</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="problemDescription">問題描述:</label>
+                    <textarea id="problemDescription" placeholder="請詳細描述遇到的問題..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="problemPriority">優先級:</label>
+                    <select id="problemPriority">
+                        <option value="low">低</option>
+                        <option value="medium">中</option>
+                        <option value="high">高</option>
+                        <option value="urgent">緊急</option>
+                    </select>
+                </div>
+                
+                <button onclick="testProblemReport()">📋 送出問題回報</button>
+                <div id="problemResponse" class="response" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- 其他 API 測試 -->
+        <div class="test-section">
+            <h2>🔧 其他 API 測試</h2>
+            <button onclick="testOrderPhotos()">📷 查看訂單照片</button>
+            <button onclick="testProcessQueue()">🔄 處理離線佇列</button>
+            <button onclick="testStats()">📊 獲取統計資料</button>
+            <button onclick="testOrderCounts()">📈 獲取訂單數量</button>
+            
+            <div id="otherResponse" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- API 回應日誌 -->
+        <div class="test-section">
+            <h2>📋 API 回應日誌</h2>
+            <button onclick="clearLogs()" style="background-color: #e74c3c;">🗑️ 清除日誌</button>
+            <div id="apiLogs" style="max-height: 400px; overflow-y: auto; margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let apiLogs = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 照片選擇處理
+            document.getElementById('photoFiles').addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                const preview = document.getElementById('photoPreview');
+                
+                preview.innerHTML = '';
+                files.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `📷 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+                    preview.appendChild(item);
+                });
+            });
+        });
+
+        // 記錄 API 日誌
+        function logApiResponse(method, url, response, success = true) {
+            const timestamp = new Date().toLocaleString();
+            const log = {
+                timestamp,
+                method,
+                url,
+                response,
+                success
+            };
+            
+            apiLogs.unshift(log);
+            updateLogsDisplay();
+        }
+
+        // 更新日誌顯示
+        function updateLogsDisplay() {
+            const logsDiv = document.getElementById('apiLogs');
+            logsDiv.innerHTML = apiLogs.map(log => `
+                <div class="response ${log.success ? 'success' : 'error'}" style="margin-bottom: 10px;">
+                    <strong>${log.timestamp} - ${log.method} ${log.url}</strong>
+                    ${JSON.stringify(log.response, null, 2)}
+                </div>
+            `).join('');
+        }
+
+        // 清除日誌
+        function clearLogs() {
+            apiLogs = [];
+            updateLogsDisplay();
+        }
+
+        // 顯示回應
+        function showResponse(elementId, response, success = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${success ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(response, null, 2);
+        }
+
+        // 照片上傳測試
+        async function testPhotoUpload() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const orderId = document.getElementById('orderId').value;
+            const photoType = document.getElementById('photoType').value;
+            const description = document.getElementById('photoDescription').value;
+            const files = document.getElementById('photoFiles').files;
+
+            if (!files.length) {
+                alert('請選擇至少一張照片');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('orderId', orderId);
+            formData.append('photoType', photoType);
+            formData.append('description', description);
+
+            for (let file of files) {
+                formData.append('photos', file);
+            }
+
+            showResponse('uploadResponse', { status: '上傳中...' }, true);
+            document.getElementById('uploadResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/upload-delivery-photo`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResponse('uploadResponse', result, response.ok);
+                logApiResponse('POST', '/upload-delivery-photo', result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('uploadResponse', errorResponse, false);
+                logApiResponse('POST', '/upload-delivery-photo', errorResponse, false);
+            }
+        }
+
+        // 問題回報測試
+        async function testProblemReport() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const orderId = document.getElementById('orderId').value;
+            const problemType = document.getElementById('problemType').value;
+            const description = document.getElementById('problemDescription').value;
+            const priority = document.getElementById('problemPriority').value;
+
+            const data = {
+                orderId: parseInt(orderId),
+                problemType,
+                description,
+                priority
+            };
+
+            showResponse('problemResponse', { status: '提交中...' }, true);
+            document.getElementById('problemResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/report-problem`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                showResponse('problemResponse', result, response.ok);
+                logApiResponse('POST', '/report-problem', result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('problemResponse', errorResponse, false);
+                logApiResponse('POST', '/report-problem', errorResponse, false);
+            }
+        }
+
+        // 查看訂單照片
+        async function testOrderPhotos() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const orderId = document.getElementById('orderId').value;
+
+            showResponse('otherResponse', { status: '查詢中...' }, true);
+            document.getElementById('otherResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/order-photos/${orderId}`);
+                const result = await response.json();
+                showResponse('otherResponse', result, response.ok);
+                logApiResponse('GET', `/order-photos/${orderId}`, result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('otherResponse', errorResponse, false);
+                logApiResponse('GET', `/order-photos/${orderId}`, errorResponse, false);
+            }
+        }
+
+        // 處理離線佇列
+        async function testProcessQueue() {
+            const baseUrl = document.getElementById('baseUrl').value;
+
+            showResponse('otherResponse', { status: '處理中...' }, true);
+            document.getElementById('otherResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/process-offline-queue`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                showResponse('otherResponse', result, response.ok);
+                logApiResponse('POST', '/process-offline-queue', result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('otherResponse', errorResponse, false);
+                logApiResponse('POST', '/process-offline-queue', errorResponse, false);
+            }
+        }
+
+        // 獲取統計資料
+        async function testStats() {
+            const baseUrl = document.getElementById('baseUrl').value;
+
+            showResponse('otherResponse', { status: '查詢中...' }, true);
+            document.getElementById('otherResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/stats`);
+                const result = await response.json();
+                showResponse('otherResponse', result, response.ok);
+                logApiResponse('GET', '/stats', result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('otherResponse', errorResponse, false);
+                logApiResponse('GET', '/stats', errorResponse, false);
+            }
+        }
+
+        // 獲取訂單數量
+        async function testOrderCounts() {
+            const baseUrl = document.getElementById('baseUrl').value;
+
+            showResponse('otherResponse', { status: '查詢中...' }, true);
+            document.getElementById('otherResponse').className = 'response loading';
+
+            try {
+                const response = await fetch(`${baseUrl}/order-counts`);
+                const result = await response.json();
+                showResponse('otherResponse', result, response.ok);
+                logApiResponse('GET', '/order-counts', result, response.ok);
+
+            } catch (error) {
+                const errorResponse = { error: error.message };
+                showResponse('otherResponse', errorResponse, false);
+                logApiResponse('GET', '/order-counts', errorResponse, false);
+            }
+        }
+    </script>
+</body>
+</html>

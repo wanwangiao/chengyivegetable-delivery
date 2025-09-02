@@ -924,13 +924,13 @@
         
         /* ========== 導航模式樣式 (Uber風格) ========== */
         
-        /* 地圖容器 - 佔80%螢幕 */
+        /* 地圖容器 - 佔85%螢幕 */
         .nav-map-container {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 80vh;
+            height: 85vh;
             z-index: 1;
         }
         
@@ -981,26 +981,27 @@
             background: rgba(0, 0, 0, 0.9);
         }
         
-        /* 底部狀態列 - 佔20%螢幕 */
+        /* 底部狀態列 - 佔15%螢幕 */
         .nav-bottom-status-bar {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 20vh;
+            height: 15vh;
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             z-index: 5;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 20px 20px 0 0;
         }
         
         .nav-bottom-status-bar:hover {
             background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
         }
         
-        /* 狀態列內容 */
+        /* 狀態列內容 - 簡化版本 */
         .nav-status-content {
-            padding: 15px 20px;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1009,36 +1010,634 @@
         
         .nav-delivery-info {
             flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
-        .nav-delivery-info h3 {
+        .nav-customer-name {
             color: #00d4aa;
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        
-        .nav-delivery-info .nav-distance {
             font-size: 16px;
-            color: #fff;
-            margin-bottom: 3px;
+            font-weight: 600;
+            min-width: 80px;
         }
         
-        .nav-delivery-info .nav-eta {
+        .nav-remaining-distance {
             font-size: 14px;
-            color: #aaa;
+            color: #fff;
+            min-width: 80px;
         }
         
-        .nav-pull-indicator {
-            width: 40px;
-            height: 40px;
+        .nav-action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .nav-call-btn {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
             border-radius: 50%;
-            background: rgba(0, 212, 170, 0.2);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #00d4aa;
-            font-size: 20px;
-            animation: bounce 2s infinite;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .nav-call-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        
+        .nav-details-btn {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+        
+        .nav-details-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+        
+        /* 批次訂單按鈕 - 右上角 */
+        .nav-batch-orders-btn {
+            position: absolute;
+            top: 20px;
+            right: 80px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            border: none;
+            border-radius: 15px;
+            color: #000;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+        
+        .nav-batch-orders-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+        }
+        
+        .nav-batch-orders-btn .batch-count {
+            font-size: 10px;
+            line-height: 1;
+            margin-top: -2px;
+        }
+        
+        /* ========== 訂單詳情小卡彈窗 ========== */
+        .order-details-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .order-details-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .order-details-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .order-details-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+        
+        .order-details-header h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .order-details-header .order-id {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .order-details-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .order-details-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .order-details-content {
+            padding: 20px;
+        }
+        
+        .order-section {
+            margin-bottom: 25px;
+        }
+        
+        .order-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .order-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .order-info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .order-info-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .order-info-item .value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .product-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        
+        .product-name {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .product-quantity {
+            margin: 0 15px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .product-price {
+            font-weight: 600;
+            color: #007bff;
+        }
+        
+        /* 拍照上傳區域 */
+        .photo-upload-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s;
+        }
+        
+        .photo-upload-area.dragover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+        
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .photo-preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        /* 問題回報區域 */
+        .problem-report-area {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .problem-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .problem-category {
+            background: #fff;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .problem-category.selected {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .problem-description {
+            width: 100%;
+            min-height: 80px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        /* 底部按鈕組 */
+        .order-details-footer {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 0 0 20px 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 56px;
+        }
+        
+        .complete-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .report-problem-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        
+        .report-problem-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        /* ========== 響應式設計 & 觸控友善 ========== */
+        @media (max-width: 768px) {
+            /* 地圖和底部狀態列在手機上保持85%/15%比例 */
+            .nav-map-container {
+                height: 85vh;
+            }
+            
+            .nav-bottom-status-bar {
+                height: 15vh;
+                padding: 0;
+            }
+            
+            .nav-status-content {
+                padding: 8px 15px;
+                gap: 10px;
+            }
+            
+            .nav-customer-name {
+                font-size: 14px;
+                min-width: 60px;
+            }
+            
+            .nav-remaining-distance {
+                font-size: 12px;
+                min-width: 60px;
+            }
+            
+            .nav-call-btn, .nav-details-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 16px;
+            }
+            
+            /* 批次訂單按鈕在手機上調整 */
+            .nav-batch-orders-btn {
+                right: 70px;
+                width: 48px;
+                height: 48px;
+                font-size: 16px;
+            }
+            
+            .nav-batch-orders-btn .batch-count {
+                font-size: 9px;
+            }
+            
+            /* 返回和GPS按鈕調整 */
+            .back-to-orders-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .nav-gps-button {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+            
+            /* 訂單詳情彈窗在手機上全螢幕 */
+            .order-details-modal.show {
+                padding: 10px;
+            }
+            
+            .order-details-card {
+                max-width: 100%;
+                margin: 0;
+                border-radius: 15px;
+            }
+            
+            .order-details-header {
+                padding: 15px;
+                border-radius: 15px 15px 0 0;
+            }
+            
+            .order-details-header h3 {
+                font-size: 16px;
+            }
+            
+            .order-details-content {
+                padding: 15px;
+            }
+            
+            .order-section h4 {
+                font-size: 14px;
+            }
+            
+            .order-info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .order-info-item {
+                padding: 12px;
+            }
+            
+            .order-info-item .label {
+                font-size: 11px;
+            }
+            
+            .order-info-item .value {
+                font-size: 13px;
+            }
+            
+            .photo-upload-area {
+                padding: 15px;
+            }
+            
+            .upload-btn {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+            
+            .problem-categories {
+                gap: 6px;
+            }
+            
+            .problem-category {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .problem-description {
+                min-height: 60px;
+                padding: 10px;
+                font-size: 13px;
+            }
+            
+            .order-details-footer {
+                padding: 15px;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .action-btn {
+                padding: 12px;
+                font-size: 14px;
+                min-height: 48px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* 超小螢幕優化 */
+            .nav-delivery-info {
+                gap: 8px;
+            }
+            
+            .nav-customer-name {
+                font-size: 13px;
+                min-width: 50px;
+            }
+            
+            .nav-remaining-distance {
+                font-size: 11px;
+                min-width: 50px;
+            }
+            
+            .nav-call-btn, .nav-details-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 14px;
+            }
+            
+            .nav-batch-orders-btn {
+                right: 60px;
+                width: 42px;
+                height: 42px;
+                font-size: 14px;
+            }
+            
+            .order-details-modal.show {
+                padding: 5px;
+            }
+            
+            .order-details-card {
+                border-radius: 10px;
+            }
+            
+            .order-details-header {
+                border-radius: 10px 10px 0 0;
+            }
+        }
+        
+        /* 觸控設備優化 */
+        @media (hover: none) and (pointer: coarse) {
+            /* 移除hover效果，增加按鈕點擊區域 */
+            .nav-call-btn:hover,
+            .nav-details-btn:hover,
+            .nav-batch-orders-btn:hover,
+            .complete-btn:hover,
+            .report-problem-btn:hover,
+            .upload-btn:hover {
+                transform: none;
+            }
+            
+            /* 增加點擊時的視覺回饋 */
+            .nav-call-btn:active,
+            .nav-details-btn:active,
+            .nav-batch-orders-btn:active {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+            
+            .complete-btn:active,
+            .report-problem-btn:active,
+            .upload-btn:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+            
+            /* 確保按鈕觸控區域足夠大 */
+            .nav-call-btn, .nav-details-btn, .nav-batch-orders-btn {
+                min-width: 48px;
+                min-height: 48px;
+            }
+            
+            .action-btn {
+                min-height: 56px;
+            }
+            
+            /* 問題分類按鈕觸控優化 */
+            .problem-category {
+                min-height: 36px;
+                padding: 8px 16px;
+            }
+        }
+        
+        /* 安全區域適配（適用於iPhone X等有瀏海的設備） */
+        @supports (padding: max(0px)) {
+            .nav-bottom-status-bar {
+                padding-bottom: max(env(safe-area-inset-bottom), 10px);
+            }
+            
+            .order-details-modal.show {
+                padding-top: max(env(safe-area-inset-top), 10px);
+                padding-bottom: max(env(safe-area-inset-bottom), 10px);
+            }
         }
         
         @keyframes bounce {
@@ -1311,21 +1910,29 @@
             <!-- 返回接單按鈕 -->
             <button class="back-to-orders-btn" onclick="switchToOrderMode()">← 返回接單</button>
             
+            <!-- 批次訂單按鈕 -->
+            <button class="nav-batch-orders-btn" onclick="showBatchOrdersPanel()" title="批次訂單管理">
+                📋
+                <span class="batch-count" id="batch-count">12</span>
+            </button>
+            
             <!-- Google Maps 地圖容器 -->
             <div class="nav-map-container">
                 <div class="nav-google-map" id="nav-google-map"></div>
                 <button class="nav-gps-button" onclick="getCurrentLocationForNav()">📍</button>
             </div>
             
-            <!-- 底部狀態列 -->
-            <div class="nav-bottom-status-bar" onclick="toggleNavOrdersPanel()">
+            <!-- 底部狀態列 - 簡化版本 -->
+            <div class="nav-bottom-status-bar">
                 <div class="nav-status-content">
                     <div class="nav-delivery-info">
-                        <h3 id="nav-current-customer">準備配送</h3>
-                        <div class="nav-distance" id="nav-remaining-distance">點擊開始導航</div>
-                        <div class="nav-eta" id="nav-estimated-time">等待GPS定位...</div>
+                        <div class="nav-customer-name" id="nav-current-customer">準備配送</div>
+                        <div class="nav-remaining-distance" id="nav-remaining-distance">等待定位...</div>
                     </div>
-                    <div class="nav-pull-indicator">↑</div>
+                    <div class="nav-action-buttons">
+                        <button class="nav-call-btn" onclick="makeCall()" title="撥打客戶電話">📱</button>
+                        <button class="nav-details-btn" onclick="showOrderDetails()" title="查看訂單詳情">➤</button>
+                    </div>
                 </div>
             </div>
             
@@ -1352,6 +1959,89 @@
             </button>
         </div>
         
+    </div>
+
+    <!-- ========== 訂單詳情小卡彈窗 ========== -->
+    <div class="order-details-modal" id="order-details-modal">
+        <div class="order-details-card">
+            <!-- 標題列 -->
+            <div class="order-details-header">
+                <h3 id="order-customer-name">客戶姓名</h3>
+                <div class="order-id" id="order-id">訂單編號: #12345</div>
+                <button class="order-details-close" onclick="hideOrderDetails()">&times;</button>
+            </div>
+            
+            <!-- 內容區域 -->
+            <div class="order-details-content">
+                <!-- 訂單資訊 -->
+                <div class="order-section">
+                    <h4>📋 訂單資訊</h4>
+                    <div class="order-info-grid">
+                        <div class="order-info-item">
+                            <div class="label">配送地址</div>
+                            <div class="value" id="order-address">載入中...</div>
+                        </div>
+                        <div class="order-info-item">
+                            <div class="label">聯絡電話</div>
+                            <div class="value" id="order-phone">載入中...</div>
+                        </div>
+                        <div class="order-info-item">
+                            <div class="label">配送時間</div>
+                            <div class="value" id="order-time">載入中...</div>
+                        </div>
+                        <div class="order-info-item">
+                            <div class="label">付款方式</div>
+                            <div class="value" id="order-payment">載入中...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 商品清單 -->
+                <div class="order-section">
+                    <h4>🛒 商品清單</h4>
+                    <div class="product-list" id="product-list">
+                        <!-- 動態載入商品 -->
+                    </div>
+                </div>
+                
+                <!-- 拍照上傳 -->
+                <div class="order-section">
+                    <h4>📸 配送照片</h4>
+                    <div class="photo-upload-area" id="photo-upload-area">
+                        <div>📷 拍攝配送照片</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">點擊拍照或拖拽照片到此處</div>
+                        <button class="upload-btn" onclick="triggerPhotoUpload()">開始拍照</button>
+                        <div class="photo-preview" id="photo-preview"></div>
+                        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display: none;" multiple>
+                    </div>
+                </div>
+                
+                <!-- 問題回報 -->
+                <div class="order-section">
+                    <h4>⚠️ 問題回報</h4>
+                    <div class="problem-report-area">
+                        <div class="problem-categories">
+                            <div class="problem-category" data-problem="找不到地址">找不到地址</div>
+                            <div class="problem-category" data-problem="客戶不在">客戶不在</div>
+                            <div class="problem-category" data-problem="電話無人接聽">電話無人接聽</div>
+                            <div class="problem-category" data-problem="商品問題">商品問題</div>
+                            <div class="problem-category" data-problem="其他">其他</div>
+                        </div>
+                        <textarea class="problem-description" id="problem-description" placeholder="請詳細描述遇到的問題..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部按鈕 -->
+            <div class="order-details-footer">
+                <button class="action-btn complete-btn" onclick="completeOrderWithDetails()">
+                    ✅ 完成配送
+                </button>
+                <button class="action-btn report-problem-btn" onclick="submitProblemReport()">
+                    ⚠️ 回報問題
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 路線地圖容器 -->
@@ -3085,7 +3775,7 @@
                     },
                     (error) => {
                         console.log('無法獲取位置:', error);
-                        document.getElementById('nav-estimated-time').textContent = '無法獲取GPS位置';
+                        document.getElementById('nav-remaining-distance').textContent = '無法獲取GPS位置';
                     },
                     {
                         enableHighAccuracy: true,
@@ -3119,8 +3809,6 @@
                     const route = result.routes[0].legs[0];
                     document.getElementById('nav-remaining-distance').textContent = 
                         `剩餘 ${route.distance.text}`;
-                    document.getElementById('nav-estimated-time').textContent = 
-                        `預計 ${route.duration.text} 抵達`;
                 } else {
                     showNotification('路線規劃失敗，請檢查地址', 'error');
                 }
@@ -3220,9 +3908,330 @@
             }
         });
         
+        // ========== 新增功能函數 ==========
+        
+        // 全局變數
+        let currentOrderData = null;
+        let uploadedPhotos = [];
+        let selectedProblemCategory = null;
+        
+        // 撥打電話功能
+        function makeCall() {
+            const currentOrder = myDeliveryOrders.find(order => order.status === 'delivering');
+            if (currentOrder && currentOrder.customer_phone) {
+                window.location.href = `tel:${currentOrder.customer_phone}`;
+            } else {
+                showNotification('無法取得客戶電話號碼', 'error');
+            }
+        }
+        
+        // 顯示訂單詳情
+        function showOrderDetails() {
+            const currentOrder = myDeliveryOrders.find(order => order.status === 'delivering');
+            if (!currentOrder) {
+                showNotification('沒有進行中的訂單', 'error');
+                return;
+            }
+            
+            currentOrderData = currentOrder;
+            
+            // 更新彈窗內容
+            document.getElementById('order-customer-name').textContent = currentOrder.customer_name;
+            document.getElementById('order-id').textContent = `訂單編號: #${currentOrder.id}`;
+            document.getElementById('order-address').textContent = currentOrder.delivery_address;
+            document.getElementById('order-phone').textContent = currentOrder.customer_phone || '無';
+            document.getElementById('order-time').textContent = formatDateTime(currentOrder.delivery_time);
+            document.getElementById('order-payment').textContent = getPaymentMethodText(currentOrder.payment_method);
+            
+            // 載入商品清單
+            loadProductList(currentOrder);
+            
+            // 顯示彈窗
+            const modal = document.getElementById('order-details-modal');
+            modal.classList.add('show');
+        }
+        
+        // 隱藏訂單詳情
+        function hideOrderDetails() {
+            const modal = document.getElementById('order-details-modal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        // 載入商品清單
+        function loadProductList(order) {
+            const productListElement = document.getElementById('product-list');
+            let productsHtml = '';
+            
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    productsHtml += `
+                        <div class="product-item">
+                            <div class="product-name">${item.product_name}</div>
+                            <div class="product-quantity">x${item.quantity}</div>
+                            <div class="product-price">$${item.price * item.quantity}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                productsHtml = '<div style="text-align: center; color: #666; padding: 20px;">沒有商品資訊</div>';
+            }
+            
+            productListElement.innerHTML = productsHtml;
+        }
+        
+        // 格式化日期時間
+        function formatDateTime(dateString) {
+            if (!dateString) return '未指定';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // 獲取付款方式文字
+        function getPaymentMethodText(method) {
+            const paymentMethods = {
+                'cash': '現金',
+                'credit_card': '信用卡',
+                'line_pay': 'Line Pay',
+                'bank_transfer': '銀行轉帳'
+            };
+            return paymentMethods[method] || '未指定';
+        }
+        
+        // 觸發拍照上傳
+        function triggerPhotoUpload() {
+            document.getElementById('photo-input').click();
+        }
+        
+        // 處理照片上傳
+        document.getElementById('photo-input').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    // 壓縮照片
+                    compressImage(file, (compressedFile) => {
+                        uploadedPhotos.push(compressedFile);
+                        displayPhotoPreview(compressedFile);
+                    });
+                }
+            });
+        });
+        
+        // 壓縮圖片
+        function compressImage(file, callback) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                const maxWidth = 800;
+                const maxHeight = 600;
+                let { width, height } = img;
+                
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob(callback, 'image/jpeg', 0.8);
+            };
+            
+            img.src = URL.createObjectURL(file);
+        }
+        
+        // 顯示照片預覽
+        function displayPhotoPreview(file) {
+            const previewContainer = document.getElementById('photo-preview');
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.onclick = () => {
+                // 可以添加放大預覽功能
+                window.open(img.src, '_blank');
+            };
+            previewContainer.appendChild(img);
+        }
+        
+        // 問題分類選擇
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('problem-category')) {
+                // 移除其他選中狀態
+                document.querySelectorAll('.problem-category').forEach(cat => {
+                    cat.classList.remove('selected');
+                });
+                
+                // 添加選中狀態
+                e.target.classList.add('selected');
+                selectedProblemCategory = e.target.dataset.problem;
+            }
+        });
+        
+        // 顯示批次訂單面板
+        function showBatchOrdersPanel() {
+            toggleNavOrdersPanel();
+        }
+        
+        // 完成訂單（含詳情）
+        function completeOrderWithDetails() {
+            if (!currentOrderData) {
+                showNotification('找不到訂單資料', 'error');
+                return;
+            }
+            
+            // 檢查是否有上傳照片
+            if (uploadedPhotos.length === 0) {
+                if (!confirm('尚未上傳配送照片，確定要完成配送嗎？')) {
+                    return;
+                }
+            }
+            
+            // 上傳照片和完成配送
+            uploadPhotosAndComplete();
+        }
+        
+        // 上傳照片並完成配送
+        async function uploadPhotosAndComplete() {
+            try {
+                showNotification('正在上傳照片...', 'info');
+                
+                if (uploadedPhotos.length > 0) {
+                    const formData = new FormData();
+                    formData.append('orderId', currentOrderData.id);
+                    
+                    uploadedPhotos.forEach((photo, index) => {
+                        formData.append('photos', photo, `delivery_${Date.now()}_${index}.jpg`);
+                    });
+                    
+                    const response = await fetch('/api/driver/upload-delivery-photos', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('照片上傳失敗');
+                    }
+                }
+                
+                // 完成配送
+                await completeDelivery();
+                hideOrderDetails();
+                showNotification('配送完成！', 'success');
+                
+            } catch (error) {
+                console.error('完成配送失敗:', error);
+                showNotification('完成配送失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 提交問題回報
+        async function submitProblemReport() {
+            if (!selectedProblemCategory) {
+                showNotification('請選擇問題分類', 'error');
+                return;
+            }
+            
+            const description = document.getElementById('problem-description').value.trim();
+            if (!description) {
+                showNotification('請填寫問題描述', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/driver/report-problem', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: currentOrderData.id,
+                        category: selectedProblemCategory,
+                        description: description,
+                        photos: uploadedPhotos.length
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('問題回報失敗');
+                }
+                
+                showNotification('問題已回報，系統將盡快處理', 'success');
+                hideOrderDetails();
+                
+                // 重置表單
+                selectedProblemCategory = null;
+                document.getElementById('problem-description').value = '';
+                document.querySelectorAll('.problem-category').forEach(cat => {
+                    cat.classList.remove('selected');
+                });
+                
+            } catch (error) {
+                console.error('問題回報失敗:', error);
+                showNotification('問題回報失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 拖拽上傳功能
+        const uploadArea = document.getElementById('photo-upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    compressImage(file, (compressedFile) => {
+                        uploadedPhotos.push(compressedFile);
+                        displayPhotoPreview(compressedFile);
+                    });
+                }
+            });
+        });
+        
+        // 點擊背景關閉彈窗
+        document.getElementById('order-details-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideOrderDetails();
+            }
+        });
+        
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeStatsModal();
+                hideOrderDetails();
             }
         });
         

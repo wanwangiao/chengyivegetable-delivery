@@ -1,0 +1,153 @@
+{
+  "summary": {
+    "totalTests": 17,
+    "passed": 12,
+    "failed": 2,
+    "errors": 0,
+    "info": 3,
+    "timestamp": "2025-09-02T15:33:11.697Z"
+  },
+  "results": [
+    {
+      "testName": "檔案存在性",
+      "status": "pass",
+      "message": "必要檔案存在: views/driver_dashboard_simplified.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.520Z"
+    },
+    {
+      "testName": "檔案存在性",
+      "status": "pass",
+      "message": "必要檔案存在: views/driver_mobile_interface.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.522Z"
+    },
+    {
+      "testName": "檔案存在性",
+      "status": "pass",
+      "message": "必要檔案存在: src/routes/driver_simplified_api.js",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.522Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: views/driver_dashboard.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.522Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: views/driver_dashboard_enhanced.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.522Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: views/driver_dashboard_modern.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.522Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: views/driver_dashboard_gps.ejs",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.523Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: src/routes/driver_api.js",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.523Z"
+    },
+    {
+      "testName": "檔案清理",
+      "status": "pass",
+      "message": "舊檔案已清理: src/routes/driver_mobile_api.js",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.523Z"
+    },
+    {
+      "testName": "頁面載入",
+      "status": "pass",
+      "message": "外送員登入頁面 載入成功",
+      "details": {
+        "statusCode": 200,
+        "contentLength": 1250
+      },
+      "timestamp": "2025-09-02T15:33:11.574Z"
+    },
+    {
+      "testName": "頁面載入",
+      "status": "info",
+      "message": "外送員工作台 重定向",
+      "details": {
+        "statusCode": 302,
+        "location": "/driver/login"
+      },
+      "timestamp": "2025-09-02T15:33:11.577Z"
+    },
+    {
+      "testName": "頁面載入",
+      "status": "info",
+      "message": "行動版介面 重定向",
+      "details": {
+        "statusCode": 302,
+        "location": "/driver/login"
+      },
+      "timestamp": "2025-09-02T15:33:11.579Z"
+    },
+    {
+      "testName": "API測試",
+      "status": "pass",
+      "message": "可接訂單API 回應正常",
+      "details": {
+        "statusCode": 200,
+        "responseType": "object",
+        "hasData": true
+      },
+      "timestamp": "2025-09-02T15:33:11.690Z"
+    },
+    {
+      "testName": "API測試",
+      "status": "pass",
+      "message": "外送員統計API 回應正常",
+      "details": {
+        "statusCode": 200,
+        "responseType": "object",
+        "hasData": true
+      },
+      "timestamp": "2025-09-02T15:33:11.692Z"
+    },
+    {
+      "testName": "API測試",
+      "status": "info",
+      "message": "今日統計API 需要認證",
+      "details": {
+        "statusCode": 401
+      },
+      "timestamp": "2025-09-02T15:33:11.695Z"
+    },
+    {
+      "testName": "版面比例",
+      "status": "fail",
+      "message": "未找到85%/15%比例配置",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.697Z"
+    },
+    {
+      "testName": "響應式設計",
+      "status": "fail",
+      "message": "響應式設計配置缺失",
+      "details": null,
+      "timestamp": "2025-09-02T15:33:11.697Z"
+    }
+  ],
+  "recommendations": [
+    "需要修復失敗的測試項目"
+  ]
+}

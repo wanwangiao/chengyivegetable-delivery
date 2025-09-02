@@ -23,9 +23,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation'),
       { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler'),
       { createAgentSystem } = require('./agents'),
-      driverApiRoutes = require('./routes/driver_api'),
       { router: driverSimplifiedApiRoutes, setDatabasePool: setDriverSimplifiedDatabasePool } = require('./routes/driver_simplified_api'),
-      driverMobileApiRoutes = require('./routes/driver_mobile_api'),
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
@@ -547,14 +545,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// 簡化版外送員API路由 (優先處理)
+// 外送員API路由 (統一簡化版)
 app.use('/api/driver', driverSimplifiedApiRoutes);
-
-// 移動端外送員API路由
-app.use('/api/driver-mobile', driverMobileApiRoutes);
-
-// 外送員API路由 (原有功能)
-app.use('/api/driver', driverApiRoutes);
 
 // 客戶端API路由
 app.use('/api/customer', customerApiRoutes);
@@ -906,15 +898,9 @@ app.get('/driver/logout', (req, res) => {
   res.redirect('/driver/login');
 });
 
-// 🛰️ 外送員GPS追蹤工作台
+// 🛰️ 外送員GPS追蹤工作台 (重定向到簡化版)
 app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
-  
-  res.render('driver_dashboard_gps', {
-    driver: {
-      id: req.session.driverId,
-      name: req.session.driverName || '外送員'
-    }
-  });
+  res.redirect('/driver/dashboard');
 });
 
 // 🚛 外送員API - 可接訂單 (添加快取優化)

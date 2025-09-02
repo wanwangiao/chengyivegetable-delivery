@@ -1,0 +1,222 @@
+{
+  "summary": {
+    "totalTests": 10,
+    "passed": 6,
+    "failed": 1,
+    "errors": 0,
+    "info": 3,
+    "timestamp": "2025-09-02T15:36:21.308Z"
+  },
+  "categories": {
+    "批次訂單": [
+      {
+        "testName": "批次訂單",
+        "status": "pass",
+        "message": "可接訂單列表 功能正常",
+        "details": {
+          "statusCode": 200,
+          "responseKeys": [
+            "success",
+            "orders"
+          ],
+          "dataStructure": "object"
+        },
+        "timestamp": "2025-09-02T15:36:20.824Z"
+      },
+      {
+        "testName": "批次訂單",
+        "status": "pass",
+        "message": "批次接單 功能正常",
+        "details": {
+          "statusCode": 200,
+          "responseKeys": [
+            "success",
+            "message",
+            "acceptedCount"
+          ],
+          "dataStructure": "object"
+        },
+        "timestamp": "2025-09-02T15:36:20.828Z"
+      }
+    ],
+    "拍照上傳": [
+      {
+        "testName": "拍照上傳",
+        "status": "pass",
+        "message": "上傳端點存在並正確驗證",
+        "details": {
+          "statusCode": 400,
+          "note": "端點正確拒絕無效請求"
+        },
+        "timestamp": "2025-09-02T15:36:20.831Z"
+      },
+      {
+        "testName": "拍照上傳",
+        "status": "pass",
+        "message": "Sharp圖片處理庫已安裝",
+        "details": null,
+        "timestamp": "2025-09-02T15:36:20.905Z"
+      },
+      {
+        "testName": "拍照上傳",
+        "status": "pass",
+        "message": "Multer檔案上傳庫已安裝",
+        "details": null,
+        "timestamp": "2025-09-02T15:36:20.956Z"
+      }
+    ],
+    "問題回報": [
+      {
+        "testName": "問題回報",
+        "status": "info",
+        "message": "問題回報驗證功能正常",
+        "details": {
+          "statusCode": 400,
+          "note": "正確驗證輸入資料"
+        },
+        "timestamp": "2025-09-02T15:36:20.959Z"
+      }
+    ],
+    "LINE Bot": [
+      {
+        "testName": "LINE Bot",
+        "status": "pass",
+        "message": "LINE Bot SDK已安裝",
+        "details": null,
+        "timestamp": "2025-09-02T15:36:21.297Z"
+      },
+      {
+        "testName": "LINE Bot",
+        "status": "info",
+        "message": "LINE通知功能在示範模式",
+        "details": {
+          "statusCode": 404,
+          "note": "可能運行在示範模式"
+        },
+        "timestamp": "2025-09-02T15:36:21.300Z"
+      }
+    ],
+    "Google Maps": [
+      {
+        "testName": "Google Maps",
+        "status": "fail",
+        "message": "Google Maps API異常",
+        "details": {
+          "statusCode": 404
+        },
+        "timestamp": "2025-09-02T15:36:21.305Z"
+      }
+    ],
+    "客戶詳情": [
+      {
+        "testName": "客戶詳情",
+        "status": "info",
+        "message": "客戶詳情API端點正常（測試資料不存在）",
+        "details": null,
+        "timestamp": "2025-09-02T15:36:21.308Z"
+      }
+    ]
+  },
+  "results": [
+    {
+      "testName": "批次訂單",
+      "status": "pass",
+      "message": "可接訂單列表 功能正常",
+      "details": {
+        "statusCode": 200,
+        "responseKeys": [
+          "success",
+          "orders"
+        ],
+        "dataStructure": "object"
+      },
+      "timestamp": "2025-09-02T15:36:20.824Z"
+    },
+    {
+      "testName": "批次訂單",
+      "status": "pass",
+      "message": "批次接單 功能正常",
+      "details": {
+        "statusCode": 200,
+        "responseKeys": [
+          "success",
+          "message",
+          "acceptedCount"
+        ],
+        "dataStructure": "object"
+      },
+      "timestamp": "2025-09-02T15:36:20.828Z"
+    },
+    {
+      "testName": "拍照上傳",
+      "status": "pass",
+      "message": "上傳端點存在並正確驗證",
+      "details": {
+        "statusCode": 400,
+        "note": "端點正確拒絕無效請求"
+      },
+      "timestamp": "2025-09-02T15:36:20.831Z"
+    },
+    {
+      "testName": "拍照上傳",
+      "status": "pass",
+      "message": "Sharp圖片處理庫已安裝",
+      "details": null,
+      "timestamp": "2025-09-02T15:36:20.905Z"
+    },
+    {
+      "testName": "拍照上傳",
+      "status": "pass",
+      "message": "Multer檔案上傳庫已安裝",
+      "details": null,
+      "timestamp": "2025-09-02T15:36:20.956Z"
+    },
+    {
+      "testName": "問題回報",
+      "status": "info",
+      "message": "問題回報驗證功能正常",
+      "details": {
+        "statusCode": 400,
+        "note": "正確驗證輸入資料"
+      },
+      "timestamp": "2025-09-02T15:36:20.959Z"
+    },
+    {
+      "testName": "LINE Bot",
+      "status": "pass",
+      "message": "LINE Bot SDK已安裝",
+      "details": null,
+      "timestamp": "2025-09-02T15:36:21.297Z"
+    },
+    {
+      "testName": "LINE Bot",
+      "status": "info",
+      "message": "LINE通知功能在示範模式",
+      "details": {
+        "statusCode": 404,
+        "note": "可能運行在示範模式"
+      },
+      "timestamp": "2025-09-02T15:36:21.300Z"
+    },
+    {
+      "testName": "Google Maps",
+      "status": "fail",
+      "message": "Google Maps API異常",
+      "details": {
+        "statusCode": 404
+      },
+      "timestamp": "2025-09-02T15:36:21.305Z"
+    },
+    {
+      "testName": "客戶詳情",
+      "status": "info",
+      "message": "客戶詳情API端點正常（測試資料不存在）",
+      "details": null,
+      "timestamp": "2025-09-02T15:36:21.308Z"
+    }
+  ],
+  "recommendations": [
+    "⚠️ 需要修復失敗的功能測試",
+    "ℹ️ 部分功能可能需要認證或配置"
+  ]
+}

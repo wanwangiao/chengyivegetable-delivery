@@ -1,10 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs').promises;
+const crypto = require('crypto');
 const GoogleMapsService = require('../services/GoogleMapsService');
+const LineBotService = require('../services/LineBotService');
 
 // 資料庫連接將從主應用程式傳入
 let db = null;
 let demoMode = true;
+let lineBotService = null;
 
 // 設置資料庫連接的函數
 function setDatabasePool(pool, isDemo = true) {
@@ -12,7 +19,32 @@ function setDatabasePool(pool, isDemo = true) {
     // 強制使用示範模式直到外送員系統完全穩定
     demoMode = true;
     console.log('🔧 外送員簡化API：強制啟用示範模式');
+    
+    // 初始化 LINE Bot 服務
+    lineBotService = new LineBotService();
 }
+
+// 設置照片上傳的 multer 配置
+const storage = multer.memoryStorage(); // 使用記憶體存儲，稍後處理壓縮
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB 限制
+        files: 5 // 一次最多5個檔案
+    },
+    fileFilter: (req, file, cb) => {
+        // 只允許圖片檔案
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('只允許上傳圖片檔案'), false);
+        }
+    }
+});
+
+// 確保上傳目錄存在
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'delivery_photos');
+const COMPRESSED_DIR = path.join(UPLOAD_DIR, 'compressed');
 
 // 匯出設置函數
 router.setDatabasePool = setDatabasePool;
@@ -483,6 +515,205 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// ========== 照片處理和工具函數 ==========
+
+/**
+ * 確保目錄存在
+ */
+async function ensureDirectoryExists(dirPath) {
+    try {
+        await fs.access(dirPath);
+    } catch (error) {
+        await fs.mkdir(dirPath, { recursive: true });
+        console.log(`✅ 創建目錄: ${dirPath}`);
+    }
+}
+
+/**
+ * 壓縮照片到指定尺寸
+ */
+async function compressImage(buffer, maxWidth = 800, maxHeight = 600, quality = 80) {
+    try {
+        const compressed = await sharp(buffer)
+            .resize(maxWidth, maxHeight, { 
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .jpeg({ 
+                quality: quality,
+                progressive: true 
+            })
+            .toBuffer();
+        
+        console.log(`📷 照片壓縮: ${buffer.length} bytes -> ${compressed.length} bytes`);
+        return compressed;
+    } catch (error) {
+        console.error('照片壓縮失敗:', error);
+        return buffer; // 壓縮失敗則返回原圖
+    }
+}
+
+/**
+ * 生成唯一的檔案名稱
+ */
+function generateUniqueFilename(originalName, driverId, orderId) {
+    const timestamp = Date.now();
+    const random = crypto.randomBytes(4).toString('hex');
+    const ext = path.extname(originalName).toLowerCase();
+    return `driver_${driverId}_order_${orderId}_${timestamp}_${random}${ext}`;
+}
+
+/**
+ * 保存照片到磁碟
+ */
+async function savePhotoToDisk(buffer, filename, useCompressed = false) {
+    const targetDir = useCompressed ? COMPRESSED_DIR : UPLOAD_DIR;
+    await ensureDirectoryExists(targetDir);
+    
+    const filePath = path.join(targetDir, filename);
+    await fs.writeFile(filePath, buffer);
+    
+    return filePath;
+}
+
+/**
+ * 生成照片的公開 URL
+ */
+function generatePhotoUrl(filename, useCompressed = true) {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const subPath = useCompressed ? 'compressed' : '';
+    return `${baseUrl}/uploads/delivery_photos/${subPath}/${filename}`.replace(/\/+/g, '/');
+}
+
+/**
+ * 添加離線任務到佇列
+ */
+async function addToOfflineQueue(driverId, actionType, orderId, dataPayload, filePaths = []) {
+    if (demoMode) {
+        console.log('🔄 [示範模式] 模擬添加離線任務:', {
+            driverId,
+            actionType,
+            orderId,
+            payloadSize: JSON.stringify(dataPayload).length,
+            fileCount: filePaths.length
+        });
+        return { id: Date.now(), demo: true };
+    }
+    
+    try {
+        const query = `
+            INSERT INTO offline_queue (driver_id, action_type, order_id, data_payload, file_paths)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, created_at
+        `;
+        
+        const result = await db.query(query, [
+            driverId,
+            actionType, 
+            orderId,
+            JSON.stringify(dataPayload),
+            filePaths
+        ]);
+        
+        console.log(`✅ 離線任務已加入佇列: #${result.rows[0].id}`);
+        return result.rows[0];
+        
+    } catch (error) {
+        console.error('添加離線任務失敗:', error);
+        throw error;
+    }
+}
+
+/**
+ * 處理離線佇列中的任務
+ */
+async function processOfflineQueue(driverId) {
+    if (demoMode) {
+        console.log(`🔄 [示範模式] 模擬處理司機 ${driverId} 的離線任務`);
+        return { processed: 0, demo: true };
+    }
+    
+    try {
+        const query = `
+            SELECT id, action_type, order_id, data_payload, file_paths, retry_count
+            FROM offline_queue 
+            WHERE driver_id = $1 
+                AND status = 'pending'
+                AND retry_count < max_retries
+                AND (scheduled_retry_at IS NULL OR scheduled_retry_at <= NOW())
+            ORDER BY created_at ASC
+            LIMIT 10
+        `;
+        
+        const result = await db.query(query, [driverId]);
+        let processedCount = 0;
+        
+        for (const task of result.rows) {
+            try {
+                await processOfflineTask(task);
+                processedCount++;
+            } catch (error) {
+                console.error(`處理離線任務 #${task.id} 失敗:`, error);
+                await markOfflineTaskFailed(task.id, error.message);
+            }
+        }
+        
+        console.log(`✅ 處理完成 ${processedCount} 個離線任務`);
+        return { processed: processedCount };
+        
+    } catch (error) {
+        console.error('處理離線佇列失敗:', error);
+        throw error;
+    }
+}
+
+/**
+ * 執行單個離線任務
+ */
+async function processOfflineTask(task) {
+    const { id, action_type, order_id, data_payload, file_paths } = task;
+    const payload = JSON.parse(data_payload);
+    
+    console.log(`🔄 處理離線任務 #${id}: ${action_type}`);
+    
+    switch (action_type) {
+        case 'upload_photo':
+            await processOfflinePhotoUpload(id, order_id, payload, file_paths);
+            break;
+        case 'report_problem':
+            await processOfflineProblemReport(id, order_id, payload);
+            break;
+        case 'complete_order':
+            await processOfflineOrderCompletion(id, order_id, payload);
+            break;
+        default:
+            throw new Error(`未知的任務類型: ${action_type}`);
+    }
+    
+    // 標記任務完成
+    await db.query(`
+        UPDATE offline_queue 
+        SET status = 'completed', completed_at = NOW()
+        WHERE id = $1
+    `, [id]);
+}
+
+/**
+ * 標記離線任務失敗並安排重試
+ */
+async function markOfflineTaskFailed(taskId, errorMessage) {
+    await db.query(`
+        UPDATE offline_queue 
+        SET 
+            status = 'pending',
+            retry_count = retry_count + 1,
+            error_message = $1,
+            last_attempt_at = NOW(),
+            scheduled_retry_at = NOW() + INTERVAL '5 minutes' * retry_count
+        WHERE id = $2
+    `, [errorMessage, taskId]);
+}
+
 // ========== 輔助函數 ==========
 
 // 生成示範地區訂單
@@ -622,6 +853,483 @@ function generateMockGoogleDirectionsUrl(orders) {
     
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints}&travelmode=driving`;
 }
+
+// ========== 新增API端點 - 照片上傳和問題回報 ==========
+
+// 照片上傳API端點
+router.post('/upload-delivery-photo', upload.array('photos', 5), async (req, res) => {
+    try {
+        const { orderId, photoType = 'delivery', description = '' } = req.body;
+        const driverId = req.session?.driverId || (demoMode ? 1 : null);
+        
+        if (!driverId && !demoMode) {
+            return res.status(401).json({ success: false, message: '請先登入' });
+        }
+        
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: '請提供訂單ID' });
+        }
+        
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: '請選擇要上傳的照片' });
+        }
+        
+        console.log(`📷 外送員 ${driverId} 上傳 ${req.files.length} 張照片 (訂單 #${orderId})`);
+        
+        if (demoMode) {
+            // 示範模式
+            const mockPhotos = req.files.map((file, index) => ({
+                id: Date.now() + index,
+                filename: `demo_photo_${index + 1}.jpg`,
+                url: `http://localhost:3000/demo/photo_${orderId}_${index + 1}.jpg`,
+                size: file.size,
+                type: photoType,
+                uploadedAt: new Date().toISOString()
+            }));
+            
+            console.log('📱 模擬發送照片到客戶LINE...');
+            
+            const mockOrder = {
+                id: orderId,
+                customer_name: '測試客戶',
+                customer_phone: '0912345678',
+                address: '測試地址'
+            };
+            
+            // 模擬發送LINE照片
+            if (lineBotService) {
+                await lineBotService.sendDeliveryPhoto(mockOrder, mockPhotos[0].url, photoType);
+            }
+            
+            return res.json({
+                success: true,
+                message: `成功上傳 ${req.files.length} 張照片`,
+                photos: mockPhotos,
+                lineSent: true,
+                demo: true
+            });
+        }
+        
+        // 實際處理模式
+        const uploadedPhotos = [];
+        const filePaths = [];
+        
+        try {
+            // 獲取訂單資料
+            const orderResult = await db.query(
+                'SELECT * FROM orders WHERE id = $1',
+                [orderId]
+            );
+            
+            if (orderResult.rows.length === 0) {
+                return res.status(404).json({ success: false, message: '訂單不存在' });
+            }
+            
+            const order = orderResult.rows[0];
+            
+            // 處理每張照片
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                
+                // 生成檔案名稱
+                const originalFilename = generateUniqueFilename(file.originalname, driverId, orderId);
+                const compressedFilename = `compressed_${originalFilename}`;
+                
+                // 壓縮照片
+                const compressedBuffer = await compressImage(file.buffer);
+                
+                // 保存原圖和壓縮圖
+                const originalPath = await savePhotoToDisk(file.buffer, originalFilename, false);
+                const compressedPath = await savePhotoToDisk(compressedBuffer, compressedFilename, true);
+                
+                filePaths.push(originalPath, compressedPath);
+                
+                // 生成公開URL
+                const photoUrl = generatePhotoUrl(compressedFilename, true);
+                
+                // 儲存到資料庫
+                const insertResult = await db.query(`
+                    INSERT INTO delivery_photos (
+                        order_id, driver_id, photo_type, original_filename, 
+                        stored_filename, file_path, file_size, 
+                        compressed_file_path, compressed_size, metadata
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    RETURNING id, upload_timestamp
+                `, [
+                    orderId, driverId, photoType, file.originalname,
+                    compressedFilename, compressedPath, compressedBuffer.length,
+                    compressedPath, compressedBuffer.length,
+                    JSON.stringify({ description, originalSize: file.size })
+                ]);
+                
+                uploadedPhotos.push({
+                    id: insertResult.rows[0].id,
+                    filename: compressedFilename,
+                    url: photoUrl,
+                    size: compressedBuffer.length,
+                    originalSize: file.size,
+                    type: photoType,
+                    uploadedAt: insertResult.rows[0].upload_timestamp
+                });
+            }
+            
+            // 發送照片給客戶
+            let lineSent = false;
+            try {
+                if (lineBotService && uploadedPhotos.length > 0) {
+                    const result = await lineBotService.sendDeliveryPhoto(
+                        order, 
+                        uploadedPhotos[0].url, 
+                        photoType
+                    );
+                    lineSent = result.success;
+                    
+                    // 更新資料庫狀態
+                    if (lineSent) {
+                        await db.query(`
+                            UPDATE delivery_photos 
+                            SET line_sent_at = NOW(), status = 'line_sent'
+                            WHERE id = ANY($1::int[])
+                        `, [uploadedPhotos.map(p => p.id)]);
+                    }
+                }
+            } catch (lineError) {
+                console.error('發送LINE照片失敗:', lineError);
+                // 不影響照片上傳的成功，但記錄錯誤
+            }
+            
+            // 更新訂單的照片計數
+            await db.query(`
+                UPDATE orders 
+                SET delivery_photo_count = delivery_photo_count + $1,
+                    last_photo_uploaded_at = NOW()
+                WHERE id = $2
+            `, [uploadedPhotos.length, orderId]);
+            
+            console.log(`✅ 成功上傳 ${uploadedPhotos.length} 張照片，LINE發送狀態: ${lineSent}`);
+            
+            res.json({
+                success: true,
+                message: `成功上傳 ${uploadedPhotos.length} 張照片`,
+                photos: uploadedPhotos,
+                lineSent: lineSent,
+                orderId: orderId
+            });
+            
+        } catch (uploadError) {
+            console.error('照片處理失敗，嘗試離線暫存:', uploadError);
+            
+            // 如果處理失敗，加入離線佇列
+            const offlineData = {
+                orderId,
+                photoType,
+                description,
+                files: req.files.map(f => ({
+                    originalname: f.originalname,
+                    mimetype: f.mimetype,
+                    size: f.size,
+                    buffer: f.buffer.toString('base64')
+                }))
+            };
+            
+            await addToOfflineQueue(driverId, 'upload_photo', orderId, offlineData, filePaths);
+            
+            res.json({
+                success: true,
+                message: '照片已暫存，將於網路恢復後自動上傳',
+                queued: true,
+                queuedFiles: req.files.length
+            });
+        }
+        
+    } catch (error) {
+        console.error('照片上傳API失敗:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '照片上傳失敗',
+            error: error.message 
+        });
+    }
+});
+
+// 問題回報API端點
+router.post('/report-problem', async (req, res) => {
+    try {
+        const { 
+            orderId, 
+            problemType, 
+            description = '', 
+            priority = 'medium',
+            attachedPhotos = [],
+            location = null 
+        } = req.body;
+        const driverId = req.session?.driverId || (demoMode ? 1 : null);
+        
+        if (!driverId && !demoMode) {
+            return res.status(401).json({ success: false, message: '請先登入' });
+        }
+        
+        if (!orderId || !problemType) {
+            return res.status(400).json({ 
+                success: false, 
+                message: '請提供訂單ID和問題類型' 
+            });
+        }
+        
+        console.log(`🚨 外送員 ${driverId} 回報問題 (訂單 #${orderId}): ${problemType}`);
+        
+        if (demoMode) {
+            // 示範模式
+            const mockProblem = {
+                id: Date.now(),
+                orderId: orderId,
+                problemType: problemType,
+                description: description,
+                priority: priority,
+                status: 'reported',
+                reportedAt: new Date().toISOString(),
+                driverId: driverId
+            };
+            
+            console.log('📱 模擬發送問題回報給管理員...');
+            
+            const mockOrder = {
+                id: orderId,
+                customer_name: '測試客戶',
+                customer_phone: '0912345678',
+                address: '測試地址'
+            };
+            
+            // 模擬發送問題回報
+            if (lineBotService) {
+                await lineBotService.sendProblemReport(mockOrder, mockProblem, driverId);
+            }
+            
+            return res.json({
+                success: true,
+                message: '問題回報已送出',
+                problem: mockProblem,
+                adminNotified: true,
+                demo: true
+            });
+        }
+        
+        // 實際處理模式
+        try {
+            // 檢查訂單是否存在
+            const orderResult = await db.query(
+                'SELECT * FROM orders WHERE id = $1',
+                [orderId]
+            );
+            
+            if (orderResult.rows.length === 0) {
+                return res.status(404).json({ success: false, message: '訂單不存在' });
+            }
+            
+            const order = orderResult.rows[0];
+            
+            // 儲存問題回報到資料庫
+            const insertResult = await db.query(`
+                INSERT INTO delivery_problems (
+                    order_id, driver_id, problem_type, problem_description,
+                    priority, attached_photos, location_lat, location_lng,
+                    metadata
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING id, reported_at, status
+            `, [
+                orderId, driverId, problemType, description,
+                priority, JSON.stringify(attachedPhotos),
+                location?.lat || null, location?.lng || null,
+                JSON.stringify({ userAgent: req.headers['user-agent'] })
+            ]);
+            
+            const problemRecord = insertResult.rows[0];
+            
+            // 更新訂單狀態
+            await db.query(`
+                UPDATE orders 
+                SET status = 'problem_reported',
+                    problem_reported_at = NOW()
+                WHERE id = $1
+            `, [orderId]);
+            
+            // 發送通知給管理員
+            let adminNotified = false;
+            try {
+                if (lineBotService) {
+                    const result = await lineBotService.sendProblemReport(
+                        order, 
+                        {
+                            problem_type: problemType,
+                            problem_description: description,
+                            priority: priority
+                        }, 
+                        driverId
+                    );
+                    adminNotified = result.success;
+                }
+            } catch (notifyError) {
+                console.error('發送管理員通知失敗:', notifyError);
+                // 不影響問題回報的成功，但記錄錯誤
+            }
+            
+            console.log(`✅ 問題回報已記錄 #${problemRecord.id}，管理員通知狀態: ${adminNotified}`);
+            
+            res.json({
+                success: true,
+                message: '問題回報已送出，管理員將盡快處理',
+                problem: {
+                    id: problemRecord.id,
+                    orderId: orderId,
+                    problemType: problemType,
+                    description: description,
+                    priority: priority,
+                    status: problemRecord.status,
+                    reportedAt: problemRecord.reported_at
+                },
+                adminNotified: adminNotified,
+                orderStatusChanged: true
+            });
+            
+        } catch (reportError) {
+            console.error('問題回報處理失敗，嘗試離線暫存:', reportError);
+            
+            // 如果處理失敗，加入離線佇列
+            const offlineData = {
+                orderId,
+                problemType,
+                description,
+                priority,
+                attachedPhotos,
+                location
+            };
+            
+            await addToOfflineQueue(driverId, 'report_problem', orderId, offlineData);
+            
+            res.json({
+                success: true,
+                message: '問題回報已暫存，將於網路恢復後自動送出',
+                queued: true
+            });
+        }
+        
+    } catch (error) {
+        console.error('問題回報API失敗:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '問題回報失敗',
+            error: error.message 
+        });
+    }
+});
+
+// 處理離線佇列API端點
+router.post('/process-offline-queue', async (req, res) => {
+    try {
+        const driverId = req.session?.driverId || (demoMode ? 1 : null);
+        
+        if (!driverId && !demoMode) {
+            return res.status(401).json({ success: false, message: '請先登入' });
+        }
+        
+        console.log(`🔄 處理司機 ${driverId} 的離線佇列...`);
+        
+        const result = await processOfflineQueue(driverId);
+        
+        res.json({
+            success: true,
+            message: result.demo 
+                ? '示範模式：模擬處理離線任務'
+                : `處理完成 ${result.processed} 個離線任務`,
+            processed: result.processed || 0,
+            demo: result.demo || false
+        });
+        
+    } catch (error) {
+        console.error('處理離線佇列失敗:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '處理離線佇列失敗',
+            error: error.message 
+        });
+    }
+});
+
+// 獲取訂單照片API端點
+router.get('/order-photos/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const driverId = req.session?.driverId || (demoMode ? 1 : null);
+        
+        if (!driverId && !demoMode) {
+            return res.status(401).json({ success: false, message: '請先登入' });
+        }
+        
+        if (demoMode) {
+            // 示範模式
+            const mockPhotos = [
+                {
+                    id: 1,
+                    filename: 'demo_photo_1.jpg',
+                    url: `http://localhost:3000/demo/photo_${orderId}_1.jpg`,
+                    type: 'delivery',
+                    uploadedAt: new Date().toISOString(),
+                    size: 150000
+                },
+                {
+                    id: 2,
+                    filename: 'demo_photo_2.jpg',
+                    url: `http://localhost:3000/demo/photo_${orderId}_2.jpg`,
+                    type: 'before_delivery',
+                    uploadedAt: new Date(Date.now() - 300000).toISOString(),
+                    size: 120000
+                }
+            ];
+            
+            return res.json({
+                success: true,
+                photos: mockPhotos,
+                demo: true
+            });
+        }
+        
+        // 實際查詢
+        const result = await db.query(`
+            SELECT 
+                id, photo_type, stored_filename, file_size,
+                upload_timestamp, line_sent_at, status, metadata
+            FROM delivery_photos
+            WHERE order_id = $1
+            ORDER BY upload_timestamp DESC
+        `, [orderId]);
+        
+        const photos = result.rows.map(photo => ({
+            id: photo.id,
+            filename: photo.stored_filename,
+            url: generatePhotoUrl(photo.stored_filename, true),
+            type: photo.photo_type,
+            size: photo.file_size,
+            uploadedAt: photo.upload_timestamp,
+            lineSentAt: photo.line_sent_at,
+            status: photo.status,
+            metadata: photo.metadata
+        }));
+        
+        res.json({
+            success: true,
+            photos: photos,
+            count: photos.length
+        });
+        
+    } catch (error) {
+        console.error('獲取訂單照片失敗:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '獲取訂單照片失敗',
+            error: error.message 
+        });
+    }
+});
 
 // ========== 訂單鎖定系統API ==========
 
@@ -966,5 +1674,174 @@ router.post('/area-orders-by-name', async (req, res) => {
         res.status(500).json({ success: false, message: '載入地區訂單失敗' });
     }
 });
+
+// ========== 離線任務處理函數 ==========
+
+/**
+ * 處理離線照片上傳任務
+ */
+async function processOfflinePhotoUpload(taskId, orderId, payload, filePaths) {
+    console.log(`🔄 處理離線照片上傳任務 #${taskId}`);
+    
+    try {
+        // 從 payload 重建檔案資料
+        const files = payload.files.map(f => ({
+            originalname: f.originalname,
+            mimetype: f.mimetype,
+            size: f.size,
+            buffer: Buffer.from(f.buffer, 'base64')
+        }));
+        
+        // 獲取訂單資料
+        const orderResult = await db.query('SELECT * FROM orders WHERE id = $1', [orderId]);
+        if (orderResult.rows.length === 0) {
+            throw new Error('訂單不存在');
+        }
+        
+        const order = orderResult.rows[0];
+        const uploadedPhotos = [];
+        
+        // 處理每張照片
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const driverId = 1; // 從任務中獲取
+            
+            const originalFilename = generateUniqueFilename(file.originalname, driverId, orderId);
+            const compressedFilename = `compressed_${originalFilename}`;
+            
+            // 壓縮照片
+            const compressedBuffer = await compressImage(file.buffer);
+            
+            // 保存照片
+            const originalPath = await savePhotoToDisk(file.buffer, originalFilename, false);
+            const compressedPath = await savePhotoToDisk(compressedBuffer, compressedFilename, true);
+            
+            // 生成URL
+            const photoUrl = generatePhotoUrl(compressedFilename, true);
+            
+            // 儲存到資料庫
+            const insertResult = await db.query(`
+                INSERT INTO delivery_photos (
+                    order_id, driver_id, photo_type, original_filename, 
+                    stored_filename, file_path, file_size, 
+                    compressed_file_path, compressed_size, metadata
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                RETURNING id, upload_timestamp
+            `, [
+                orderId, driverId, payload.photoType, file.originalname,
+                compressedFilename, compressedPath, compressedBuffer.length,
+                compressedPath, compressedBuffer.length,
+                JSON.stringify({ description: payload.description, originalSize: file.size, offline: true })
+            ]);
+            
+            uploadedPhotos.push({
+                id: insertResult.rows[0].id,
+                url: photoUrl
+            });
+        }
+        
+        // 發送到 LINE
+        if (lineBotService && uploadedPhotos.length > 0) {
+            await lineBotService.sendDeliveryPhoto(order, uploadedPhotos[0].url, payload.photoType);
+            
+            // 更新發送狀態
+            await db.query(`
+                UPDATE delivery_photos 
+                SET line_sent_at = NOW(), status = 'line_sent'
+                WHERE id = ANY($1::int[])
+            `, [uploadedPhotos.map(p => p.id)]);
+        }
+        
+        console.log(`✅ 離線照片上傳任務完成: ${uploadedPhotos.length} 張照片`);
+        
+    } catch (error) {
+        console.error(`❌ 離線照片上傳任務失敗:`, error);
+        throw error;
+    }
+}
+
+/**
+ * 處理離線問題回報任務
+ */
+async function processOfflineProblemReport(taskId, orderId, payload) {
+    console.log(`🔄 處理離線問題回報任務 #${taskId}`);
+    
+    try {
+        // 檢查訂單
+        const orderResult = await db.query('SELECT * FROM orders WHERE id = $1', [orderId]);
+        if (orderResult.rows.length === 0) {
+            throw new Error('訂單不存在');
+        }
+        
+        const order = orderResult.rows[0];
+        const driverId = 1; // 從任務中獲取
+        
+        // 儲存問題回報
+        const insertResult = await db.query(`
+            INSERT INTO delivery_problems (
+                order_id, driver_id, problem_type, problem_description,
+                priority, attached_photos, location_lat, location_lng,
+                metadata
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, reported_at, status
+        `, [
+            orderId, driverId, payload.problemType, payload.description,
+            payload.priority, JSON.stringify(payload.attachedPhotos),
+            payload.location?.lat || null, payload.location?.lng || null,
+            JSON.stringify({ offline: true })
+        ]);
+        
+        // 更新訂單狀態
+        await db.query(`
+            UPDATE orders 
+            SET status = 'problem_reported', problem_reported_at = NOW()
+            WHERE id = $1
+        `, [orderId]);
+        
+        // 發送管理員通知
+        if (lineBotService) {
+            await lineBotService.sendProblemReport(order, {
+                problem_type: payload.problemType,
+                problem_description: payload.description,
+                priority: payload.priority
+            }, driverId);
+        }
+        
+        console.log(`✅ 離線問題回報任務完成: #${insertResult.rows[0].id}`);
+        
+    } catch (error) {
+        console.error(`❌ 離線問題回報任務失敗:`, error);
+        throw error;
+    }
+}
+
+/**
+ * 處理離線訂單完成任務
+ */
+async function processOfflineOrderCompletion(taskId, orderId, payload) {
+    console.log(`🔄 處理離線訂單完成任務 #${taskId}`);
+    
+    try {
+        const driverId = 1; // 從任務中獲取
+        
+        // 更新訂單狀態
+        const result = await db.query(`
+            UPDATE orders 
+            SET status = 'delivered', completed_at = NOW()
+            WHERE id = $1 AND driver_id = $2 AND status = 'assigned'
+            RETURNING id, customer_name, customer_phone
+        `, [orderId, driverId]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('無法完成此訂單');
+        }
+        
+        console.log(`✅ 離線訂單完成任務完成: 訂單 #${orderId}`);
+        
+    } catch (error) {
+        console.error(`❌ 離線訂單完成任務失敗:`, error);
+        throw error;
+    }
+}
 
 module.exports = { router, setDatabasePool };
