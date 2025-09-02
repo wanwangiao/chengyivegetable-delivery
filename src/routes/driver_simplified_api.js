@@ -875,4 +875,96 @@ async function optimizeDeliveryRoute(orders) {
     }
 }
 
+// 新增：通過 POST 方式獲取地區訂單，避免 URL 編碼問題
+router.post('/area-orders-by-name', async (req, res) => {
+    try {
+        const { area } = req.body;
+        
+        if (!area) {
+            return res.status(400).json({
+                success: false,
+                message: '缺少區域參數'
+            });
+        }
+        
+        console.log(`📍 POST 方式載入 ${area} 訂單...`);
+        
+        // 標準化地區名稱
+        const validAreas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
+        if (!validAreas.includes(area)) {
+            console.log(`⚠️ 無效的地區名稱: ${area}`);
+            return res.json({ success: true, orders: [] });
+        }
+        
+        if (demoMode) {
+            console.log(`📦 示範模式：生成 ${area} 測試訂單`);
+            
+            // 隨機生成該地區的測試訂單
+            const orderCount = Math.floor(Math.random() * 4) + 1;
+            const testOrders = [];
+            
+            for (let i = 0; i < orderCount; i++) {
+                testOrders.push({
+                    id: Date.now() + Math.random(),
+                    customer_name: ['王小明', '李小華', '張小美', '陳大雄'][Math.floor(Math.random() * 4)],
+                    customer_phone: '0912345678',
+                    address: `新北市${area}${['中山路', '民權街', '復興路'][Math.floor(Math.random() * 3)]}${Math.floor(Math.random() * 200) + 1}號`,
+                    delivery_fee: 50,
+                    total_amount: 130,
+                    payment_method: ['cash', 'linepay', 'bank_transfer'][Math.floor(Math.random() * 3)],
+                    created_at: new Date().toISOString(),
+                    items: [
+                        { product_name: '高麗菜', quantity: 1, price: 30 },
+                        { product_name: '白蘿蔔', quantity: 2, price: 25 }
+                    ]
+                });
+            }
+            
+            res.json({
+                success: true,
+                orders: testOrders
+            });
+        } else {
+            console.log(`🔍 從資料庫載入 ${area} 訂單...`);
+            
+            const result = await db.query(`
+                SELECT o.id, 
+                       o.customer_name, 
+                       o.customer_phone, 
+                       o.address, 
+                       o.delivery_fee, 
+                       COALESCE(o.total_amount, o.total, 0) as total_amount,
+                       o.payment_method, 
+                       o.created_at,
+                       COALESCE(
+                           json_agg(
+                               json_build_object(
+                                   'product_name', oi.product_name,
+                                   'quantity', oi.quantity,
+                                   'price', oi.price
+                               )
+                           ) FILTER (WHERE oi.id IS NOT NULL), 
+                           '[]'
+                       ) as items
+                FROM orders o
+                LEFT JOIN order_items oi ON o.id = oi.order_id
+                WHERE o.delivery_area = $1 AND o.status = 'pending'
+                GROUP BY o.id, o.customer_name, o.customer_phone, o.address, o.delivery_fee, o.total_amount, o.payment_method, o.created_at
+                ORDER BY o.created_at DESC
+            `, [area]);
+            
+            console.log(`📊 找到 ${result.rows.length} 筆 ${area} 訂單`);
+            
+            res.json({
+                success: true,
+                orders: result.rows
+            });
+        }
+        
+    } catch (error) {
+        console.error(`❌ POST 載入 ${req.body?.area || 'unknown'} 訂單失敗:`, error);
+        res.status(500).json({ success: false, message: '載入地區訂單失敗' });
+    }
+});
+
 module.exports = { router, setDatabasePool };

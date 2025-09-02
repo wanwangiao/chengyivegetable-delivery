@@ -1514,7 +1514,21 @@
                 const areaPromises = areas.map(async (area) => {
                     try {
                         console.log(`  🔍 載入 ${area}...`);
-                        const response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                        
+                        // 先嘗試 GET 方式
+                        let response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                        
+                        // 如果 GET 失敗，改用 POST 方式避免 URL 編碼問題
+                        if (!response.ok) {
+                            console.log(`  ⚠️ ${area} GET 請求失敗，嘗試 POST 方式...`);
+                            response = await fetch('/api/driver/area-orders-by-name', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ area: area })
+                            });
+                        }
                         
                         if (response.ok) {
                             const data = await response.json();
@@ -2128,7 +2142,21 @@
             container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入中...</div>';
             
             try {
-                const response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                // 先嘗試 GET 方式
+                let response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                
+                // 如果 GET 失敗，改用 POST 方式
+                if (!response.ok) {
+                    console.log(`⚠️ ${area} GET 請求失敗，嘗試 POST 方式...`);
+                    response = await fetch('/api/driver/area-orders-by-name', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ area: area })
+                    });
+                }
+                
                 const data = await response.json();
                 
                 if (data.orders.length === 0) {
