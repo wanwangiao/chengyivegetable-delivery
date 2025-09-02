@@ -425,22 +425,6 @@
             line-height: 1.4;
         }
         
-        /* 我的配送區域特殊樣式 */
-        .my-delivery-section {
-            border-left: 4px solid #27ae60;
-        }
-        
-        .my-delivery-section .section-header {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-        }
-        
-        .sortable-list {
-            min-height: 100px;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            background: #fafafa;
-        }
         
         .sortable-list.drag-over {
             border-color: #27ae60;
@@ -1298,10 +1282,6 @@
         <div class="compact-stats-panel">
             <div class="stats-summary">
                 <div class="main-stats">
-                    <div class="stat-item">
-                        <h3 id="my-orders-count">0</h3>
-                        <p>進行中訂單</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1328,31 +1308,6 @@
                 </div>
             </div>
 
-            <!-- 我的配送 -->
-            <div class="orders-section my-delivery-section">
-                <div class="section-header">
-                    <h2 class="section-title">🚛 我的配送 (<span id="delivery-count">0</span>)</h2>
-                    <button class="btn btn-optimize" onclick="optimizeRoute()" id="optimize-btn" style="display: none;">
-                        🧭 一鍵路線優化
-                    </button>
-                </div>
-                <div class="orders-list">
-                    <div class="sortable-list" id="my-delivery-list">
-                        <div class="empty-state">
-                            <div class="empty-icon">🚛</div>
-                            <p>尚未接取任何訂單<br>從左側地區選擇訂單接取</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 內嵌Google地圖區域 -->
-                <div class="embedded-map-section" style="margin-top: 20px;">
-                    <div class="section-header">
-                        <h3 style="margin: 0; color: #333; font-size: 16px;">🗺️ 配送路線預覽</h3>
-                    </div>
-                    <div id="embedded-google-maps-container" class="google-maps-container embedded-google-maps" style="width: 100%; height: 250px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; margin-top: 10px;"></div>
-                </div>
-            </div>
         </div>
         
         <!-- 開始配送按鈕 -->
@@ -1458,7 +1413,6 @@
         const driverId = <%= driver.id %>;
         let currentArea = null;
         let selectedOrders = [];
-        let myDeliveryOrders = [];
         let sortableInstance = null;
         let googleMap = null;
         let currentRouteUrl = null;
@@ -1495,7 +1449,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initDashboard();
             loadUnifiedOrderPool(); // 改為載入統一訂單池
-            loadMyDeliveryOrders();
             updateStats();
             initFullscreenMode(); // 初始化全螢幕模式
             checkPWAInstallation(); // 檢查PWA安裝狀態
@@ -1677,10 +1630,9 @@
             const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
             const isSelected = selectedOrders.includes(orderId);
             
-            // 防止在非選擇模式下操作
-            if (!isSelectionMode && !isSelected) {
-                showNotification('請先進入選擇模式', 'info');
-                return;
+            // 如果不在選擇模式且沒有選中項目，自動進入選擇模式
+            if (!isSelectionMode && selectedOrders.length === 0) {
+                enterSelectionMode();
             }
             
             if (isSelected) {
@@ -2455,90 +2407,8 @@
             }
         }
 
-        // 載入我的配送訂單
-        async function loadMyDeliveryOrders() {
-            try {
-                const response = await fetch('/api/driver/my-orders');
-                const data = await response.json();
-                
-                myDeliveryOrders = data.orders;
-                renderMyDeliveryOrders();
-                updateOptimizeButton();
-                
-                // 更新統計
-                document.getElementById('my-orders-count').textContent = data.orders.length;
-                document.getElementById('delivery-count').textContent = data.orders.length;
-            } catch (error) {
-                console.error('載入我的配送訂單失敗:', error);
-            }
-        }
 
-        // 渲染我的配送訂單
-        function renderMyDeliveryOrders() {
-            const container = document.getElementById('my-delivery-list');
-            
-            if (myDeliveryOrders.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🚛</div>
-                        <p>尚未接取任何訂單<br>從左側地區選擇訂單接取</p>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = myDeliveryOrders.map((order, index) => `
-                    <div class="order-card delivery-order-card" data-order-id="${order.id}">
-                        <div class="order-header">
-                            <span class="order-number">#${order.id}</span>
-                            <span class="order-area">${getAreaFromAddress(order.address)}</span>
-                            <span style="font-size: 12px; color: #666;">第 ${index + 1} 站</span>
-                        </div>
-                        <div class="order-customer">
-                            👤 ${order.customer_name} | 📞 ${order.customer_phone}
-                        </div>
-                        <div class="order-address">
-                            📍 ${order.address}
-                        </div>
-                        <div class="order-actions">
-                            <button class="btn btn-remove" onclick="removeFromMyDelivery(${order.id})">
-                                🗑️ 移除
-                            </button>
-                            <button class="btn btn-accept" onclick="completeDelivery(${order.id})">
-                                ✅ 完成配送
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
 
-        // 從我的配送中移除訂單
-        async function removeFromMyDelivery(orderId) {
-            if (!confirm('確定要移除這筆訂單嗎？訂單將回到可接取狀態。')) return;
-            
-            try {
-                const response = await fetch(`/api/driver/remove-order/${orderId}`, {
-                    method: 'POST'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('✅ 訂單已移除並回到可接取狀態', 'success');
-                    
-                    // 重新載入數據
-                    await Promise.all([
-                        loadMyDeliveryOrders(),
-                        loadOrderCounts(),
-                        currentArea ? loadAreaOrders(currentArea) : Promise.resolve()
-                    ]);
-                } else {
-                    showNotification('移除失敗：' + result.message, 'error');
-                }
-            } catch (error) {
-                console.error('移除訂單失敗:', error);
-                showNotification('移除失敗，請檢查網路連線', 'error');
-            }
-        }
 
         // 完成配送
         async function completeDelivery(orderId) {
@@ -2568,73 +2438,8 @@
             }
         }
 
-        // 重新排序我的配送訂單
-        function reorderMyDeliveryOrders(newOrder) {
-            const reorderedOrders = newOrder.map(orderId => 
-                myDeliveryOrders.find(order => order.id == orderId)
-            ).filter(Boolean);
-            
-            myDeliveryOrders = reorderedOrders;
-            renderMyDeliveryOrders();
-        }
 
-        // 更新優化按鈕狀態
-        function updateOptimizeButton() {
-            const optimizeBtn = document.getElementById('optimize-btn');
-            if (myDeliveryOrders.length >= 2) {
-                optimizeBtn.style.display = 'inline-block';
-            } else {
-                optimizeBtn.style.display = 'none';
-            }
-        }
 
-        // 一鍵路線優化
-        async function optimizeRoute() {
-            if (myDeliveryOrders.length < 2) {
-                showNotification('至少需要2筆訂單才能進行路線優化', 'warning');
-                return;
-            }
-            
-            showNotification('🧭 正在優化路線...', 'info');
-            
-            try {
-                const response = await fetch('/api/driver/optimize-route', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        orderIds: myDeliveryOrders.map(order => order.id)
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 更新訂單順序
-                    myDeliveryOrders = result.optimizedOrders;
-                    renderMyDeliveryOrders();
-                    
-                    showNotification(`🎉 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
-                    
-                    // 保存路線URL
-                    currentRouteUrl = result.routeUrl;
-                    currentInteractiveUrl = result.interactiveUrl || result.routeUrl;
-                    
-                    // 顯示地圖模態框
-                    if (result.routeUrl) {
-                        setTimeout(() => {
-                            showRouteMap(result.optimizedOrders, result.totalDistance, result.timeSaved);
-                        }, 1500);
-                    }
-                } else {
-                    showNotification('路線優化失敗：' + result.message, 'error');
-                }
-            } catch (error) {
-                console.error('路線優化失敗:', error);
-                showNotification('路線優化失敗，請檢查網路連線', 'error');
-            }
-        }
 
         // 更新統計數據
         async function updateStats() {
