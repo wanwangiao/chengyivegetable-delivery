@@ -628,20 +628,24 @@
         }
         
         .record-query-btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255,255,255,0.2);
-            padding: 10px 15px;
+            background: #fff;
+            color: #333;
+            padding: 8px 15px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid #ddd;
+            font-size: 14px;
+            margin-right: 10px;
         }
         
         .record-query-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: scale(1.05);
+            background: #f5f5f5;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .query-icon {
@@ -1105,6 +1109,10 @@
                         <p>外送員：<%= driver.name %></p>
                     </div>
                     <div class="header-actions">
+                        <button class="record-query-btn" onclick="openStatsModal()">
+                            <span class="query-icon">📊</span>
+                            <span>記錄查詢</span>
+                        </button>
                         <span class="status online">🟢 上線中</span>
                         <a href="/driver/logout" class="logout-btn">登出</a>
                     </div>
@@ -1118,12 +1126,8 @@
                 <div class="main-stats">
                     <div class="stat-item">
                         <h3 id="my-orders-count">0</h3>
-                        <p>進行中</p>
+                        <p>進行中訂單</p>
                     </div>
-                    <button class="record-query-btn" onclick="openStatsModal()">
-                        <span class="query-icon">📊</span>
-                        <span>記錄查詢</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -1234,9 +1238,7 @@
             <div id="google-maps-container" class="google-maps-container"></div>
             <div class="map-modal-footer">
                 <p id="map-info">載入中...</p>
-                <button class="btn btn-primary" onclick="openExternalMap()" id="external-map-btn" style="display: none;">
-                    🔗 開啟外部導航
-                </button>
+                <!-- 移除外部導航按鈕，使用內嵌地圖 -->
             </div>
         </div>
     </div>
@@ -2317,8 +2319,7 @@
             const mapInfo = document.getElementById('map-info');
             mapInfo.textContent = `路線總距離：${totalDistance || '計算中'} 公里，預計節省時間：${timeSaved || 0} 分鐘`;
             
-            // 顯示外部地圖按鈕
-            document.getElementById('external-map-btn').style.display = 'inline-block';
+            // 內嵌地圖載入完成
         }
 
         // 初始化Google Maps路線地圖
