@@ -845,28 +845,12 @@ app.get('/driver/dashboard', ensureDriverPage, (req, res) => {
   });
 });
 
-// 移動端外送員介面
+// 移動端外送員介面 - 重導向到統一介面
 app.get('/driver/mobile', ensureDriverPage, (req, res) => {
-  res.render('driver_mobile_interface', { 
-    title: '外送員配送介面',
-    demoMode: req.app.locals.demoMode,
-    driver: {
-      id: req.session.driverId,
-      name: req.session.driverName || '外送員'
-    }
-  });
+  res.redirect('/driver');
 });
 
-// 🚛 外送員工作台 (舊版本，保留作為備份)
-app.get('/driver/dashboard-old', ensureDriverPage, (req, res) => {
-  
-  res.render('driver_dashboard', {
-    driver: {
-      id: req.session.driverId,
-      name: req.session.driverName || '外送員'
-    }
-  });
-});
+// 舊版本路由已刪除，統一使用driver_dashboard_simplified
 
 // 🚀 外送員PWA工作台
 app.get('/driver', ensureDriverPage, (req, res) => {
@@ -879,16 +863,9 @@ app.get('/driver', ensureDriverPage, (req, res) => {
   });
 });
 
-// 🚛 外送員通訊中心
+// 🚛 外送員通訊中心 - 重導向到統一介面
 app.get('/driver/chat', ensureDriverPage, (req, res) => {
-  
-  res.render('driver_chat', {
-    driver: {
-      id: req.session.driverId,
-      name: req.session.driverName || '外送員',
-      phone: req.session.driverPhone || ''
-    }
-  });
+  res.redirect('/driver');
 });
 
 // 🚛 外送員登出
