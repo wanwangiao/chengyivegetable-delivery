@@ -75,7 +75,7 @@ router.get('/order-counts', async (req, res) => {
 // 獲取特定地區的訂單 - 使用通用路由避免Express自動解碼問題
 router.get('/area-orders/*', async (req, res) => {
     try {
-        // 從原始URL路徑中提取區域名稱，避免Express自動解碼
+        // 從原始URL路徑中提取區域名稱，避免Express自動解碼 (2025-09-02 強制更新部署)
         const fullPath = req.params[0] || req.originalUrl.split('/area-orders/')[1] || '';
         let area = fullPath.split('?')[0]; // 移除查詢參數
         
