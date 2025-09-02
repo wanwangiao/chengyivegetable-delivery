@@ -1473,44 +1473,63 @@
 
         // ========== 新的訂單鎖定系統功能 ==========
         
-        // 載入統一訂單池
+        // 載入統一訂單池 - 簡化版本
         async function loadUnifiedOrderPool() {
             const container = document.getElementById('unified-orders');
             container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入全域訂單...</div>';
             
             try {
-                // 載入所有地區的訂單數據
-                const [countsResponse, ordersPromises] = await Promise.all([
-                    fetch('/api/driver/order-counts'),
-                    Promise.all(['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'].map(area =>
-                        fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`)
-                    ))
-                ]);
+                console.log('🔄 開始載入統一訂單池...');
+                
+                // 簡化：先載入訂單數量
+                const countsResponse = await fetch('/api/driver/order-counts');
+                if (!countsResponse.ok) {
+                    throw new Error(`API回應錯誤: ${countsResponse.status}`);
+                }
                 
                 const countsData = await countsResponse.json();
-                const ordersData = await Promise.all(ordersPromises.map(res => res.json()));
+                console.log('📊 訂單數量:', countsData);
                 
-                // 整合所有訂單並按區域分組
-                allAvailableOrders = [];
-                let totalCount = 0;
+                if (!countsData.success) {
+                    throw new Error('載入訂單數量失敗');
+                }
                 
+                // 載入有訂單的地區
+                const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
                 const areaGroups = [];
-                ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'].forEach((area, index) => {
-                    const areaOrders = ordersData[index].orders || [];
-                    totalCount += areaOrders.length;
-                    allAvailableOrders = allAvailableOrders.concat(areaOrders.map(order => ({
-                        ...order,
-                        area: area
-                    })));
-                    
-                    if (areaOrders.length > 0) {
-                        areaGroups.push({
-                            area: area,
-                            count: areaOrders.length,
-                            orders: areaOrders
-                        });
+                let totalCount = 0;
+                allAvailableOrders = [];
+                
+                for (const area of areas) {
+                    try {
+                        console.log(`📍 載入 ${area} 的訂單...`);
+                        const response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            const areaOrders = data.orders || [];
+                            
+                            if (areaOrders.length > 0) {
+                                totalCount += areaOrders.length;
+                                allAvailableOrders = allAvailableOrders.concat(areaOrders.map(order => ({
+                                    ...order,
+                                    area: area
+                                })));
+                                
+                                areaGroups.push({
+                                    area: area,
+                                    count: areaOrders.length,
+                                    orders: areaOrders
+                                });
+                                console.log(`✅ ${area}: ${areaOrders.length} 筆訂單`);
+                            }
+                        } else {
+                            console.warn(`⚠️ 載入 ${area} 訂單失敗: ${response.status}`);
+                        }
+                    } catch (err) {
+                        console.warn(`⚠️ 載入 ${area} 訂單出錯:`, err);
                     }
-                });
+                }
                 
                 // 按訂單數量排序（多到少）
                 areaGroups.sort((a, b) => b.count - a.count);
@@ -1518,15 +1537,18 @@
                 // 更新總數量
                 document.getElementById('total-available-count').textContent = totalCount;
                 
+                console.log('📊 總計載入:', totalCount, '筆訂單');
+                
                 // 渲染訂單池
                 renderUnifiedOrderPool(areaGroups);
                 
             } catch (error) {
-                console.error('載入統一訂單池失敗:', error);
+                console.error('❌ 載入統一訂單池失敗:', error);
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">❌</div>
-                        <p>載入失敗，請重試</p>
+                        <p>載入失敗，請重試<br><small>錯誤: ${error.message}</small></p>
+                        <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 10px;">🔄 重新載入</button>
                     </div>
                 `;
             }
@@ -1534,9 +1556,11 @@
         
         // 渲染統一訂單池
         function renderUnifiedOrderPool(areaGroups) {
+            console.log('🎨 開始渲染訂單池:', areaGroups);
             const container = document.getElementById('unified-orders');
             
             if (areaGroups.length === 0) {
+                console.log('📭 沒有訂單數據');
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">📭</div>
@@ -1545,6 +1569,8 @@
                 `;
                 return;
             }
+            
+            console.log('✅ 渲染', areaGroups.length, '個地區的訂單');
             
             container.innerHTML = areaGroups.map(group => `
                 <div class="area-group">
