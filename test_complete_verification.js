@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://chengyivegetable.vercel.app';
+const BASE_URL = 'http://localhost:3002';
 
 async function completeVerification() {
     console.log('🔍 完整驗證外送員介面\n');
@@ -12,9 +12,24 @@ async function completeVerification() {
     };
     
     try {
-        // 1. 測試頁面載入
-        console.log('\n📱 測試頁面載入...');
-        const response = await axios.get(`${BASE_URL}/driver`);
+        // 1. 先登入取得session
+        console.log('\n🔐 執行登入...');
+        const loginData = 'phone=0912345678&password=driver123';
+        const loginResponse = await axios.post(`${BASE_URL}/driver/login`, loginData, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            maxRedirects: 0,
+            validateStatus: (status) => status < 400
+        });
+        
+        const cookies = loginResponse.headers['set-cookie'];
+        
+        // 2. 測試頁面載入
+        console.log('📱 測試頁面載入...');
+        const response = await axios.get(`${BASE_URL}/driver/dashboard`, {
+            headers: { 
+                'Cookie': cookies ? cookies.join('; ') : ''
+            }
+        });
         const html = response.data;
         
         // 2. 檢查關鍵功能
@@ -73,7 +88,11 @@ async function completeVerification() {
         // 3. API測試
         console.log('\n📡 API功能測試：\n');
         try {
-            const apiResponse = await axios.get(`${BASE_URL}/api/driver/area-orders/三峽區`);
+            const apiResponse = await axios.get(`${BASE_URL}/api/driver/area-orders/三峽區`, {
+                headers: { 
+                    'Cookie': cookies ? cookies.join('; ') : ''
+                }
+            });
             if (apiResponse.data.success) {
                 console.log('   ✅ API正常運作');
                 

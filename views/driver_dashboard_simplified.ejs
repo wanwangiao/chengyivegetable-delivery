@@ -1344,6 +1344,14 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- 內嵌Google地圖區域 -->
+                <div class="embedded-map-section" style="margin-top: 20px;">
+                    <div class="section-header">
+                        <h3 style="margin: 0; color: #333; font-size: 16px;">🗺️ 配送路線預覽</h3>
+                    </div>
+                    <div id="embedded-google-maps-container" class="google-maps-container embedded-google-maps" style="width: 100%; height: 250px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; margin-top: 10px;"></div>
+                </div>
             </div>
         </div>
         
@@ -1673,8 +1681,9 @@
                 if (checkbox) checkbox.checked = true;
             }
             
-            // 更新確認接單按鈕
+            // 更新確認接單按鈕和購物車
             updateConfirmButton();
+            updateShoppingCart();
         }
         
         // 更新確認接單按鈕狀態
@@ -2056,34 +2065,8 @@
             }
         }
 
-        // 切換訂單選擇狀態
-        function toggleOrderSelection(orderId) {
-            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
-            const checkbox = document.getElementById(`order-check-area-${orderId}`) || document.getElementById(`order-check-${orderId}`);
-            const isSelected = selectedOrders.includes(orderId);
-            
-            if (isSelected) {
-                selectedOrders = selectedOrders.filter(id => id !== orderId);
-                orderCard.classList.remove('selected');
-                if (checkbox) checkbox.checked = false;
-            } else {
-                selectedOrders.push(orderId);
-                orderCard.classList.add('selected');
-                if (checkbox) checkbox.checked = true;
-            }
-            
-            updateAcceptButton();
-        }
-
-        // 更新接受按鈕狀態
-        function updateAcceptButton() {
-            const acceptBtn = document.getElementById('accept-btn');
-            if (selectedOrders.length > 0) {
-                acceptBtn.style.display = 'inline-block';
-                acceptBtn.textContent = `✅ 接受選中的 ${selectedOrders.length} 筆訂單`;
-            } else {
-                acceptBtn.style.display = 'none';
-            }
+        // 更新購物車和按鈕狀態 (移除重複的toggleOrderSelection函數)
+        function updateShoppingCartAndButtons() {
             updateShoppingCart();
         }
         
@@ -2765,8 +2748,12 @@
         // 初始化Google Maps路線地圖
         function initGoogleMapsRoute(orders) {
             const mapContainer = document.getElementById('google-maps-container');
+            const embeddedMapContainer = document.getElementById('embedded-google-maps-container');
             
-            if (!mapContainer) {
+            // 優先使用模態框地圖，如果不存在則使用內嵌地圖
+            const activeContainer = mapContainer || embeddedMapContainer;
+            
+            if (!activeContainer) {
                 console.error('Google Maps 容器未找到');
                 return;
             }
@@ -2778,7 +2765,7 @@
                 }
                 
                 // 創建新Google Maps實例
-                googleMap = new google.maps.Map(mapContainer, {
+                googleMap = new google.maps.Map(activeContainer, {
                     center: { lat: 24.93, lng: 121.37 }, // 三峽區中心
                     zoom: 12,
                     mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -2793,11 +2780,11 @@
                 
             } catch (error) {
                 console.error('Google Maps初始化失敗:', error);
-                mapContainer.innerHTML = `
+                activeContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; color: #666;">
                         <div style="font-size: 48px; margin-bottom: 20px;">🗺️</div>
                         <p>地圖載入失敗</p>
-                        <p style="font-size: 12px;">請點擊下方「開啟外部導航」按鈕查看路線</p>
+                        <p style="font-size: 12px;">${activeContainer === embeddedMapContainer ? '內嵌地圖' : '模態框地圖'}載入失敗，請重新整理頁面</p>
                     </div>
                 `;
             }
