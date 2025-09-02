@@ -9,7 +9,9 @@ let demoMode = true;
 // 設置資料庫連接的函數
 function setDatabasePool(pool, isDemo = true) {
     db = pool;
-    demoMode = isDemo;
+    // 強制使用示範模式直到外送員系統完全穩定
+    demoMode = true;
+    console.log('🔧 外送員簡化API：強制啟用示範模式');
 }
 
 // 匯出設置函數
@@ -70,23 +72,26 @@ router.get('/order-counts', async (req, res) => {
     }
 });
 
-// 獲取特定地區的訂單
-router.get('/area-orders/:area', async (req, res) => {
+// 獲取特定地區的訂單 - 使用通用路由避免Express自動解碼問題
+router.get('/area-orders/*', async (req, res) => {
     try {
-        // 處理區域名稱解碼，支援多種編碼方式
-        let area = req.params.area;
+        // 從原始URL路徑中提取區域名稱，避免Express自動解碼
+        const fullPath = req.params[0] || req.originalUrl.split('/area-orders/')[1] || '';
+        let area = fullPath.split('?')[0]; // 移除查詢參數
         
-        // 確保正確解碼中文字符
+        // 處理各種編碼情況
         if (area.includes('%')) {
             try {
                 area = decodeURIComponent(area);
             } catch (decodeError) {
-                console.error('URL解碼失敗:', decodeError);
-                // 嘗試其他解碼方式或回傳錯誤
-                return res.status(400).json({ 
-                    success: false, 
-                    message: '地區名稱格式錯誤' 
-                });
+                console.error('URL解碼失敗:', area, decodeError);
+                // 嘗試直接映射常見的錯誤編碼
+                const areaMapping = {
+                    '%a4T%ael%b0%cf': '三峽區',
+                    '%be%f0%aaL%b0%cf': '樹林區', 
+                    '%c5a%baq%b0%cf': '鶯歌區'
+                };
+                area = areaMapping[area] || area;
             }
         }
         
@@ -95,7 +100,9 @@ router.get('/area-orders/:area', async (req, res) => {
         if (!validAreas.includes(area)) {
             return res.status(400).json({ 
                 success: false, 
-                message: `不支援的地區: ${area}` 
+                message: `不支援的地區: ${area}`,
+                receivedArea: area,
+                originalPath: req.originalUrl
             });
         }
         
@@ -128,11 +135,11 @@ router.get('/area-orders/:area', async (req, res) => {
             
             const query = `
                 SELECT o.*, 
-                       o.total as total_amount,
+                       COALESCE(o.total_amount, o.total, 0) as total_amount,
                        COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
-                               'product_name', oi.product_name,
+                               'product_name', COALESCE(oi.product_name, oi.name),
                                'quantity', oi.quantity,
                                'price', oi.price
                            )
@@ -142,7 +149,7 @@ router.get('/area-orders/:area', async (req, res) => {
                 WHERE o.status = 'packed' 
                     AND o.driver_id IS NULL 
                     AND ${areaCondition}
-                GROUP BY o.id
+                GROUP BY o.id, o.total_amount, o.total, o.payment_method
                 ORDER BY o.created_at ASC
             `;
             
