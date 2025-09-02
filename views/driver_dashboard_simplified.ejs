@@ -1473,147 +1473,281 @@
 
         // ========== 新的訂單鎖定系統功能 ==========
         
-        // 載入統一訂單池 - 簡化版本
+        // 載入統一訂單池 - 修復版本
         async function loadUnifiedOrderPool() {
+            console.log('🔄 === 開始載入統一訂單池 ===');
+            
+            // 確保容器存在
             const container = document.getElementById('unified-orders');
-            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入全域訂單...</div>';
+            if (!container) {
+                console.error('❌ 找不到 unified-orders 容器');
+                return;
+            }
+            
+            // 顯示載入狀態
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入全域訂單中...</div>';
             
             try {
-                console.log('🔄 開始載入統一訂單池...');
-                
-                // 簡化：先載入訂單數量
+                // Step 1: 載入訂單數量
+                console.log('📊 Step 1: 載入訂單數量...');
                 const countsResponse = await fetch('/api/driver/order-counts');
+                
                 if (!countsResponse.ok) {
-                    throw new Error(`API回應錯誤: ${countsResponse.status}`);
+                    throw new Error(`訂單數量API錯誤: ${countsResponse.status} ${countsResponse.statusText}`);
                 }
                 
                 const countsData = await countsResponse.json();
-                console.log('📊 訂單數量:', countsData);
+                console.log('✅ 訂單數量回應:', countsData);
                 
                 if (!countsData.success) {
-                    throw new Error('載入訂單數量失敗');
+                    throw new Error('訂單數量API回應失敗');
                 }
                 
-                // 載入有訂單的地區
+                // Step 2: 載入各地區訂單
+                console.log('📍 Step 2: 載入各地區訂單...');
                 const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
                 const areaGroups = [];
                 let totalCount = 0;
-                allAvailableOrders = [];
+                allAvailableOrders = []; // 重置全域訂單陣列
                 
-                for (const area of areas) {
+                // 使用 Promise.allSettled 確保所有請求都完成
+                const areaPromises = areas.map(async (area) => {
                     try {
-                        console.log(`📍 載入 ${area} 的訂單...`);
+                        console.log(`  🔍 載入 ${area}...`);
                         const response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
                         
                         if (response.ok) {
                             const data = await response.json();
-                            const areaOrders = data.orders || [];
-                            
-                            if (areaOrders.length > 0) {
-                                totalCount += areaOrders.length;
-                                allAvailableOrders = allAvailableOrders.concat(areaOrders.map(order => ({
-                                    ...order,
-                                    area: area
-                                })));
-                                
-                                areaGroups.push({
-                                    area: area,
-                                    count: areaOrders.length,
-                                    orders: areaOrders
-                                });
-                                console.log(`✅ ${area}: ${areaOrders.length} 筆訂單`);
+                            if (data.success && data.orders && Array.isArray(data.orders)) {
+                                return {
+                                    area,
+                                    orders: data.orders,
+                                    success: true
+                                };
+                            } else {
+                                console.warn(`  ⚠️ ${area} 回應格式錯誤:`, data);
+                                return { area, orders: [], success: false };
                             }
                         } else {
-                            console.warn(`⚠️ 載入 ${area} 訂單失敗: ${response.status}`);
+                            console.warn(`  ⚠️ ${area} HTTP錯誤: ${response.status}`);
+                            return { area, orders: [], success: false };
                         }
                     } catch (err) {
-                        console.warn(`⚠️ 載入 ${area} 訂單出錯:`, err);
+                        console.error(`  ❌ ${area} 請求失敗:`, err);
+                        return { area, orders: [], success: false };
+                    }
+                });
+                
+                const areaResults = await Promise.allSettled(areaPromises);
+                
+                // Step 3: 處理結果
+                console.log('🔧 Step 3: 處理結果...');
+                for (const result of areaResults) {
+                    if (result.status === 'fulfilled' && result.value.success) {
+                        const { area, orders } = result.value;
+                        if (orders.length > 0) {
+                            totalCount += orders.length;
+                            
+                            // 為每個訂單添加地區標記
+                            const ordersWithArea = orders.map(order => ({
+                                ...order,
+                                area: area
+                            }));
+                            
+                            allAvailableOrders = allAvailableOrders.concat(ordersWithArea);
+                            
+                            areaGroups.push({
+                                area: area,
+                                count: orders.length,
+                                orders: orders
+                            });
+                            
+                            console.log(`  ✅ ${area}: ${orders.length} 筆訂單`);
+                        } else {
+                            console.log(`  📭 ${area}: 無訂單`);
+                        }
+                    } else {
+                        console.warn(`  ❌ ${result.reason || 'Promise失敗'}`);
                     }
                 }
                 
-                // 按訂單數量排序（多到少）
+                // Step 4: 排序和更新UI
+                console.log('🎨 Step 4: 更新UI...');
                 areaGroups.sort((a, b) => b.count - a.count);
                 
-                // 更新總數量
-                document.getElementById('total-available-count').textContent = totalCount;
+                // 安全更新總數量
+                const countElement = document.getElementById('total-available-count');
+                if (countElement) {
+                    countElement.textContent = totalCount;
+                } else {
+                    console.warn('⚠️ 找不到 total-available-count 元素');
+                }
                 
-                console.log('📊 總計載入:', totalCount, '筆訂單');
+                console.log(`📊 總計: ${totalCount} 筆訂單，${areaGroups.length} 個地區`);
                 
-                // 渲染訂單池
+                // Step 5: 渲染訂單池
+                console.log('🖼️ Step 5: 渲染訂單池...');
                 renderUnifiedOrderPool(areaGroups);
+                
+                console.log('✅ === 載入統一訂單池完成 ===');
                 
             } catch (error) {
                 console.error('❌ 載入統一訂單池失敗:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <p>載入失敗，請重試<br><small>錯誤: ${error.message}</small></p>
-                        <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 10px;">🔄 重新載入</button>
-                    </div>
-                `;
+                console.error('錯誤堆棧:', error.stack);
+                
+                // 確保容器存在再更新
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">❌</div>
+                            <h3>載入失敗</h3>
+                            <p>錯誤: ${error.message}</p>
+                            <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
+                                🔄 重新載入
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
         
-        // 渲染統一訂單池
+        // 渲染統一訂單池 - 修復版本
         function renderUnifiedOrderPool(areaGroups) {
-            console.log('🎨 開始渲染訂單池:', areaGroups);
-            const container = document.getElementById('unified-orders');
+            console.log('🎨 === 開始渲染訂單池 ===');
+            console.log('📊 接收到的地區數據:', areaGroups);
             
-            if (areaGroups.length === 0) {
-                console.log('📭 沒有訂單數據');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <p>目前沒有可接的訂單</p>
-                    </div>
-                `;
+            // 確保容器存在
+            const container = document.getElementById('unified-orders');
+            if (!container) {
+                console.error('❌ 找不到 unified-orders 容器');
                 return;
             }
             
-            console.log('✅ 渲染', areaGroups.length, '個地區的訂單');
-            
-            container.innerHTML = areaGroups.map(group => `
-                <div class="area-group">
-                    <div class="area-group-header">
-                        <h4>📍 ${group.area}</h4>
-                        <span class="area-order-count">${group.count} 筆訂單</span>
-                    </div>
-                    <div class="area-orders">
-                        ${group.orders.map(order => `
-                            <div class="order-card ${selectedOrders.includes(order.id) ? 'selected' : ''} ${lockedOrders.includes(order.id) ? 'locked' : ''}" 
-                                 data-order-id="${order.id}" 
-                                 onclick="${isSelectionMode ? `toggleOrderSelection(${order.id})` : 'void(0)'}">
-                                <div style="display: flex; gap: 10px;">
-                                    <div class="order-checkbox">
-                                        <input type="checkbox" 
-                                               id="order-check-area-${order.id}" 
-                                               class="order-select-checkbox"
-                                               ${selectedOrders.includes(order.id) ? 'checked' : ''}
-                                               onclick="event.stopPropagation(); toggleOrderSelection(${order.id})">
-                                        <label for="order-check-area-${order.id}" class="checkbox-label"></label>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div class="order-header">
-                                            <span class="order-number">#${order.id}</span>
-                                            <span class="order-area">${group.area}</span>
-                                        </div>
-                                        <div class="order-customer">
-                                            👤 ${order.customer_name} | 📞 ${order.customer_phone}
-                                        </div>
-                                        <div class="order-address">
-                                            📍 ${order.address}
-                                        </div>
-                                        <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
-                                            🛒 ${order.items ? order.items.length : 1} 項商品 | 
-                                            💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
-                                        </div>
-                                    </div>
+            try {
+                // 檢查是否有數據
+                if (!areaGroups || !Array.isArray(areaGroups) || areaGroups.length === 0) {
+                    console.log('📭 沒有訂單數據或數據格式錯誤');
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3>目前沒有可接的訂單</h3>
+                            <p>請稍後再試或聯繫管理員</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log(`✅ 準備渲染 ${areaGroups.length} 個地區的訂單`);
+                
+                // 安全渲染HTML，使用錯誤捕獲
+                let htmlContent = '';
+                
+                for (let i = 0; i < areaGroups.length; i++) {
+                    const group = areaGroups[i];
+                    try {
+                        if (!group || !group.area || !Array.isArray(group.orders)) {
+                            console.warn(`⚠️ 地區 ${i} 數據格式錯誤:`, group);
+                            continue;
+                        }
+                        
+                        // 渲染地區標題
+                        htmlContent += `
+                            <div class="area-group">
+                                <div class="area-group-header">
+                                    <h4>📍 ${group.area}</h4>
+                                    <span class="area-order-count">${group.count || group.orders.length} 筆訂單</span>
                                 </div>
-                            </div>
-                        `).join('')}
+                                <div class="area-orders">`;
+                        
+                        // 渲染每個訂單
+                        for (let j = 0; j < group.orders.length; j++) {
+                            const order = group.orders[j];
+                            try {
+                                if (!order || !order.id) {
+                                    console.warn(`⚠️ ${group.area} 訂單 ${j} 數據錯誤:`, order);
+                                    continue;
+                                }
+                                
+                                const isSelected = selectedOrders.includes(order.id);
+                                const isLocked = lockedOrders.includes(order.id);
+                                const itemCount = order.items && Array.isArray(order.items) ? order.items.length : 1;
+                                
+                                htmlContent += `
+                                    <div class="order-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}" 
+                                         data-order-id="${order.id}" 
+                                         onclick="${isSelectionMode ? `toggleOrderSelection(${order.id})` : 'void(0)'}">
+                                        <div style="display: flex; gap: 10px;">
+                                            <div class="order-checkbox">
+                                                <input type="checkbox" 
+                                                       id="order-check-area-${order.id}" 
+                                                       class="order-select-checkbox"
+                                                       ${isSelected ? 'checked' : ''}
+                                                       onclick="event.stopPropagation(); toggleOrderSelection(${order.id})">
+                                                <label for="order-check-area-${order.id}" class="checkbox-label"></label>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div class="order-header">
+                                                    <span class="order-number">#${order.id}</span>
+                                                    <span class="order-area">${group.area}</span>
+                                                </div>
+                                                <div class="order-customer">
+                                                    👤 ${order.customer_name || '未知客戶'} | 📞 ${order.customer_phone || '無電話'}
+                                                </div>
+                                                <div class="order-address">
+                                                    📍 ${order.address || '地址未提供'}
+                                                </div>
+                                                <div class="order-items" style="margin-top: 8px; font-size: 13px; color: #666;">
+                                                    🛒 ${itemCount} 項商品 | 
+                                                    💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            } catch (orderError) {
+                                console.error(`❌ 渲染訂單失敗 ${group.area}[${j}]:`, orderError, order);
+                            }
+                        }
+                        
+                        htmlContent += `
+                                </div>
+                            </div>`;
+                        
+                    } catch (groupError) {
+                        console.error(`❌ 渲染地區失敗 ${i}:`, groupError, group);
+                    }
+                }
+                
+                // 安全設置HTML內容
+                if (htmlContent.trim()) {
+                    container.innerHTML = htmlContent;
+                    console.log('✅ 訂單池渲染完成');
+                } else {
+                    console.warn('⚠️ 沒有成功渲染任何內容');
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">⚠️</div>
+                            <h3>渲染失敗</h3>
+                            <p>無法正確顯示訂單內容</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (renderError) {
+                console.error('❌ 渲染訂單池發生錯誤:', renderError);
+                console.error('錯誤堆棧:', renderError.stack);
+                
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <h3>渲染錯誤</h3>
+                        <p>錯誤: ${renderError.message}</p>
+                        <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
+                            🔄 重新載入
+                        </button>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }
         }
         
         // 進入選擇模式
