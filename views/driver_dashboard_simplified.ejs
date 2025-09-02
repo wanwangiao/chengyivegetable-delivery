@@ -1278,13 +1278,6 @@
             </header>
 
             <main class="simplified-dashboard">
-        <!-- 簡化的統計欄 -->
-        <div class="compact-stats-panel">
-            <div class="stats-summary">
-                <div class="main-stats">
-                </div>
-            </div>
-        </div>
         
         <!-- 確認接單按鈕（固定在底部） -->
         <div class="confirm-orders-container" id="confirm-orders-container" style="display: none;">
@@ -1310,10 +1303,6 @@
 
         </div>
         
-        <!-- 開始配送按鈕 -->
-        <button class="start-delivery-btn" onclick="switchToNavigationMode()" id="start-delivery-btn" disabled>
-            🚀 開始配送 (請先接取訂單)
-        </button>
     </main>
         </div>
         
@@ -2215,9 +2204,7 @@
                     
                     showNotification(`✅ 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
                     
-                    // 更新我的配送列表
-                    myDeliveryOrders = result.optimizedOrders || [];
-                    updateMyDeliveryList();
+                    // 訂單已優化，準備開始配送
                 }
             } catch (error) {
                 console.error('優化路線失敗:', error);
@@ -2226,8 +2213,8 @@
         }
         
         async function startDeliveryFromCart() {
-            if (myDeliveryOrders.length === 0) {
-                showNotification('請先優化路線', 'warning');
+            if (selectedOrders.length === 0) {
+                showNotification('請先選擇訂單', 'warning');
                 return;
             }
             
@@ -2706,8 +2693,8 @@
         
         // 切換到導航模式
         function switchToNavigationMode() {
-            if (myDeliveryOrders.length === 0) {
-                showNotification('請先接取訂單再開始配送', 'warning');
+            if (selectedOrders.length === 0) {
+                showNotification('請先選擇訂單再開始配送', 'warning');
                 return;
             }
             
@@ -2971,17 +2958,6 @@
             }
         }
         
-        // 更新開始配送按鈕狀態
-        function updateStartDeliveryButton() {
-            const btn = document.getElementById('start-delivery-btn');
-            if (myDeliveryOrders.length > 0) {
-                btn.disabled = false;
-                btn.textContent = `🚀 開始配送 (${myDeliveryOrders.length} 筆訂單)`;
-            } else {
-                btn.disabled = true;
-                btn.textContent = '🚀 開始配送 (請先接取訂單)';
-            }
-        }
         
         // 修改現有函數，在接取訂單後更新按鈕
         const originalAcceptOrders = acceptSelectedOrders;

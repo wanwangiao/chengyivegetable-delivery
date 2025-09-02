@@ -488,7 +488,7 @@ function generateDemoOrdersForArea(area) {
     const phones = ['0912345678', '0923456789', '0934567890', '0945678901', '0956789012'];
     
     const areaAddresses = addresses[area] || [];
-    const orderCount = Math.min(areaAddresses.length, Math.floor(Math.random() * 5) + 1);
+    const orderCount = Math.min(areaAddresses.length, Math.floor(Math.random() * 3) + 3); // 確保3-5個訂單
     
     const paymentMethods = ['cash', 'linepay', 'transfer'];
     
