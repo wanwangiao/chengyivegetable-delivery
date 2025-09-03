@@ -27,6 +27,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
+      { router: googleMapsSecureApiRoutes, setDatabasePool: setGoogleMapsSecureDatabasePool } = require('./routes/google_maps_secure_api'),
       { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
       WebSocketManager = require('./services/WebSocketManager'),
       SmartRouteService = require('./services/SmartRouteService'),
@@ -235,8 +236,10 @@ createDatabasePool().then(async () => {
   // 初始化 Google Maps API 服務
   try {
     setGoogleMapsDatabasePool(pool);
+    setGoogleMapsSecureDatabasePool(pool);
     setDriverSimplifiedDatabasePool(pool, demoMode);
     console.log('🗺️ Google Maps API 服務已初始化');
+    console.log('🔒 Google Maps 安全API 服務已初始化');
 
   // 暫時註解即時通知系統初始化
   // try {
@@ -556,6 +559,9 @@ app.use('/api/admin/reports', adminReportsApiRoutes);
 
 // Google Maps API路由
 app.use('/api/maps', googleMapsApiRoutes);
+
+// Google Maps 安全API路由
+app.use('/api/google-maps-secure', googleMapsSecureApiRoutes);
 
 // WebSocket API路由
 app.use('/api/websocket', websocketApiRoutes);
