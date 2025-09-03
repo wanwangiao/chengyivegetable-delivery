@@ -34,6 +34,7 @@
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
             background: #f5f5f5;
             overflow-x: hidden;
+            padding-bottom: 80px; /* 留空間給底部購物車橫條 */
         }
         
         /* ========== 模式切換系統 ========== */
@@ -589,53 +590,74 @@
             background: #e74c3c;
         }
         
-        /* 購物車按鈕 - 固定在底部 */
+        /* 底部橫條購物車 */
         .shopping-cart-btn {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
+            bottom: 0;
+            left: 0;
+            right: 0;
             height: 60px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            border-radius: 50%;
             color: white;
-            font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 -4px 15px rgba(102, 126, 234, 0.4);
             z-index: 1000;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-radius: 0;
         }
         
         .shopping-cart-btn.show {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
         }
         
         .shopping-cart-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4c93 100%);
+            box-shadow: 0 -6px 20px rgba(102, 126, 234, 0.6);
         }
         
-        .cart-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ff4757;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+        .cart-left-info {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            border: 2px solid white;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .cart-icon {
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        
+        .cart-count {
+            background: rgba(255,255,255,0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-size: 14px;
+        }
+        
+        .cart-right-action {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .cart-total {
+            margin-right: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .cart-action-icon {
+            font-size: 18px;
+            margin-left: 8px;
         }
         
         /* 購物車面板 */
@@ -1003,80 +1025,89 @@
         
         /* 狀態列內容 - 簡化版本 */
         .nav-status-content {
-            padding: 10px 20px;
+            padding: 8px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            gap: 5px;
+        }
+        
+        /* 第一排：訂單資訊列 */
+        .nav-info-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 100%;
-        }
-        
-        .nav-delivery-info {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .nav-customer-name {
-            color: #00d4aa;
-            font-size: 16px;
-            font-weight: 600;
-            min-width: 80px;
-        }
-        
-        .nav-remaining-distance {
             font-size: 14px;
             color: #fff;
-            min-width: 80px;
         }
         
-        .nav-action-buttons {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .nav-call-btn {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-        
-        .nav-call-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        .nav-order-count, .nav-eta, .nav-current-customer {
+            color: #00d4aa;
+            font-weight: 500;
         }
         
         .nav-details-btn {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            background: rgba(255,255,255,0.2);
             border: none;
-            border-radius: 50%;
+            color: #00d4aa;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .nav-details-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* 第二排：操作按鈕列 */
+        .nav-action-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .nav-call-btn, .nav-photo-btn, .nav-problem-btn, .nav-complete-btn {
+            flex: 1;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
             color: white;
-            font-size: 18px;
+            font-size: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            font-weight: 500;
         }
         
-        .nav-details-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        .nav-call-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
+        
+        .nav-photo-btn {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+        
+        .nav-problem-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        }
+        
+        .nav-complete-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .nav-call-btn:hover, .nav-photo-btn:hover, 
+        .nav-problem-btn:hover, .nav-complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* 舊樣式已整合到上方 */
         
         /* 批次訂單按鈕 - 右上角 */
         .nav-batch-orders-btn {
@@ -2044,16 +2075,23 @@
                 <button class="nav-gps-button" onclick="getCurrentLocationForNav()">📍</button>
             </div>
             
-            <!-- 底部狀態列 - 簡化版本 -->
+            <!-- 底部狀態列 - 85%/15%設計 -->
             <div class="nav-bottom-status-bar">
                 <div class="nav-status-content">
-                    <div class="nav-delivery-info">
-                        <div class="nav-customer-name" id="nav-current-customer">準備配送</div>
-                        <div class="nav-remaining-distance" id="nav-remaining-distance">等待定位...</div>
+                    <!-- 第一排：訂單資訊 -->
+                    <div class="nav-info-row">
+                        <div class="nav-order-count">📦 <span id="nav-order-count">0</span>筆訂單</div>
+                        <div class="nav-eta">⏰ <span id="nav-eta">計算中</span></div>
+                        <div class="nav-current-customer">👤 <span id="nav-customer-display">準備配送</span></div>
+                        <button class="nav-details-btn" onclick="showNavOrderDetails()" title="查看訂單詳情">詳情➤</button>
                     </div>
-                    <div class="nav-action-buttons">
-                        <button class="nav-call-btn" onclick="makeCall()" title="撥打客戶電話">📱</button>
-                        <button class="nav-details-btn" onclick="showOrderDetails()" title="查看訂單詳情">➤</button>
+                    
+                    <!-- 第二排：操作按鈕 -->
+                    <div class="nav-action-row">
+                        <button class="nav-call-btn" onclick="callCurrentCustomer()" title="聯絡客戶">📞 聯絡客戶</button>
+                        <button class="nav-photo-btn" onclick="takeDeliveryPhoto()" title="拍照送達">📷 拍照送達</button>
+                        <button class="nav-problem-btn" onclick="reportProblem()" title="問題回報">🚨 問題回報</button>
+                        <button class="nav-complete-btn" onclick="completeCurrentDelivery()" title="完成配送">✅完成配送</button>
                     </div>
                 </div>
             </div>
@@ -2181,10 +2219,18 @@
         </div>
     </div>
 
-    <!-- 購物車按鈕 -->
+    <!-- 底部橫條購物車 -->
     <button class="shopping-cart-btn" id="shopping-cart-btn" onclick="toggleShoppingCart()">
-        🛒
-        <span class="cart-badge" id="cart-badge">0</span>
+        <div class="cart-left-info">
+            <span class="cart-icon">🛒</span>
+            <span>已選訂單</span>
+            <span class="cart-count" id="cart-count">0</span>
+        </div>
+        <div class="cart-right-action">
+            <span class="cart-total" id="cart-total">NT$0</span>
+            <span>確認接單</span>
+            <span class="cart-action-icon">▶</span>
+        </div>
     </button>
     
     <!-- 購物車面板 -->
@@ -2303,6 +2349,10 @@
                     showNotification('訂單順序已更新', 'success');
                 }
             });
+            
+            // 初始化購物車按鈕狀態
+            updateCartDisplay();
+            updateCartActionButton();
         }
 
         // ========== 新的訂單鎖定系統功能 ==========
@@ -2666,6 +2716,9 @@
                                                     🛒 ${itemCount} 項商品 | 
                                                     💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
                                                 </div>
+                                                <div class="order-amount" style="margin-top: 5px; font-weight: 600; color: #e74c3c;">
+                                                    💰 NT$ ${order.total_amount || 0}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2764,6 +2817,7 @@
             setTimeout(() => {
                 updateConfirmButton();
                 updateShoppingCart();
+                updateCartDisplay(); // 更新底部購物車橫條
             }, 0);
         }
         
@@ -3145,6 +3199,9 @@
                                         🛒 ${order.items ? order.items.length : 1} 項商品 | 
                                         💳 ${getPaymentMethodDisplay(order.payment_method, order.total_amount)}
                                     </div>
+                                    <div class="order-amount" style="margin-top: 5px; font-weight: 600; color: #e74c3c;">
+                                        💰 NT$ ${order.total_amount || 0}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3252,7 +3309,7 @@
                     break;
                 case 'locked':
                     btn.className = 'cart-action-btn optimize';
-                    btn.innerHTML = '🧭 優化路線';
+                    btn.innerHTML = '🧭 優化配送路線';
                     btn.onclick = handleCartAction;
                     btn.disabled = false;
                     break;
@@ -3285,26 +3342,22 @@
                 return;
             }
             
+            // 前端示範模式：直接鎖定訂單
             try {
-                const response = await fetch('/api/driver/lock-orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        orderIds: selectedOrders
-                    })
+                // 標記訂單為鎖定狀態
+                selectedOrders.forEach(orderId => {
+                    const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+                    if (orderCard) {
+                        orderCard.classList.add('locked');
+                    }
                 });
                 
-                const result = await response.json();
+                lockedOrders = [...selectedOrders];
+                cartState = 'locked';
+                updateCartActionButton();
+                startLockTimer();
+                showNotification(`🔒 成功鎖定 ${lockedOrders.length} 筆訂單（30秒保護時間）`, 'success');
                 
-                if (result.success) {
-                    lockedOrders = [...selectedOrders];
-                    cartState = 'locked';
-                    updateCartActionButton();
-                    startLockTimer();
-                    showNotification(`🔒 成功鎖定 ${lockedOrders.length} 筆訂單，請在30秒內完成操作`, 'success');
-                }
             } catch (error) {
                 console.error('鎖定訂單失敗:', error);
                 showNotification('鎖定訂單失敗，請重試', 'error');
@@ -3317,35 +3370,51 @@
                 return;
             }
             
-            showNotification('🧭 正在優化路線...', 'info');
+            showNotification('🧭 正在優化配送路線...', 'info');
             
             try {
-                const response = await fetch('/api/driver/optimize-route', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        orderIds: lockedOrders
-                    })
+                // 前端示範模式：模擬路線優化
+                await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬API調用時間
+                
+                // 收集地址資訊
+                const addresses = [];
+                lockedOrders.forEach(orderId => {
+                    const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+                    if (orderCard) {
+                        const address = orderCard.querySelector('.order-address')?.textContent?.replace('📍 ', '') || '未知地址';
+                        addresses.push(address);
+                    }
                 });
                 
-                const result = await response.json();
+                cartState = 'optimized';
+                updateCartActionButton();
                 
-                if (result.success) {
-                    cartState = 'optimized';
-                    updateCartActionButton();
-                    
-                    // 停止鎖定計時器
-                    if (lockTimer) {
-                        clearInterval(lockTimer);
-                        lockTimer = null;
-                    }
-                    
-                    showNotification(`✅ 路線優化完成！預計節省 ${result.timeSaved || 10} 分鐘`, 'success');
-                    
-                    // 訂單已優化，準備開始配送
+                // 停止鎖定計時器
+                if (lockTimer) {
+                    clearInterval(lockTimer);
+                    lockTimer = null;
                 }
+                
+                // 更新購物車面板顯示路線資訊
+                const cartBody = document.getElementById('cart-panel-body');
+                if (cartBody) {
+                    cartBody.innerHTML = `
+                        <div style="padding: 15px;">
+                            <h4 style="margin: 0 0 15px 0; color: #2c3e50;">🧭 配送路線優化結果</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db;">
+                                ${addresses.map((addr, i) => `<div style="margin: 8px 0; display: flex; align-items: center;"><span style="background: #3498db; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 10px;">${i+1}</span>${addr}</div>`).join('')}
+                            </div>
+                            <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                                <div>📊 預估總時間：35分鐘</div>
+                                <div>📏 預估距離：8.3公里</div>
+                                <div>⚡ 節省時間：12分鐘</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                showNotification(`✅ 路線優化完成！預計節省 12 分鐘`, 'success');
+                
             } catch (error) {
                 console.error('優化路線失敗:', error);
                 showNotification('優化路線失敗，請重試', 'error');
@@ -3877,6 +3946,7 @@
             
             initNavigationMap();
             loadNavigationOrders();
+            updateNavigationStatus();
             getCurrentLocationForNav();
         }
         
@@ -3982,6 +4052,44 @@
             // 如果有當前訂單，顯示路線
             if (currentOrder) {
                 showDeliveryRoute(currentOrder.delivery_address);
+            }
+        }
+        
+        // 更新導航模式狀態列
+        function updateNavigationStatus() {
+            const orderCountEl = document.getElementById('nav-order-count');
+            const etaEl = document.getElementById('nav-eta');
+            const customerDisplayEl = document.getElementById('nav-customer-display');
+            
+            if (selectedOrders.length > 0) {
+                // 更新訂單數量
+                if (orderCountEl) {
+                    orderCountEl.textContent = selectedOrders.length;
+                }
+                
+                // 找到當前配送的訂單（第一個）
+                const currentOrderId = selectedOrders[0];
+                const currentOrderCard = document.querySelector(`[data-order-id="${currentOrderId}"]`);
+                
+                if (currentOrderCard) {
+                    // 獲取客戶名稱
+                    const customerName = currentOrderCard.querySelector('.order-customer')?.textContent?.split('👤')[1]?.split('|')[0]?.trim() || '未知客戶';
+                    if (customerDisplayEl) {
+                        customerDisplayEl.textContent = customerName;
+                    }
+                    
+                    // 設定預計送達時間
+                    const now = new Date();
+                    const eta = new Date(now.getTime() + 25 * 60000); // 25分鐘後
+                    if (etaEl) {
+                        etaEl.textContent = eta.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                    }
+                }
+            } else {
+                // 沒有選擇訂單時的預設狀態
+                if (orderCountEl) orderCountEl.textContent = '0';
+                if (etaEl) etaEl.textContent = '計算中';
+                if (customerDisplayEl) customerDisplayEl.textContent = '準備配送';
             }
         }
         
@@ -4185,6 +4293,58 @@
             
             // 載入商品清單
             loadProductList(currentOrder);
+            
+            // 顯示彈窗
+            const modal = document.getElementById('order-details-modal');
+            modal.classList.add('show');
+        }
+        
+        // 顯示導航模式訂單詳情
+        function showNavOrderDetails() {
+            if (selectedOrders.length === 0) {
+                showNotification('沒有選擇任何訂單', 'warning');
+                return;
+            }
+            
+            // 取得當前配送的訂單（第一個）
+            const currentOrderId = selectedOrders[0];
+            const currentOrderCard = document.querySelector(`[data-order-id="${currentOrderId}"]`);
+            
+            if (!currentOrderCard) {
+                showNotification('找不到訂單詳情', 'error');
+                return;
+            }
+            
+            // 解析訂單資訊
+            const orderNumber = currentOrderCard.querySelector('.order-number')?.textContent || `#${currentOrderId}`;
+            const customerInfo = currentOrderCard.querySelector('.order-customer')?.textContent || '';
+            const address = currentOrderCard.querySelector('.order-address')?.textContent?.replace('📍 ', '') || '';
+            const amount = currentOrderCard.querySelector('.order-amount')?.textContent?.replace('💰 ', '') || '';
+            
+            // 解析客戶姓名和電話
+            const customerParts = customerInfo.split('|');
+            const customerName = customerParts[0]?.replace('👤 ', '').trim() || '未知客戶';
+            const customerPhone = customerParts[1]?.replace('📞 ', '').trim() || '無電話';
+            
+            // 更新彈窗內容
+            document.getElementById('order-customer-name').textContent = customerName;
+            document.getElementById('order-id').textContent = `訂單編號: ${orderNumber}`;
+            document.getElementById('order-address').textContent = address;
+            document.getElementById('order-phone').textContent = customerPhone;
+            document.getElementById('order-time').textContent = new Date().toLocaleString('zh-TW');
+            document.getElementById('order-payment').textContent = '現金付款'; // 預設值
+            
+            // 更新訂單金額資訊
+            const orderTotalEl = document.getElementById('order-total');
+            if (orderTotalEl) {
+                orderTotalEl.textContent = amount;
+            }
+            
+            // 載入備註資訊（如果有的話）
+            const orderNotesEl = document.getElementById('order-notes');
+            if (orderNotesEl) {
+                orderNotesEl.textContent = '請按電鈴，有管理員代收'; // 示範備註
+            }
             
             // 顯示彈窗
             const modal = document.getElementById('order-details-modal');
@@ -4481,7 +4641,7 @@
         
         // 全域變數
         let selectedOrders = [];
-        let cartState = 'lock'; // lock, optimize, start
+        // cartState 已在上方定義為 'selection'
         let isCartVisible = false;
         
         // 訂單選擇函數（完整版）
@@ -4524,14 +4684,35 @@
         // 更新購物車顯示
         function updateCartDisplay() {
             const cartBtn = document.getElementById('shopping-cart-btn');
-            const cartBadge = document.getElementById('cart-badge');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
             const cartBody = document.getElementById('cart-panel-body');
             
-            if (cartBadge) {
-                cartBadge.textContent = selectedOrders.length;
+            // 計算總金額
+            let totalAmount = 0;
+            selectedOrders.forEach(orderId => {
+                const orderCard = document.querySelector(`#order-${orderId}`)?.closest('.order-card');
+                if (orderCard) {
+                    const priceText = orderCard.querySelector('.order-amount')?.textContent;
+                    if (priceText) {
+                        const price = parseInt(priceText.replace(/[^\d]/g, ''));
+                        if (!isNaN(price)) {
+                            totalAmount += price;
+                        }
+                    }
+                }
+            });
+            
+            // 更新底部橫條顯示
+            if (cartCount) {
+                cartCount.textContent = selectedOrders.length;
             }
             
-            // 購物車按鈕永遠顯示，只更新數量
+            if (cartTotal) {
+                cartTotal.textContent = `NT$${totalAmount}`;
+            }
+            
+            // 購物車按鈕永遠顯示，只更新數量和金額
             if (cartBtn) {
                 cartBtn.style.display = 'flex';
             }
@@ -4620,88 +4801,7 @@
             }
         }
         
-        // 處理購物車動作
-        function handleCartAction() {
-            if (selectedOrders.length === 0) {
-                alert('請先選擇訂單！');
-                return;
-            }
-            
-            switch (cartState) {
-                case 'lock':
-                    lockOrders();
-                    break;
-                case 'optimize':
-                    optimizeRoute();
-                    break;
-                case 'start':
-                    startDelivery();
-                    break;
-            }
-        }
-        
-        // 鎖定訂單
-        function lockOrders() {
-            console.log('🔒 鎖定訂單:', selectedOrders);
-            alert(`已鎖定 ${selectedOrders.length} 筆訂單！\n鎖定時間：30秒`);
-            
-            // 標記訂單為鎖定狀態
-            selectedOrders.forEach(orderId => {
-                const orderCard = document.querySelector(`#order-${orderId}`)?.closest('.order-card');
-                if (orderCard) {
-                    orderCard.classList.add('locked');
-                }
-            });
-            
-            // 切換到下一階段
-            cartState = 'optimize';
-            updateCartActionButton();
-            
-            // 30秒後自動解鎖
-            setTimeout(() => {
-                selectedOrders.forEach(orderId => {
-                    const orderCard = document.querySelector(`#order-${orderId}`)?.closest('.order-card');
-                    if (orderCard) {
-                        orderCard.classList.remove('locked');
-                    }
-                });
-                console.log('🔓 訂單鎖定已過期');
-            }, 30000);
-        }
-        
-        // 路線優化
-        function optimizeRoute() {
-            console.log('🧭 優化路線:', selectedOrders);
-            
-            // 模擬路線優化
-            const addresses = [];
-            selectedOrders.forEach(orderId => {
-                const orderCard = document.querySelector(`#order-${orderId}`)?.closest('.order-card');
-                const address = orderCard?.querySelector('.order-address')?.textContent || '未知地址';
-                addresses.push(address);
-            });
-            
-            alert(`🧭 路線優化完成！\n\n配送順序：\n${addresses.map((addr, i) => `${i+1}. ${addr}`).join('\n')}\n\n預估總時間：45分鐘\n預估距離：12.5公里`);
-            
-            // 切換到下一階段
-            cartState = 'start';
-            updateCartActionButton();
-        }
-        
-        // 開始配送
-        function startDelivery() {
-            console.log('🚀 開始配送:', selectedOrders);
-            alert(`🚀 開始配送 ${selectedOrders.length} 筆訂單！\n\n系統將切換到導航模式`);
-            
-            // 可以在這裡切換到導航模式
-            // switchToNavigationMode();
-            
-            // 重置狀態
-            cartState = 'lock';
-            selectedOrders = [];
-            updateCartDisplay();
-            toggleShoppingCart();
-        }
+        // 重複的函數已移除，使用上方的 handleCartAction
         
         // 更新選擇數量（兼容原有函數）
         function updateSelectedCount() {
