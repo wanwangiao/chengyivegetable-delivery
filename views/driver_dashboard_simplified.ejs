@@ -605,7 +605,9 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             z-index: 1000;
             transition: all 0.3s ease;
-            display: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .shopping-cart-btn.show {
@@ -4529,8 +4531,9 @@
                 cartBadge.textContent = selectedOrders.length;
             }
             
+            // 購物車按鈕永遠顯示，只更新數量
             if (cartBtn) {
-                cartBtn.style.display = selectedOrders.length > 0 ? 'flex' : 'none';
+                cartBtn.style.display = 'flex';
             }
             
             // 更新購物車內容
