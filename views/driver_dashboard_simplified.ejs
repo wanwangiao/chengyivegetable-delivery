@@ -2185,18 +2185,133 @@
 
         // ========== 新的訂單鎖定系統功能 ==========
         
-        // 載入統一訂單池 - 修復版本
-        // 載入統一訂單池 - 緊急修復版本 (2025-09-02)
+        // 載入統一訂單池 - 最終修復版本 (基於緊急版本邏輯)
         async function loadUnifiedOrderPool() {
-            console.log('🔄 === 開始載入統一訂單池 (修復版) ===');
-            console.log('🕐 載入時間:', new Date().toLocaleTimeString());
+            console.log('🔄 開始載入訂單池（最終修復版）');
             
             const container = document.getElementById('unified-orders');
             if (!container) {
                 console.error('❌ 找不到 unified-orders 容器');
-                showNotification('系統錯誤：找不到訂單容器', 'error');
                 return;
             }
+            
+            // 顯示載入狀態
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>正在載入訂單...</div>';
+            
+            try {
+                console.log('📊 Step 1: 獲取訂單統計');
+                const countResponse = await fetch('/api/driver/order-counts');
+                
+                if (!countResponse.ok) {
+                    throw new Error(`HTTP ${countResponse.status}: ${countResponse.statusText}`);
+                }
+                
+                const countData = await countResponse.json();
+                console.log('✅ 訂單統計:', countData);
+                
+                if (!countData.success) {
+                    throw new Error('訂單統計API返回失敗');
+                }
+                
+                // 更新訂單總數
+                const totalCountElement = document.getElementById('total-available-count');
+                let totalCount = 0;
+                if (countData.counts) {
+                    totalCount = Object.values(countData.counts).reduce((a, b) => a + b, 0);
+                    if (totalCountElement) {
+                        totalCountElement.textContent = totalCount;
+                    }
+                }
+                
+                console.log(`📊 總訂單數: ${totalCount}`);
+                
+                // Step 2: 載入各地區訂單
+                const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
+                let allOrders = [];
+                const areaGroups = [];
+                
+                for (const area of areas) {
+                    console.log(`📍 載入 ${area} 訂單`);
+                    container.innerHTML = `<div class="loading"><div class="loading-spinner"></div>載入 ${area} 中...</div>`;
+                    
+                    try {
+                        const areaResponse = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                        
+                        if (areaResponse.ok) {
+                            const areaData = await areaResponse.json();
+                            console.log(`✅ ${area} 回應:`, areaData);
+                            
+                            if (areaData.success && areaData.orders && Array.isArray(areaData.orders)) {
+                                const ordersWithArea = areaData.orders.map(order => ({...order, area}));
+                                allOrders.push(...ordersWithArea);
+                                
+                                if (areaData.orders.length > 0) {
+                                    areaGroups.push({
+                                        area,
+                                        count: areaData.orders.length,
+                                        orders: ordersWithArea
+                                    });
+                                }
+                                
+                                console.log(`✅ ${area}: ${areaData.orders.length} 筆訂單`);
+                            } else {
+                                console.log(`⚠️ ${area}: 無訂單或格式錯誤`);
+                            }
+                        } else {
+                            console.log(`❌ ${area}: HTTP ${areaResponse.status}`);
+                        }
+                    } catch (areaError) {
+                        console.error(`❌ ${area} 錯誤:`, areaError);
+                    }
+                }
+                
+                // 保存到全域變數
+                window.allAvailableOrders = allOrders;
+                
+                console.log(`🎨 渲染 ${allOrders.length} 筆訂單, ${areaGroups.length} 個地區`);
+                
+                // Step 3: 渲染訂單
+                if (areaGroups.length > 0) {
+                    renderUnifiedOrderPool(areaGroups);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3>暫無可接訂單</h3>
+                            <p>目前沒有需要配送的訂單</p>
+                            <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
+                                🔄 重新載入
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                console.log('🎉 訂單載入完成');
+                
+            } catch (error) {
+                console.error('❌ 載入訂單失敗:', error);
+                
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <h3>載入失敗</h3>
+                        <p>錯誤: ${error.message}</p>
+                        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                            時間: ${new Date().toLocaleTimeString()}<br>
+                            請嘗試重新載入或聯絡技術支援
+                        </p>
+                        <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
+                            🔄 重新載入
+                        </button>
+                    </div>
+                `;
+                
+                // 顯示通知
+                if (typeof showNotification === 'function') {
+                    showNotification('載入訂單失敗: ' + error.message, 'error');
+                }
+            }
+        }
             
             // 顯示載入狀態並增加用戶反饋
             container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>正在連接伺服器</small></div>';
