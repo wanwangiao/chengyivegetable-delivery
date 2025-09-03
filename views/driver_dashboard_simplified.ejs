@@ -2189,15 +2189,18 @@
         // 載入統一訂單池 - 緊急修復版本 (2025-09-02)
         async function loadUnifiedOrderPool() {
             console.log('🔄 === 開始載入統一訂單池 (修復版) ===');
+            console.log('🕐 載入時間:', new Date().toLocaleTimeString());
             
             const container = document.getElementById('unified-orders');
             if (!container) {
                 console.error('❌ 找不到 unified-orders 容器');
+                showNotification('系統錯誤：找不到訂單容器', 'error');
                 return;
             }
             
-            // 顯示載入狀態
-            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...</div>';
+            // 顯示載入狀態並增加用戶反饋
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>正在連接伺服器</small></div>';
+            console.log('✅ 容器已找到，開始載入流程');
             
             try {
                 // 添加總體超時機制 - 30秒
@@ -2207,8 +2210,11 @@
                 
                 // Step 1: 載入訂單數量（5秒超時）
                 console.log('📊 Step 1: 載入訂單數量...');
+                container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>📊 檢查可用訂單數量</small></div>';
+                
                 const countsPromise = fetch('/api/driver/order-counts')
                     .then(response => {
+                        console.log('📡 訂單數量API回應狀態:', response.status);
                         if (!response.ok) {
                             throw new Error(`訂單數量API錯誤: ${response.status}`);
                         }
@@ -2230,6 +2236,8 @@
                 
                 // Step 2: 簡化地區訂單載入（避免Promise.allSettled）
                 console.log('📍 Step 2: 載入各地區訂單（簡化版）...');
+                container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>📍 正在載入各地區訂單</small></div>';
+                
                 const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
                 const areaGroups = [];
                 let totalCount = 0;
@@ -2239,6 +2247,8 @@
                 for (const area of areas) {
                     try {
                         console.log(`  🔍 載入 ${area}...`);
+                        // 實時更新載入狀態
+                        container.innerHTML = `<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>📍 正在載入 ${area}</small></div>`;
                         
                         // 單個地區5秒超時
                         const areaPromise = fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`)
@@ -2286,6 +2296,7 @@
                 // Step 3: 渲染結果
                 console.log('🎨 Step 3: 渲染結果...');
                 console.log(`📊 總計載入 ${totalCount} 筆訂單，${areaGroups.length} 個地區`);
+                container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入訂單中...<br><small>🎨 正在渲染訂單列表</small></div>';
                 
                 // 更新訂單總數
                 const totalCountElement = document.getElementById('total-available-count');
@@ -2297,19 +2308,25 @@
                 renderUnifiedOrderPool(areaGroups);
                 
                 console.log('🎉 === 訂單池載入完成 ===');
+                console.log('🕐 完成時間:', new Date().toLocaleTimeString());
                 
             } catch (error) {
                 console.error('❌ === 載入訂單池失敗 ===', error);
+                console.error('🕐 失敗時間:', new Date().toLocaleTimeString());
+                console.error('📱 用戶代理:', navigator.userAgent);
+                console.error('🌐 網路狀態:', navigator.onLine ? '已連線' : '離線');
                 
-                // 顯示錯誤狀態和重試按鈕
+                // 顯示詳細錯誤狀態和重試按鈕
                 if (container) {
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-icon">⚠️</div>
                             <h3>載入失敗</h3>
-                            <p>錯誤: ${error.message}</p>
+                            <p><strong>錯誤:</strong> ${error.message}</p>
+                            <p><strong>時間:</strong> ${new Date().toLocaleTimeString()}</p>
+                            <p><strong>網路:</strong> ${navigator.onLine ? '已連線' : '離線'}</p>
                             <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                                如果問題持續，請聯絡技術支援
+                                診斷提示：請檢查網路連線，或聯絡技術支援
                             </p>
                             <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
                                 🔄 重新載入
@@ -2318,149 +2335,8 @@
                     `;
                 }
                 
-                // 通知用戶
-                showNotification('載入訂單失敗: ' + error.message, 'error');
-            }
-        }
-            
-            // 顯示載入狀態
-            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div>載入全域訂單中...</div>';
-            
-            try {
-                // Step 1: 載入訂單數量
-                console.log('📊 Step 1: 載入訂單數量...');
-                const countsResponse = await fetch('/api/driver/order-counts');
-                
-                if (!countsResponse.ok) {
-                    throw new Error(`訂單數量API錯誤: ${countsResponse.status} ${countsResponse.statusText}`);
-                }
-                
-                const countsData = await countsResponse.json();
-                console.log('✅ 訂單數量回應:', countsData);
-                
-                if (!countsData.success) {
-                    throw new Error('訂單數量API回應失敗');
-                }
-                
-                // Step 2: 載入各地區訂單
-                console.log('📍 Step 2: 載入各地區訂單...');
-                const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
-                const areaGroups = [];
-                let totalCount = 0;
-                allAvailableOrders = []; // 重置全域訂單陣列
-                
-                // 使用 Promise.allSettled 確保所有請求都完成
-                const areaPromises = areas.map(async (area) => {
-                    try {
-                        console.log(`  🔍 載入 ${area}...`);
-                        
-                        // 先嘗試 GET 方式
-                        let response = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
-                        
-                        // 如果 GET 失敗，改用 POST 方式避免 URL 編碼問題
-                        if (!response.ok) {
-                            console.log(`  ⚠️ ${area} GET 請求失敗，嘗試 POST 方式...`);
-                            response = await fetch('/api/driver/area-orders-by-name', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ area: area })
-                            });
-                        }
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.success && data.orders && Array.isArray(data.orders)) {
-                                return {
-                                    area,
-                                    orders: data.orders,
-                                    success: true
-                                };
-                            } else {
-                                console.warn(`  ⚠️ ${area} 回應格式錯誤:`, data);
-                                return { area, orders: [], success: false };
-                            }
-                        } else {
-                            console.warn(`  ⚠️ ${area} HTTP錯誤: ${response.status}`);
-                            return { area, orders: [], success: false };
-                        }
-                    } catch (err) {
-                        console.error(`  ❌ ${area} 請求失敗:`, err);
-                        return { area, orders: [], success: false };
-                    }
-                });
-                
-                const areaResults = await Promise.allSettled(areaPromises);
-                
-                // Step 3: 處理結果
-                console.log('🔧 Step 3: 處理結果...');
-                for (const result of areaResults) {
-                    if (result.status === 'fulfilled' && result.value.success) {
-                        const { area, orders } = result.value;
-                        if (orders.length > 0) {
-                            totalCount += orders.length;
-                            
-                            // 為每個訂單添加地區標記
-                            const ordersWithArea = orders.map(order => ({
-                                ...order,
-                                area: area
-                            }));
-                            
-                            allAvailableOrders = allAvailableOrders.concat(ordersWithArea);
-                            
-                            areaGroups.push({
-                                area: area,
-                                count: orders.length,
-                                orders: orders
-                            });
-                            
-                            console.log(`  ✅ ${area}: ${orders.length} 筆訂單`);
-                        } else {
-                            console.log(`  📭 ${area}: 無訂單`);
-                        }
-                    } else {
-                        console.warn(`  ❌ ${result.reason || 'Promise失敗'}`);
-                    }
-                }
-                
-                // Step 4: 排序和更新UI
-                console.log('🎨 Step 4: 更新UI...');
-                areaGroups.sort((a, b) => b.count - a.count);
-                
-                // 安全更新總數量
-                const countElement = document.getElementById('total-available-count');
-                if (countElement) {
-                    countElement.textContent = totalCount;
-                } else {
-                    console.warn('⚠️ 找不到 total-available-count 元素');
-                }
-                
-                console.log(`📊 總計: ${totalCount} 筆訂單，${areaGroups.length} 個地區`);
-                
-                // Step 5: 渲染訂單池
-                console.log('🖼️ Step 5: 渲染訂單池...');
-                renderUnifiedOrderPool(areaGroups);
-                
-                console.log('✅ === 載入統一訂單池完成 ===');
-                
-            } catch (error) {
-                console.error('❌ 載入統一訂單池失敗:', error);
-                console.error('錯誤堆棧:', error.stack);
-                
-                // 確保容器存在再更新
-                if (container) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">❌</div>
-                            <h3>載入失敗</h3>
-                            <p>錯誤: ${error.message}</p>
-                            <button onclick="loadUnifiedOrderPool()" class="btn btn-primary" style="margin-top: 15px;">
-                                🔄 重新載入
-                            </button>
-                        </div>
-                    `;
-                }
+                // 通知用戶並顯示診斷信息
+                showNotification('載入訂單失敗: ' + error.message + ' (時間: ' + new Date().toLocaleTimeString() + ')', 'error');
             }
         }
         

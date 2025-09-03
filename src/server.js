@@ -880,6 +880,11 @@ app.get('/debug-mobile', (req, res) => {
   res.render('debug_mobile');
 });
 
+// 🚨 緊急修復頁面 - 直接可用的外送員系統
+app.get('/emergency-fix', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'emergency_fix.html'));
+});
+
 // 🛰️ 外送員GPS追蹤工作台 (重定向到簡化版)
 app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
   res.redirect('/driver/dashboard');

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>緊急修復測試 - 外送員系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-card { background: white; border-radius: 10px; padding: 20px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .success { border-left: 5px solid #28a745; }
+        .error { border-left: 5px solid #dc3545; }
+        .warning { border-left: 5px solid #ffc107; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚨 外送員系統緊急修復測試</h1>
+    
+    <div class="test-card success">
+        <h3>✅ 修復完成</h3>
+        <p><strong>問題根源：</strong>JavaScript語法錯誤 - 重複的函數定義造成衝突</p>
+        <p><strong>修復內容：</strong>移除了舊版本的重複代碼，保留優化後的新版本</p>
+        <p><strong>增強功能：</strong>添加實時載入狀態顯示和詳細錯誤診斷</p>
+    </div>
+
+    <div class="test-card warning">
+        <h3>🔧 測試建議</h3>
+        <p>請立即測試以下項目：</p>
+        <ul>
+            <li>✓ 檢查載入狀態是否正確顯示</li>
+            <li>✓ 確認API調用日誌輸出</li>
+            <li>✓ 驗證訂單數據是否正確載入</li>
+            <li>✓ 測試錯誤處理機制</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h3>🧪 API測試工具</h3>
+        <button onclick="testAPIs()">測試API連線</button>
+        <button onclick="testConsoleLog()">測試控制台輸出</button>
+        <button onclick="clearLog()">清除日誌</button>
+        
+        <div id="testLog" class="log" style="margin-top: 10px;">
+            準備開始測試...
+        </div>
+    </div>
+
+    <script>
+        const log = document.getElementById('testLog');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#333';
+            log.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '日誌已清除...';
+        }
+        
+        function testConsoleLog() {
+            addLog('🔄 測試控制台輸出功能...', 'info');
+            console.log('🔄 === 開始載入統一訂單池 (修復版) ===');
+            console.log('🕐 載入時間:', new Date().toLocaleTimeString());
+            addLog('✅ 控制台輸出正常，請檢查瀏覽器開發者工具', 'success');
+        }
+        
+        async function testAPIs() {
+            addLog('🧪 開始API連線測試...', 'info');
+            
+            try {
+                // 測試訂單數量API
+                addLog('📊 測試訂單數量API...', 'info');
+                const response1 = await fetch('/api/driver/order-counts');
+                if (response1.ok) {
+                    const data1 = await response1.json();
+                    addLog(`✅ 訂單數量API回應正常: ${JSON.stringify(data1)}`, 'success');
+                } else {
+                    addLog(`❌ 訂單數量API錯誤: ${response1.status}`, 'error');
+                }
+                
+                // 測試地區訂單API
+                const areas = ['三峽區', '樹林區'];
+                for (const area of areas) {
+                    addLog(`📍 測試 ${area} 訂單API...`, 'info');
+                    const response2 = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                    if (response2.ok) {
+                        const data2 = await response2.json();
+                        addLog(`✅ ${area} API回應正常: ${data2.orders ? data2.orders.length : 0} 筆訂單`, 'success');
+                    } else {
+                        addLog(`❌ ${area} API錯誤: ${response2.status}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                addLog(`❌ API測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // 頁面載入時自動執行初始測試
+        window.addEventListener('load', function() {
+            addLog('🚀 緊急修復測試頁面已載入', 'success');
+            addLog('📱 用戶代理: ' + navigator.userAgent.substring(0, 50) + '...', 'info');
+            addLog('🌐 網路狀態: ' + (navigator.onLine ? '已連線' : '離線'), navigator.onLine ? 'success' : 'error');
+        });
+    </script>
+</body>
+</html>

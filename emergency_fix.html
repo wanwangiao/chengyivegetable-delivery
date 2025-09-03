@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>緊急修復 - 外送員系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .order-card { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .loading { text-align: center; padding: 20px; }
+        .error { color: red; padding: 10px; background: #ffebee; border-radius: 5px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚛 外送員系統 - 緊急版本</h1>
+        
+        <div id="status">載入中...</div>
+        
+        <button onclick="loadOrders()">🔄 載入訂單</button>
+        <button onclick="testAPI()">🧪 測試API</button>
+        
+        <div id="orders-container"></div>
+        
+        <div id="debug-info" style="background: #f0f0f0; padding: 10px; margin-top: 20px; font-family: monospace; font-size: 12px;"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const debugInfo = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.innerHTML += `[${timestamp}] ${message}<br>`;
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = message;
+            status.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            log(`STATUS: ${message}`);
+        }
+
+        async function testAPI() {
+            updateStatus('測試API中...');
+            
+            try {
+                // 測試訂單統計
+                log('測試: GET /api/driver/order-counts');
+                const countResponse = await fetch('/api/driver/order-counts');
+                const countData = await countResponse.json();
+                log(`回應: ${JSON.stringify(countData)}`);
+                
+                if (countData.success) {
+                    updateStatus('✅ API測試成功', 'success');
+                    
+                    // 測試地區訂單
+                    log('測試: GET /api/driver/area-orders/三峽區');
+                    const areaResponse = await fetch('/api/driver/area-orders/' + encodeURIComponent('三峽區'));
+                    const areaData = await areaResponse.json();
+                    log(`回應: ${JSON.stringify(areaData)}`);
+                    
+                    if (areaData.success) {
+                        log('✅ 所有API都正常');
+                    }
+                } else {
+                    updateStatus('❌ API測試失敗', 'error');
+                }
+            } catch (error) {
+                updateStatus(`❌ API錯誤: ${error.message}`, 'error');
+                log(`ERROR: ${error.message}`);
+            }
+        }
+
+        async function loadOrders() {
+            const container = document.getElementById('orders-container');
+            updateStatus('載入訂單中...');
+            
+            try {
+                log('開始載入訂單...');
+                
+                // 步驟1: 獲取訂單統計
+                log('Step 1: 獲取訂單統計');
+                const countResponse = await fetch('/api/driver/order-counts');
+                
+                if (!countResponse.ok) {
+                    throw new Error(`HTTP ${countResponse.status}: ${countResponse.statusText}`);
+                }
+                
+                const countData = await countResponse.json();
+                log(`訂單統計: ${JSON.stringify(countData)}`);
+                
+                if (!countData.success) {
+                    throw new Error('訂單統計API返回失敗');
+                }
+                
+                // 步驟2: 載入各地區訂單
+                const areas = ['三峽區', '樹林區', '鶯歌區', '土城區', '北大特區'];
+                let allOrders = [];
+                
+                for (const area of areas) {
+                    log(`Step 2: 載入 ${area} 訂單`);
+                    updateStatus(`載入 ${area} 中...`);
+                    
+                    try {
+                        const areaResponse = await fetch(`/api/driver/area-orders/${encodeURIComponent(area)}`);
+                        
+                        if (areaResponse.ok) {
+                            const areaData = await areaResponse.json();
+                            log(`${area} 回應: ${JSON.stringify(areaData)}`);
+                            
+                            if (areaData.success && areaData.orders) {
+                                allOrders.push(...areaData.orders.map(order => ({...order, area})));
+                                log(`✅ ${area}: ${areaData.orders.length} 筆訂單`);
+                            } else {
+                                log(`⚠️ ${area}: 無訂單或格式錯誤`);
+                            }
+                        } else {
+                            log(`❌ ${area}: HTTP ${areaResponse.status}`);
+                        }
+                    } catch (areaError) {
+                        log(`❌ ${area} 錯誤: ${areaError.message}`);
+                    }
+                }
+                
+                // 步驟3: 顯示訂單
+                log(`Step 3: 顯示 ${allOrders.length} 筆訂單`);
+                
+                if (allOrders.length > 0) {
+                    let html = `<h3>📦 找到 ${allOrders.length} 筆訂單</h3>`;
+                    
+                    allOrders.forEach(order => {
+                        html += `
+                            <div class="order-card">
+                                <strong>🏷️ 訂單 #${order.id}</strong><br>
+                                📍 地區: ${order.area || '未知'}<br>
+                                👤 客戶: ${order.customer_name || '未提供'}<br>
+                                📞 電話: ${order.customer_phone || '未提供'}<br>
+                                📍 地址: ${order.address || '未提供'}<br>
+                                💰 金額: NT$ ${order.total_amount || 0}<br>
+                                💳 付款: ${order.payment_method || '現金'}
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                    updateStatus(`✅ 成功載入 ${allOrders.length} 筆訂單`, 'success');
+                } else {
+                    container.innerHTML = '<div class="error">❌ 沒有找到任何訂單</div>';
+                    updateStatus('⚠️ 沒有可用訂單', 'error');
+                }
+                
+            } catch (error) {
+                log(`FATAL ERROR: ${error.message}`);
+                container.innerHTML = `<div class="error">❌ 載入失敗: ${error.message}</div>`;
+                updateStatus(`❌ 載入失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 頁面載入完成後自動測試
+        window.addEventListener('load', function() {
+            log('頁面載入完成');
+            log(`User Agent: ${navigator.userAgent}`);
+            log(`URL: ${window.location.href}`);
+            
+            // 2秒後自動載入訂單
+            setTimeout(() => {
+                log('自動開始載入訂單...');
+                loadOrders();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
