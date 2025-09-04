@@ -317,14 +317,14 @@ createDatabasePool().then(async () => {
 
 // 設定 view engine 與靜態檔案
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, '../views'));
+app.set('views', path.join(__dirname, '../../views'));
 // 設置 EJS 模板的 UTF-8 編碼
 app.set('view options', { 
   rmWhitespace: true,
   charset: 'utf-8'
 });
 // 靜態資源快取策略 - 性能優化
-app.use('/css', express.static(path.join(__dirname, '../public/css'), {
+app.use('/css', express.static(path.join(__dirname, '../../public/css'), {
   maxAge: '7d', // CSS文件快取7天
   etag: true,
   lastModified: true,
@@ -333,7 +333,7 @@ app.use('/css', express.static(path.join(__dirname, '../public/css'), {
   }
 }));
 
-app.use('/js', express.static(path.join(__dirname, '../public/js'), {
+app.use('/js', express.static(path.join(__dirname, '../../public/js'), {
   maxAge: '7d', // JS文件快取7天
   etag: true,
   lastModified: true,
@@ -342,7 +342,7 @@ app.use('/js', express.static(path.join(__dirname, '../public/js'), {
   }
 }));
 
-app.use('/images', express.static(path.join(__dirname, '../public/images'), {
+app.use('/images', express.static(path.join(__dirname, '../../public/images'), {
   maxAge: '30d', // 圖片快取30天
   etag: true,
   lastModified: true,
@@ -352,7 +352,7 @@ app.use('/images', express.static(path.join(__dirname, '../public/images'), {
 }));
 
 // 其他靜態資源
-app.use(express.static(path.join(__dirname, '../public'), {
+app.use(express.static(path.join(__dirname, '../../public'), {
   maxAge: '1d', // 其他文件快取1天
   etag: true,
   lastModified: true
@@ -816,13 +816,11 @@ async function fetchProducts() {
 }
 
 // 前台：首頁，列出商品
-// 簡單測試路由
+// 測試端點 - 無需認證
 app.get('/test', (req, res) => {
-  res.json({ 
-    message: '蔬果外送系統測試成功！', 
-    timestamp: new Date().toISOString(),
-    session: !!req.session,
-    demoMode: demoMode
+  res.json({
+    message: 'SYSTEM_WORKING',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -860,27 +858,13 @@ function getProductEmoji(productName) {
   return '🥬'; // 預設蔬菜表情符號
 }
 
-// 診斷頁面 - 無需認證
+// 健康檢查端點 - 無需認證
 app.get('/health', (req, res) => {
   res.json({
-    status: 'ok',
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    version: 'NEW_VERSION_2025_09_04',
-    server: 'src/server.js',
-    env: {
-      NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'missing',
-      demoMode: demoMode,
-      poolStatus: pool ? 'connected' : 'not connected'
-    }
-  });
-});
-
-// 簡單測試端點
-app.get('/test', (req, res) => {
-  res.json({
-    message: 'NEW_VERSION_WORKING',
-    timestamp: new Date().toISOString()
+    message: 'FIXED_VERSION_WORKING',
+    server: 'src/server.js'
   });
 });
 
@@ -3813,15 +3797,6 @@ app.post('/api/line/webhook', (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
-});
-
-// 健康檢查端點 (必須在 404 處理器之前)
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'vegdelivery-system'
-  });
 });
 
 // API錯誤處理 (先處理API錯誤)
