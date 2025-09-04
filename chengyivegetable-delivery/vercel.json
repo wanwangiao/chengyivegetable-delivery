@@ -2,16 +2,21 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.js",
+      "src": "src/server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.js"
+      "dest": "src/server.js"
     }
   ],
+  "functions": {
+    "src/server.js": {
+      "includeFiles": "views/**"
+    }
+  },
   "env": {
     "DATABASE_URL": "postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require",
     "NODE_ENV": "production",
