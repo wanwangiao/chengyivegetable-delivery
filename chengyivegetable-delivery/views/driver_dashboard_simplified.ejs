@@ -1876,6 +1876,56 @@
             transition: transform 0.3s ease;
         }
         
+        /* 外送員頭部樣式 */
+        .driver-header {
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 0.5rem 1rem; /* 縮小內邊距 */
+            height: 10vh; /* 設定高度為螢幕的10% */
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .driver-info h1 {
+            font-size: 1.2rem; /* 縮小字體 */
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .driver-info p {
+            font-size: 0.8rem; /* 縮小字體 */
+            margin: 0;
+            color: #6c757d;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .record-query-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.4rem 0.8rem; /* 縮小按鈕 */
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
         /* iOS安全區域適配 */
         @supports (padding: env(safe-area-inset-top)) {
             .simplified-dashboard {
@@ -4639,16 +4689,17 @@
         
         
         
-        // 全域變數
-        let selectedOrders = [];
+        // 全域變數 (selectedOrders 已在上方定義)
         // cartState 已在上方定義為 'selection'
         let isCartVisible = false;
         
         // 訂單選擇函數（完整版）
         function selectOrder(orderId) {
+            console.log('選擇訂單:', orderId);
             const checkbox = document.getElementById('order-' + orderId);
             if (checkbox) {
                 checkbox.checked = !checkbox.checked;
+                console.log('Checkbox狀態:', checkbox.checked);
                 
                 const orderCard = checkbox.closest('.order-card');
                 if (checkbox.checked) {
@@ -4659,8 +4710,10 @@
                     removeFromCart(orderId);
                 }
                 
+                console.log('目前選中訂單:', selectedOrders);
                 updateSelectedCount();
                 updateCartDisplay();
+                updateConfirmButton(); // 確保更新確認按鈕狀態
             }
         }
         
