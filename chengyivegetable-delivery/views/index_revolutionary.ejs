@@ -92,10 +92,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: var(--space-md) var(--space-lg);
+      padding: var(--space-sm) var(--space-lg);
       max-width: 430px;
       margin: 0 auto;
       position: relative;
+      height: 10vh; /* 設置為螢幕高度的10% */
     }
     
     .brand-section {
@@ -105,7 +106,7 @@
     }
     
     .brand-logo {
-      font-size: 1.8rem;
+      font-size: 1.4rem;
       font-weight: 800;
       background: var(--accent-gradient);
       -webkit-background-clip: text;
@@ -116,7 +117,7 @@
     }
     
     .brand-tagline {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       font-weight: 500;
       color: rgba(45, 90, 61, 0.7);
       letter-spacing: 0.02em;
@@ -175,7 +176,7 @@
        ================================================= */
     .smart-search-container {
       position: fixed;
-      top: 80px;
+      top: 10vh;
       left: 0;
       right: 0;
       z-index: 999;
@@ -335,7 +336,7 @@
        🃏 3D 商品卡片 - 視差效果
        ================================================= */
     .products-universe {
-      padding-top: 200px;
+      padding-top: calc(10vh + 120px);
       padding-bottom: 120px;
       min-height: 100vh;
       position: relative;
@@ -1084,6 +1085,9 @@
       currentProduct = products.find(p => p.id === productId);
       if (!currentProduct) return;
       
+      // 重置數量
+      currentQuantity = 1;
+      
       const modal = document.getElementById('product-experience');
       const title = document.getElementById('experience-title');
       const content = document.getElementById('experience-content');
@@ -1140,6 +1144,14 @@
           </button>
         </div>
       `;
+      
+      // 確保數量顯示是正確的
+      setTimeout(() => {
+        const quantityElement = document.getElementById('quantity-universe');
+        if (quantityElement) {
+          quantityElement.textContent = currentQuantity;
+        }
+      }, 100);
       
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
