@@ -13,6 +13,21 @@ let db = null;
 let demoMode = true;
 let lineBotService = null;
 
+// 外送員認證中間件（輕量版，適用於API）
+function ensureDriverApiAuth(req, res, next) {
+  // 在示範模式下跳過認證檢查
+  if (demoMode) {
+    return next();
+  }
+  
+  // 檢查Session和外送員ID
+  if (!req.session || !req.session.driverId) {
+    return res.status(401).json({ success: false, message: '請先登入' });
+  }
+  
+  return next();
+}
+
 // 設置資料庫連接的函數
 function setDatabasePool(pool, isDemo = true) {
     db = pool;

@@ -4728,7 +4728,7 @@ if (process.env.VERCEL) {
   }
 } else {
   // 本地開發環境：啟動伺服器
-  const server = app.listen(port, () => {
+  const server = app.listen(process.env.PORT || port, () => {
     console.log(`🚀 chengyivegetable 系統正在監聽埠號 ${port}`);
     console.log(`📱 前台網址: http://localhost:${port}`);
     console.log(`⚙️  管理後台: http://localhost:${port}/admin`);

@@ -8,7 +8,7 @@ const express = require('express'),
       cors = require('cors'),
       dns = require('dns');
 
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 dns.setDefaultResultOrder('ipv4first');
 process.env.FORCE_IPV4 = '1';
@@ -69,26 +69,52 @@ async function createDatabasePool() {
   // 方法1: 優先使用環境變數（正確方式）
   if (process.env.DATABASE_URL) {
     console.log('方法1: 使用環境變數 DATABASE_URL...');
+    console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 50) + '...' : '未設定');
+    
     try {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 60000,
+        ssl: { 
+          rejectUnauthorized: false,
+          checkServerIdentity: () => undefined // 跳過伺服器身份驗證
+        },
+        connectionTimeoutMillis: 30000,  // 減少超時時間
         idleTimeoutMillis: 30000,
-        max: 5,
+        max: 3,  // 減少連接池大小
+        min: 1,  // 保持最少連接
+        acquireTimeoutMillis: 20000,
         family: 4,  // 強制使用IPv4，解決家庭網路不支援IPv6問題
         // 確保資料庫連線使用 UTF-8 編碼
         options: '--client_encoding=UTF8'
       });
       
-      const testResult = await pool.query('SELECT NOW() as current_time');
-      console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
+      // 測試連接
+      console.log('🔄 測試數據庫連接...');
+      const client = await pool.connect();
+      const testResult = await client.query('SELECT NOW() as current_time, version() as db_version');
+      client.release();
+      
+      console.log('✅ 環境變數連線成功!');
+      console.log('📅 數據庫時間:', testResult.rows[0].current_time);
+      console.log('🗄️ 數據庫版本:', testResult.rows[0].db_version.substring(0, 50));
       demoMode = false;
       return pool;
       
     } catch (error1) {
-      console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
-      errors.push({ method: '環境變數', error: error1.message });
+      console.log('❌ 環境變數連線失敗');
+      console.log('🔍 錯誤代碼:', error1.code || 'NO_CODE');
+      console.log('🔍 錯誤訊息:', error1.message || 'NO_MESSAGE');
+      console.log('🔍 錯誤堆疊:', error1.stack ? error1.stack.substring(0, 200) : 'NO_STACK');
+      errors.push({ method: '環境變數', error: `${error1.code}: ${error1.message}` });
+      
+      // 關閉失敗的連接池
+      if (pool) {
+        try {
+          await pool.end();
+        } catch (closeError) {
+          console.log('⚠️ 關閉連接池失敗:', closeError.message);
+        }
+      }
     }
   } else {
     console.log('⚠️ DATABASE_URL 環境變數未設定');
@@ -98,7 +124,10 @@ async function createDatabasePool() {
   // 方法2: 直接IP地址連線（專家建議）
   console.log('方法2: 使用直接IP地址連線...');
   try {
-    const directIP = SUPABASE_IPv4_MAPPING['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
+    const directIP = SUPABASE_IPv4_MAP['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
+    if (!directIP) {
+      throw new Error('IPv4 映射地址未定義');
+    }
     console.log(`🔗 嘗試直接連線到 IP: ${directIP}`);
     
     pool = new Pool({
@@ -106,15 +135,17 @@ async function createDatabasePool() {
       port: 5432,
       database: 'postgres',
       user: 'postgres',
-      password: 'Chengyivegetable2025!',
+      password: 'Chengyi2025!Fresh',
       ssl: { 
         rejectUnauthorized: false,
         // 因為使用IP而非域名，需要指定servername
         servername: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co'
       },
-      connectionTimeoutMillis: 30000,
+      connectionTimeoutMillis: 25000,
       idleTimeoutMillis: 30000,
-      max: 5,
+      max: 3,
+      min: 1,
+      acquireTimeoutMillis: 15000,
       family: 4  // 強制IPv4
     });
     
@@ -180,7 +211,7 @@ let deliveryEstimationService = null;
       port: 5432,
       database: 'postgres',
       user: 'postgres',
-      password: 'Chengyivegetable2025!',
+      password: 'Chengyi2025!Fresh',
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 60000,
       idleTimeoutMillis: 30000,
@@ -403,16 +434,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session配置 - 優化版本
+// Session配置 - 修復版本，解決認證過度限制問題
 app.use(session({
   secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   rolling: true, // Rolling session - 每次請求重新設定過期時間
   cookie: {
-    secure: false, // 暫時停用 secure 以解決 Vercel 相容性問題
+    secure: process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true', // 只在明確需要HTTPS時啟用
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7天有效期
+    maxAge: 24 * 60 * 60 * 1000, // 改為24小時有效期，避免過長導致問題
     sameSite: 'lax' // 使用 lax 以提升相容性
   },
   // Session存儲配置
@@ -424,22 +455,29 @@ app.use(session({
   }
 }));
 
-// Session健康檢查和錯誤處理中間件
+// Session健康檢查和錯誤處理中間件（輕量版）
 app.use((req, res, next) => {
-  // 檢查Session是否正常運作
-  if (!req.session) {
-    console.warn('⚠️ Session未初始化，重新創建...');
-    req.session = {};
-  }
-  
-  // Session活動追蹤（用於debug）
-  if (req.session && (req.session.adminPassword || req.session.driverId)) {
-    req.session.lastActivity = new Date();
-    
-    // Debug log (只在開發環境)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`🔐 Session活動: ${req.session.adminPassword ? 'Admin' : 'Driver'} - ${req.path}`);
+  // 輕量級Session檢查，避免過度干擾
+  try {
+    if (!req.session) {
+      // 只在真的沒有Session時警告，並且不強制重新創建
+      if (req.path.startsWith('/api/') || req.path.startsWith('/admin') || req.path.startsWith('/driver')) {
+        console.warn('⚠️ Session未初始化於關鍵路徑:', req.path);
+      }
     }
+    
+    // 只對已登入用戶更新活動時間
+    if (req.session && (req.session.isAdmin || req.session.driverId)) {
+      req.session.lastActivity = new Date();
+      
+      // 減少debug日誌量，只記錄重要操作
+      if (process.env.NODE_ENV !== 'production' && (req.method !== 'GET' || req.path.includes('login') || req.path.includes('logout'))) {
+        console.log(`🔐 Session活動: ${req.session.isAdmin ? 'Admin' : 'Driver'} - ${req.method} ${req.path}`);
+      }
+    }
+  } catch (sessionError) {
+    // Session錯誤不應該阻止請求繼續
+    console.error('Session處理錯誤:', sessionError);
   }
   
   next();
@@ -803,6 +841,18 @@ app.get('/test', (req, res) => {
   });
 });
 
+// 認證測試端點
+app.get('/api/test/auth', (req, res) => {
+  res.json({
+    message: '無認證限制端點測試成功',
+    timestamp: new Date().toISOString(),
+    hasSession: !!req.session,
+    isAuthenticated: !!(req.session && (req.session.isAdmin || req.session.driverId)),
+    userType: req.session && req.session.isAdmin ? 'admin' : 
+              req.session && req.session.driverId ? 'driver' : 'guest'
+  });
+});
+
 // 🎨 產品表情符號映射函數
 function getProductEmoji(productName) {
   const emojiMap = {
@@ -932,7 +982,7 @@ app.get('/driver/dashboard-gps', ensureDriverPage, (req, res) => {
 });
 
 // 🚛 外送員API - 可接訂單 (添加快取優化)
-app.get('/api/driver/available-orders', apiCacheMiddleware(15000), async (req, res) => { // 15秒快取
+app.get('/api/driver/available-orders', ensureDriver, apiCacheMiddleware(15000), async (req, res) => { // 15秒快取
   try {
     let orders = [];
     
@@ -1007,12 +1057,9 @@ app.get('/api/driver/available-orders', apiCacheMiddleware(15000), async (req, r
 });
 
 // 🚛 外送員API - 我的配送
-app.get('/api/driver/my-orders', async (req, res) => {
+app.get('/api/driver/my-orders', ensureDriver, async (req, res) => {
   try {
     const driverId = req.session.driverId;
-    if (!driverId) {
-      return res.status(401).json({ success: false, message: '請先登入' });
-    }
     
     let orders = [];
     
@@ -1057,12 +1104,9 @@ app.get('/api/driver/my-orders', async (req, res) => {
 });
 
 // 🚛 外送員API - 已完成訂單
-app.get('/api/driver/completed-orders', async (req, res) => {
+app.get('/api/driver/completed-orders', ensureDriver, async (req, res) => {
   try {
     const driverId = req.session.driverId;
-    if (!driverId) {
-      return res.status(401).json({ success: false, message: '請先登入' });
-    }
     
     let orders = [];
     
@@ -1108,12 +1152,9 @@ app.get('/api/driver/completed-orders', async (req, res) => {
 });
 
 // 🚛 外送員API - 統計數據 (添加快取優化)
-app.get('/api/driver/stats', apiCacheMiddleware(60000), async (req, res) => { // 60秒快取
+app.get('/api/driver/stats', ensureDriver, apiCacheMiddleware(60000), async (req, res) => { // 60秒快取
   try {
     const driverId = req.session.driverId;
-    if (!driverId) {
-      return res.status(401).json({ success: false, message: '請先登入' });
-    }
     
     let todayEarnings = 0;
     let todayCompleted = 0;
@@ -1173,13 +1214,9 @@ app.get('/api/driver/order/:id', (req, res) => {
 });
 
 // 🚛 外送員API - 接取訂單
-app.post('/api/driver/take-order/:id', async (req, res) => {
+app.post('/api/driver/take-order/:id', ensureDriver, async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     if (!demoMode && pool) {
@@ -1227,13 +1264,9 @@ app.post('/api/driver/take-order/:id', async (req, res) => {
 });
 
 // 🚛 外送員API - 完成配送
-app.post('/api/driver/complete-order/:id', async (req, res) => {
+app.post('/api/driver/complete-order/:id', ensureDriver, async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     if (!demoMode && pool) {
@@ -1284,12 +1317,8 @@ app.post('/api/driver/complete-order/:id', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 今日統計 (添加快取優化)
-app.get('/api/driver/today-stats', apiCacheMiddleware(45000), async (req, res) => { // 45秒快取
+app.get('/api/driver/today-stats', ensureDriver, apiCacheMiddleware(45000), async (req, res) => { // 45秒快取
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     let completed = 0;
@@ -1343,12 +1372,8 @@ app.get('/api/driver/today-stats', apiCacheMiddleware(45000), async (req, res) =
 });
 
 // 🚀 PWA 外送員API - 當前任務
-app.get('/api/driver/current-task', async (req, res) => {
+app.get('/api/driver/current-task', ensureDriver, async (req, res) => {
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     let currentTask = null;
@@ -1390,12 +1415,8 @@ app.get('/api/driver/current-task', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 待配送訂單
-app.get('/api/driver/pending-orders', async (req, res) => {
+app.get('/api/driver/pending-orders', ensureDriver, async (req, res) => {
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     let orders = [];
@@ -1440,13 +1461,9 @@ app.get('/api/driver/pending-orders', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 取貨確認
-app.post('/api/driver/pickup-order/:id', async (req, res) => {
+app.post('/api/driver/pickup-order/:id', ensureDriver, async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     if (!demoMode && pool) {
@@ -1465,13 +1482,9 @@ app.post('/api/driver/pickup-order/:id', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 開始配送
-app.post('/api/driver/start-delivery/:id', async (req, res) => {
+app.post('/api/driver/start-delivery/:id', ensureDriver, async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     if (!demoMode && pool) {
@@ -1490,13 +1503,9 @@ app.post('/api/driver/start-delivery/:id', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 完成配送
-app.post('/api/driver/complete-delivery/:id', async (req, res) => {
+app.post('/api/driver/complete-delivery/:id', ensureDriver, async (req, res) => {
   const orderId = req.params.id;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     if (!demoMode && pool) {
@@ -1517,13 +1526,9 @@ app.post('/api/driver/complete-delivery/:id', async (req, res) => {
 });
 
 // 🚀 PWA 外送員API - 獲取下一個訂單
-app.get('/api/driver/next-order/:completedOrderId', async (req, res) => {
+app.get('/api/driver/next-order/:completedOrderId', ensureDriver, async (req, res) => {
   const completedOrderId = req.params.completedOrderId;
   const driverId = req.session.driverId;
-  
-  if (!driverId) {
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
   
   try {
     let nextOrder = null;
@@ -1954,7 +1959,7 @@ app.get('/admin/logout', (req, res) => {
   res.redirect('/admin/login');
 });
 
-// 管理員驗證中介 - 增強版本
+// 管理員驗證中介 - 增強版本（修復版）
 function ensureAdmin(req, res, next) {
   // Session健康檢查
   if (!req.session) {
@@ -1967,10 +1972,10 @@ function ensureAdmin(req, res, next) {
     // 更新最後活動時間
     req.session.lastActivity = new Date();
     
-    // 檢查Session是否過期（額外安全檢查）
+    // 放寬Session過期檢查 - 只檢查是否超過30天（非常寬鬆）
     if (req.session.lastActivity && 
-        (new Date() - new Date(req.session.lastActivity)) > 7 * 24 * 60 * 60 * 1000) {
-      console.warn('⚠️ ensureAdmin: Session已過期，清理並重定向');
+        (new Date() - new Date(req.session.lastActivity)) > 30 * 24 * 60 * 60 * 1000) {
+      console.warn('⚠️ ensureAdmin: Session已過期超過30天，清理並重定向');
       cleanupSession(req);
       return res.redirect('/admin/login');
     }
@@ -1979,7 +1984,7 @@ function ensureAdmin(req, res, next) {
   return res.redirect('/admin/login');
 }
 
-// 外送員驗證中介 - 統一Session檢查
+// 外送員驗證中介 - 統一Session檢查（修復版）
 function ensureDriver(req, res, next) {
   // Session健康檢查
   if (!req.session) {
@@ -1992,10 +1997,10 @@ function ensureDriver(req, res, next) {
     // 更新最後活動時間
     req.session.lastActivity = new Date();
     
-    // 檢查Session是否過期（額外安全檢查）
+    // 放寬Session過期檢查 - 只檢查是否超過30天（非常寬鬆）
     if (req.session.lastActivity && 
-        (new Date() - new Date(req.session.lastActivity)) > 7 * 24 * 60 * 60 * 1000) {
-      console.warn('⚠️ ensureDriver: Session已過期，清理並返回錯誤');
+        (new Date() - new Date(req.session.lastActivity)) > 30 * 24 * 60 * 60 * 1000) {
+      console.warn('⚠️ ensureDriver: Session已過期超過30天，清理並返回錯誤');
       cleanupSession(req);
       return res.status(401).json({ success: false, message: 'Session已過期，請重新登入' });
     }

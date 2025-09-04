@@ -73,7 +73,7 @@
     }
     
     /* =================================================
-       🌟 革命性頂部導航 - 動態玻璃效果
+       🌟 專業頂部導航
        ================================================= */
     .revolutionary-header {
       position: fixed;
@@ -81,11 +81,11 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      background: var(--glass-effect);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border-bottom: 1px solid var(--glass-border);
-      transition: all 0.3s var(--ease-smooth);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
     }
     
     .header-content {
@@ -159,8 +159,8 @@
     }
     
     .action-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 8px 25px rgba(124, 179, 66, 0.3);
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(124, 179, 66, 0.2);
     }
     
     .action-btn:hover::before {
@@ -197,9 +197,8 @@
     }
     
     .smart-search-wrapper.focused {
-      transform: scale(1.02);
-      box-shadow: 0 12px 40px rgba(124, 179, 66, 0.2);
-      border-color: rgba(124, 179, 66, 0.4);
+      box-shadow: 0 6px 20px rgba(124, 179, 66, 0.15);
+      border-color: rgba(124, 179, 66, 0.3);
     }
     
     .smart-search-input {
@@ -323,9 +322,8 @@
     .category-pill:hover,
     .category-pill.active {
       color: white;
-      transform: scale(1.05);
       border-color: rgba(124, 179, 66, 0.3);
-      box-shadow: 0 4px 15px rgba(124, 179, 66, 0.3);
+      box-shadow: 0 2px 8px rgba(124, 179, 66, 0.2);
     }
     
     .category-pill:active {
@@ -367,8 +365,8 @@
     }
     
     .product-universe-card:hover {
-      transform: translateY(-8px) rotateX(5deg) rotateY(5deg);
-      box-shadow: 0 20px 50px rgba(124, 179, 66, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(124, 179, 66, 0.15);
       border-color: rgba(124, 179, 66, 0.3);
     }
     
@@ -427,8 +425,8 @@
     }
     
     .product-universe-card:hover .product-emoji {
-      transform: scale(1.2) rotateY(15deg);
-      filter: drop-shadow(0 8px 16px rgba(124, 179, 66, 0.3));
+      transform: scale(1.05);
+      filter: drop-shadow(0 4px 8px rgba(124, 179, 66, 0.2));
     }
     
     .card-content-matrix {
@@ -492,8 +490,8 @@
     }
     
     .quantum-cart:hover {
-      transform: translateX(-50%) translateY(-5px);
-      box-shadow: 0 15px 50px rgba(45, 90, 61, 0.5);
+      transform: translateX(-50%) translateY(-3px);
+      box-shadow: 0 8px 24px rgba(45, 90, 61, 0.3);
     }
     
     .quantum-cart:active {
@@ -541,7 +539,7 @@
     
     .cart-portal-btn:hover {
       background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1) rotate(10deg);
+      transform: scale(1.05);
     }
     
     /* =================================================
@@ -796,8 +794,8 @@
 </head>
 
 <body>
-  <!-- 🚀 革命性頂部導航 -->
-  <header class="revolutionary-header float-effect">
+  <!-- 🚀 專業頂部導航 -->
+  <header class="revolutionary-header">
     <div class="header-content">
       <div class="brand-section">
         <h1 class="brand-logo shimmer-effect">誠意鮮蔬 2.0</h1>
@@ -834,7 +832,7 @@
   <!-- 🏷️ 動態分類標籤 -->
   <div class="fluid-categories">
     <div class="categories-container">
-      <button class="category-pill active pulse-effect" data-category="all">🌟 精選推薦</button>
+      <button class="category-pill active" data-category="all">🌟 精選推薦</button>
       <button class="category-pill" data-category="leafy">🥬 葉菜類</button>
       <button class="category-pill" data-category="root">🥕 根莖類</button>
       <button class="category-pill" data-category="fruits">🍎 新鮮水果</button>
@@ -848,10 +846,9 @@
     <div class="products-grid" id="products-grid">
       <% if (products && products.length > 0) { %>
         <% products.forEach(function(product, index) { %>
-          <div class="product-universe-card float-effect" 
+          <div class="product-universe-card" 
                data-category="<%= product.is_priced_item ? 'proxy' : 'leafy' %>"
-               onclick="openProductExperience(<%= product.id %>)"
-               style="animation-delay: <%= index * 0.1 %>s">
+               onclick="openProductExperience(<%= product.id %>)">
             
             <div class="card-image-sphere">
               <div class="product-emoji">
@@ -883,7 +880,7 @@
   </main>
 
   <!-- 🛒 量子購物車 -->
-  <div class="quantum-cart pulse-effect" id="quantum-cart" onclick="openCartExperience()">
+  <div class="quantum-cart" id="quantum-cart" onclick="openCartExperience()">
     <div class="cart-quantum-display">
       <div class="cart-info-matrix">
         <div class="cart-total-glow">總計 $<span id="cart-total">0</span></div>
@@ -964,14 +961,7 @@
     function initializeUniverse() {
       console.log('🚀 啟動革命性蔬果購物宇宙...');
       
-      // 預載入動畫
-      gsap.from('.product-universe-card', {
-        y: 50,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.1,
-        ease: "back.out(1.7)"
-      });
+      // 移除過度動畫效果
       
       // 智能預測用戶喜好
       predictUserPreferences();
@@ -1039,17 +1029,9 @@
       });
     }
     
-    // ✨ 視差效果系統
+    // ✨ 移除視差效果
     function initializeParallaxEffects() {
-      window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const parallaxElements = document.querySelectorAll('.float-effect');
-        
-        parallaxElements.forEach((element, index) => {
-          const speed = (index + 1) * 0.1;
-          element.style.transform = `translateY(${scrolled * speed}px)`;
-        });
-      });
+      // 視差效果已移除以改善性能
     }
     
     // 👆 手勢控制系統
@@ -1119,8 +1101,15 @@
                       background: linear-gradient(135deg, #7cb342, #8bc34a); 
                       -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
                       margin-bottom: 1.5rem;">
-            ${currentProduct.is_priced_item ? '時價 ⚡' : '$' + currentProduct.price}
+            ${currentProduct.is_priced_item ? '時價 💰' : '$' + currentProduct.price}
           </div>
+          
+          ${currentProduct.is_priced_item ? `
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); 
+                        color: #f57f17; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; text-align: center; font-size: 0.9rem;">
+              ⚠️ 此商品為時價商品，實際價格將於結帳時顯示
+            </div>
+          ` : ''}
           
           <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
             <button onclick="adjustQuantity(-1)" style="width: 50px; height: 50px; border-radius: 50%; 
@@ -1139,8 +1128,8 @@
           <button onclick="addToQuantumCart()" style="width: 100%; padding: 1rem; 
                   background: linear-gradient(135deg, #2d5a3d, #1e3d2a); color: white; 
                   border: none; border-radius: 15px; font-size: 1.2rem; font-weight: 700; 
-                  cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;">
-            <span style="position: relative; z-index: 2;">🚀 加入宇宙購物車</span>
+                  cursor: pointer; transition: all 0.3s ease;">
+            ${currentProduct.is_priced_item ? '💰 加入購物車 (時價)' : '🛒 加入購物車'}
           </button>
         </div>
       `;
@@ -1202,8 +1191,9 @@
             <div style="flex: 1;">
               <h4 style="margin: 0 0 0.3rem 0; font-weight: 600;">${item.name}</h4>
               <div style="font-size: 1.1rem; font-weight: 700; color: #7cb342;">
-                $${item.is_priced_item ? '時價' : item.price * item.quantity}
+                ${item.is_priced_item ? '時價 💰' : '$' + (item.price * item.quantity)}
               </div>
+              ${item.is_priced_item ? '<div style="font-size: 0.8rem; color: #666;">實際價格將於結帳時顯示</div>' : ''}
             </div>
             
             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1219,6 +1209,8 @@
         `;
       }).join('');
       
+      // 檢查是否有時價商品
+      const hasPricedItems = cart.some(item => item.is_priced_item);
       const deliveryFee = total >= 200 ? 0 : 50;
       const finalTotal = total + deliveryFee;
       
@@ -1229,7 +1221,7 @@
           <div style="border-top: 2px solid rgba(124, 179, 66, 0.2); padding-top: 1rem; margin-top: 1rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
               <span>商品小計:</span>
-              <span style="font-weight: 600;">$${total}</span>
+              <span style="font-weight: 600;">${hasPricedItems ? '含時價商品' : '$' + total}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
               <span>外送費:</span>
@@ -1240,11 +1232,17 @@
             <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700; 
                         color: #2d5a3d; border-top: 1px solid rgba(124, 179, 66, 0.2); padding-top: 0.5rem;">
               <span>總計:</span>
-              <span>$${finalTotal}</span>
+              <span>${hasPricedItems ? '結帳時顯示' : '$' + finalTotal}</span>
             </div>
+            ${hasPricedItems ? `
+              <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); 
+                          color: #1976d2; padding: 1rem; border-radius: 10px; margin-top: 1rem; text-align: center; font-size: 0.9rem;">
+                💰 購物車中含有時價商品，最終總金額將於結帳時確定
+              </div>
+            ` : ''}
           </div>
           
-          ${total < 200 ? `
+          ${!hasPricedItems && total < 200 ? `
             <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); 
                         color: #f57f17; padding: 1rem; border-radius: 10px; margin: 1rem 0; text-align: center;">
               ⚠️ 還差 $${200 - total} 即可享免費外送
@@ -1255,8 +1253,8 @@
                   style="width: 100%; padding: 1.2rem; margin-top: 1rem;
                          background: linear-gradient(135deg, #2d5a3d, #1e3d2a); color: white; 
                          border: none; border-radius: 15px; font-size: 1.2rem; font-weight: 700; 
-                         cursor: pointer; position: relative; overflow: hidden;">
-            🚀 前往量子結帳
+                         cursor: pointer;">
+            🛒 前往結帳
           </button>
         </div>
       `;
@@ -1273,6 +1271,12 @@
     function addToQuantumCart() {
       if (!currentProduct) return;
       
+      // 檢查是否為時價商品且允許添加
+      if (currentProduct.is_priced_item) {
+        // 時價商品可以添加到購物車
+        console.log('添加時價商品到購物車:', currentProduct.name);
+      }
+      
       const existingItem = cart.find(item => item.id === currentProduct.id);
       
       if (existingItem) {
@@ -1281,7 +1285,7 @@
         cart.push({
           id: currentProduct.id,
           name: currentProduct.name,
-          price: currentProduct.price,
+          price: currentProduct.price || 0, // 時價商品價格為0
           quantity: currentQuantity,
           image: currentProduct.image_url || getProductEmoji(currentProduct.name),
           is_priced_item: currentProduct.is_priced_item || false
@@ -1291,9 +1295,10 @@
       localStorage.setItem('revolutionaryCart', JSON.stringify(cart));
       updateQuantumCart();
       
-      // 成功動畫
-      showQuantumFeedback('🎉 已加入購物宇宙！');
-      setTimeout(() => closeProductExperience(), 1500);
+      // 成功提示
+      const message = currentProduct.is_priced_item ? '✅ 時價商品已加入購物車' : '✅ 已加入購物車';
+      showQuantumFeedback(message);
+      setTimeout(() => closeProductExperience(), 1000);
     }
     
     function updateQuantumCart() {
