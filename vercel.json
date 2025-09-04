@@ -3,9 +3,20 @@
   "functions": {
     "api/serverless.js": {
       "maxDuration": 30
+    },
+    "api/index.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
+    {
+      "source": "/api/test",
+      "destination": "/api/test"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index"
+    },
     {
       "source": "/(.*)",
       "destination": "/api/serverless"
