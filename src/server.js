@@ -45,6 +45,10 @@ let lineNotificationService = null;
 let lineBotService = null;
 let lineUserService = null;
 
+// 版本資訊 - 用於測試部署
+const DEPLOY_VERSION = 'v2025.09.09.22.00 - 部署測試版本';
+const DEPLOY_COMMIT = 'ab1ff89';
+
 const app = express(),
       port = process.env.PORT || 3000;
 
@@ -546,6 +550,16 @@ app.use((req, res, next) => {
   req.app.locals.pool = pool;
   req.app.locals.demoMode = demoMode;
   next();
+});
+
+// 版本測試端點
+app.get('/api/version', (req, res) => {
+    res.json({
+        version: DEPLOY_VERSION,
+        commit: DEPLOY_COMMIT,
+        timestamp: new Date().toISOString(),
+        status: 'deployed'
+    });
 });
 
 // 外送員API路由 (統一簡化版)
