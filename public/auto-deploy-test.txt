@@ -1,8 +1,10 @@
-Auto Deploy Test - Master Branch to Production
-Timestamp: 2025-08-29 22:45
+Auto Deploy Test - Main Branch to Production
+Timestamp: 2025-09-09 21:40
 Test Purpose: Verify automatic deployment to production environment
 
 If you can access this file at:
-https://veg-delivery-platform.vercel.app/auto-deploy-test.txt
+https://chengyivegetable.vercel.app/auto-deploy-test.txt
 
 Then auto-deployment is working correctly!
+
+Latest Commit: 8a446b3 🚀 觸發 Vercel 自動部署
