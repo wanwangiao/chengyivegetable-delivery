@@ -45,6 +45,9 @@ let lineNotificationService = null;
 let lineBotService = null;
 let lineUserService = null;
 
+// 系統模式設定
+let demoMode = true; // 預設為示範模式，當資料庫連線成功後會切換為線上模式
+
 // 版本資訊 - 用於測試部署
 const DEPLOY_VERSION = 'v2025.09.09.22.00 - 部署測試版本';
 const DEPLOY_COMMIT = 'ab1ff89';
@@ -55,8 +58,7 @@ const app = express(),
 // 信任代理設定（Vercel 需要）
 app.set('trust proxy', true);
 
-let pool,
-    demoMode = false;
+let pool;
 
 async function createDatabasePool() {
   // 設置 Node.js 環境使用 UTF-8 編碼
@@ -5564,20 +5566,6 @@ if (process.env.VERCEL) {
     // LINE Bot服務已在上方初始化
   });
 }
-
-}).catch(error => {
-  console.error('❌ 初始化過程發生錯誤:', error);
-  console.log('🚀 啟動緊急模式 - 基本服務仍可運行');
-  
-  // 即使資料庫初始化失敗，也要確保 Express 服務能啟動
-  if (process.env.NODE_ENV !== 'production') {
-    const server = app.listen(port, () => {
-      console.log(`🚨 緊急模式：系統正在監聽埠號 ${port}`);
-      console.log(`📱 前台網址: http://localhost:${port} (功能受限)`);
-      console.log(`⚠️ 部分功能可能無法使用，請檢查資料庫連線`);
-    });
-  }
-});
 
 // 導出 app 供 Vercel serverless 使用
 module.exports = app;
