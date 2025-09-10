@@ -50,7 +50,7 @@ let lineUserService = null;
 let demoMode = true; // 預設為示範模式，當資料庫連線成功後會切換為線上模式
 
 // 版本資訊 - 用於測試部署
-const DEPLOY_VERSION = 'v2025.09.09.22.00 - 部署測試版本';
+const DEPLOY_VERSION = 'v2025.09.10.fix - 基本資料管理修復版本';
 const DEPLOY_COMMIT = 'ab1ff89';
 
 const app = express(),
