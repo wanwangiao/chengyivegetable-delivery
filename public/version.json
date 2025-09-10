@@ -1,0 +1,6 @@
+{
+  "version": "2025.09.10.fix",
+  "buildTime": "2025-09-10T16:30:00Z",
+  "description": "修復基本資料管理頁面空白問題",
+  "commit": "ab4ec80"
+}
