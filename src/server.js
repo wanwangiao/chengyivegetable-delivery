@@ -1666,7 +1666,7 @@ app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
 
 // 前台：結帳頁
 app.get('/checkout', (req, res) => {
-  res.render('checkout');
+  res.render('checkout_new');
 });
 
 // API：提交訂單
