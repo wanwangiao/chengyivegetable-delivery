@@ -3078,6 +3078,50 @@ app.post('/api/system/init-products', async (req, res) => {
   }
 });
 
+// 重新檢測資料庫連接狀態API
+app.post('/api/system/refresh-db-status', async (req, res) => {
+  try {
+    console.log('🔄 重新檢測資料庫連接狀態...');
+    
+    // 測試資料庫連接
+    await pool.query('SELECT NOW()');
+    
+    // 檢查是否有商品資料
+    const productResult = await pool.query('SELECT COUNT(*) FROM products');
+    const productCount = parseInt(productResult.rows[0].count);
+    
+    // 更新demoMode狀態
+    const oldDemoMode = demoMode;
+    demoMode = false; // 強制切換到資料庫模式
+    
+    console.log(`✅ 資料庫連接正常，商品數量: ${productCount}`);
+    console.log(`🔄 Demo模式: ${oldDemoMode} → ${demoMode}`);
+    
+    res.json({
+      success: true,
+      message: '資料庫連接狀態已刷新',
+      database: {
+        connected: true,
+        productCount: productCount
+      },
+      mode: {
+        previous: oldDemoMode ? 'demo' : 'database',
+        current: demoMode ? 'demo' : 'database'
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 資料庫檢測失敗:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      currentMode: demoMode ? 'demo' : 'database',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 正式的資料庫初始化API（需要管理員權限）
 app.post('/api/admin/init-database', ensureAdmin, async (req, res) => {
   console.log('🔧 開始Railway資料庫初始化...');
