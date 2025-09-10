@@ -10,15 +10,15 @@ const LineBotService = require('../services/LineBotService');
 
 // 資料庫連接將從主應用程式傳入
 let db = null;
-let demoMode = true;
+let demoMode = false;
 let lineBotService = null;
 
 // 設置資料庫連接的函數
 function setDatabasePool(pool, isDemo = true) {
     db = pool;
-    // 強制使用示範模式直到外送員系統完全穩定
-    demoMode = true;
-    console.log('🔧 外送員簡化API：強制啟用示範模式');
+    // 使用線上模式進行真實測試
+    demoMode = false;
+    console.log('🔧 外送員簡化API：啟用線上模式');
     
     // 初始化 LINE Bot 服務
     lineBotService = new LineBotService();

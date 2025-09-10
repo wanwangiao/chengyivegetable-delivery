@@ -143,7 +143,7 @@ body {
     text-align: center;
 }
 
-/* 用戶信息 */
+/* 用戶資訊 */
 .user-info {
     padding: var(--spacing-lg);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -996,7 +996,37 @@ body {
     transition: margin-left 0.3s ease;
 }
 
-/* 在小屏幕上顯示漢堡按鈕 */
+/* 平板版：顯示toggle按鈕，支援收合 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-280px);
+    }
+    
+    .main-content.expanded {
+        margin-left: 0;
+    }
+}
+
+/* 桌面版：也顯示toggle按鈕，允許使用者選擇收合 */
+@media (min-width: 1025px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-280px);
+    }
+    
+    .main-content.expanded {
+        margin-left: 0;
+    }
+}
+
+/* 移動版：側邊欄預設隱藏，toggle按鈕顯示 */
 @media (max-width: 768px) {
     .sidebar-toggle {
         display: flex;
@@ -1012,12 +1042,5 @@ body {
     
     .main-content {
         margin-left: 0;
-    }
-}
-
-/* 在中等屏幕上也顯示漢堡按鈕 */
-@media (max-width: 1024px) {
-    .sidebar-toggle {
-        display: flex;
     }
 }

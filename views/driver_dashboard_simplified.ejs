@@ -2622,7 +2622,7 @@
                     `;
                 }
                 
-                // 通知用戶並顯示診斷信息
+                // 通知用戶並顯示診斷資訊
                 showNotification('載入訂單失敗: ' + error.message + ' (時間: ' + new Date().toLocaleTimeString() + ')', 'error');
             }
         }
@@ -3726,7 +3726,7 @@
                 }, 300);
             }
             
-            // 初始化地圖信息
+            // 初始化地圖資訊
             const mapInfo = document.getElementById('map-info');
             mapInfo.textContent = `路線總距離：${totalDistance || '計算中'} 公里，預計節省時間：${timeSaved || 0} 分鐘`;
             
@@ -3828,7 +3828,7 @@
                     }
                 });
                 
-                // 添加點擊事件顯示信息窗
+                // 添加點擊事件顯示資訊窗
                 marker.addListener('click', () => {
                     const content = `
                         <div style="padding: 10px; max-width: 250px;">

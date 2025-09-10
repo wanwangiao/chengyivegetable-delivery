@@ -666,6 +666,28 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
             loadSidebarState();
+            
+            // 移動版點擊外部區域關閉側邊欄
+            document.addEventListener('click', function(e) {
+                const screenWidth = window.innerWidth;
+                const isMobile = screenWidth <= 768;
+                
+                if (isMobile) {
+                    const sidebar = document.querySelector('.sidebar');
+                    const sidebarToggle = document.querySelector('.sidebar-toggle');
+                    
+                    // 如果點擊的不是側邊欄或切換按鈕，且側邊欄是打開的
+                    if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target) && sidebar.classList.contains('open')) {
+                        sidebar.classList.remove('open');
+                        localStorage.setItem('sidebarCollapsed', 'true');
+                    }
+                }
+            });
+            
+            // 視窗大小改變時重新載入狀態
+            window.addEventListener('resize', function() {
+                loadSidebarState();
+            });
         });
 
 
@@ -673,21 +695,56 @@
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const mainContent = document.querySelector('.main-content');
+            const screenWidth = window.innerWidth;
             
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
+            // 判斷螢幕類型
+            const isMobile = screenWidth <= 768;
+            const isTablet = screenWidth > 768 && screenWidth <= 1024;
+            const isDesktop = screenWidth > 1024;
+            
+            if (isMobile) {
+                // 移動版：使用 open 類
+                sidebar.classList.toggle('open');
+            } else if (isTablet) {
+                // 平板版：使用 collapsed 類
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            } else {
+                // 桌面版：使用 collapsed 類
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            }
             
             // 儲存狀態到 localStorage
-            const isCollapsed = sidebar.classList.contains('collapsed');
+            const isCollapsed = isMobile ? !sidebar.classList.contains('open') : sidebar.classList.contains('collapsed');
             localStorage.setItem('sidebarCollapsed', isCollapsed);
         }
         
         // 載入側邊欄狀態
         function loadSidebarState() {
             const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) {
-                document.querySelector('.sidebar').classList.add('collapsed');
-                document.querySelector('.main-content').classList.add('expanded');
+            const screenWidth = window.innerWidth;
+            const isMobile = screenWidth <= 768;
+            const isTabletOrDesktop = screenWidth > 768;
+            
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            
+            // 清除所有狀態類別
+            sidebar.classList.remove('open', 'collapsed');
+            mainContent.classList.remove('expanded');
+            
+            if (isMobile) {
+                // 移動版邏輯
+                if (!isCollapsed) {
+                    sidebar.classList.add('open');
+                }
+            } else if (isTabletOrDesktop) {
+                // 平板和桌面版邏輯
+                if (isCollapsed) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('expanded');
+                }
             }
         }
 

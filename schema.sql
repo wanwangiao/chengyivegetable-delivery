@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS orders (
   subtotal NUMERIC NOT NULL DEFAULT 0,
   delivery_fee NUMERIC NOT NULL DEFAULT 0,
   total NUMERIC NOT NULL DEFAULT 0,
+  payment_method TEXT DEFAULT 'cash',
   status TEXT NOT NULL DEFAULT 'placed',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   -- 新增座標欄位與地理資料狀態
@@ -90,4 +91,18 @@ CREATE TABLE IF NOT EXISTS suppliers (
   notes TEXT,
   status VARCHAR(20) DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 配送區域管理表
+CREATE TABLE IF NOT EXISTS delivery_areas (
+  id SERIAL PRIMARY KEY,
+  city VARCHAR(50) NOT NULL,
+  district VARCHAR(50) NOT NULL,
+  enabled BOOLEAN DEFAULT true,
+  delivery_fee NUMERIC(10,2) DEFAULT 0,
+  min_order_amount NUMERIC(10,2) DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(city, district)
 );

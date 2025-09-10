@@ -209,20 +209,18 @@ let deliveryEstimationService = null;
     console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
   });
   
-  // 最後選擇 - 啟用示範模式
-  console.log('🔄 啟用示範模式 - 使用本機示範資料');
-  demoMode = true;
+  // 最後選擇 - 強制線上模式，不啟用示範模式
+  console.log('❌ 所有資料庫連線方式都失敗，但強制使用線上模式');
+  demoMode = false;
   
-  // 創建一個模擬的 pool 避免崩潰
-  pool = {
-    query: async (sql, params) => {
-      console.log('📝 模擬SQL查詢:', sql.substring(0, 50));
-      throw new Error('資料庫連線失敗，正在使用示範資料');
-    },
-    end: () => console.log('📴 模擬資料庫連線結束')
-  };
+  // 線上模式：無法連接資料庫時拋出錯誤
+  console.error('🚨 無法建立資料庫連線，應用程式無法啟動');
+  console.error('請檢查以下項目：');
+  console.error('1. Railway DATABASE_URL 環境變數是否正確設定');
+  console.error('2. 資料庫服務是否正常運行');
+  console.error('3. 網路連線是否正常');
   
-  return pool;
+  process.exit(1); // 強制終止應用程式
 }
 
 // 初始化資料庫連線
@@ -548,6 +546,7 @@ function clearApiCache(pattern) {
 // 設置全局變數供路由使用
 app.use((req, res, next) => {
   req.app.locals.pool = pool;
+  req.app.locals.db = pool; // 同時設置為 db 供遷移路由使用
   req.app.locals.demoMode = demoMode;
   next();
 });
@@ -570,6 +569,10 @@ app.use('/api/customer', customerApiRoutes);
 
 // 後台報表API路由
 app.use('/api/admin/reports', adminReportsApiRoutes);
+
+// 後台遷移API路由
+const adminMigrationRoutes = require('./routes/admin_migration');
+app.use('/admin/migration', adminMigrationRoutes);
 
 // Google Maps API路由
 app.use('/api/maps', googleMapsApiRoutes);
@@ -1739,8 +1742,8 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     console.log('Creating order with data:', { name, phone, address, notes, paymentMethod, subtotal, deliveryFee, total });
     // 簡化插入，只使用存在的欄位
     const insertOrder = await pool.query(
-      'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total_amount, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
-      [name, phone, address, notes || '', subtotal, deliveryFee, total, 'placed']
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total, payment_method, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
+      [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'placed']
     );
     const orderId = insertOrder.rows[0].id;
     
@@ -1865,7 +1868,7 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     res.status(500).json({ 
       success: false, 
       message: '建立訂單時發生錯誤，請稍後再試',
-      error: err.message, // 暫時在生產環境也顯示錯誤信息
+      error: err.message, // 暫時在生產環境也顯示錯誤資訊
       errorCode: err.code,
       debug: err.stack
     });
@@ -1985,18 +1988,40 @@ app.get('/order-success', async (req, res) => {
     const mockOrder = {
       id: id,
       contact_name: '示範用戶',
+      contact_phone: '0912345678',
+      address: '台北市信義區信義路五段 7 號',
+      subtotal: 180,
+      delivery_fee: 20,
       total: 200,
+      payment_method: 'cash',
+      notes: '請送到一樓大廳',
       status: 'placed',
-      created_at: new Date()
+      created_at: new Date(),
+      items: [
+        { name: '有機高麗菜', quantity: 1, is_priced_item: false, line_total: 80 },
+        { name: '新鮮玉米筍', quantity: 2, is_priced_item: false, line_total: 100 }
+      ]
     };
-    return res.render('order_success', { order: mockOrder });
+    return res.render('order_success', { order: mockOrder, sessionLine: null });
   }
   
   try {
+    // 載入訂單基本資料
     const { rows: orders } = await pool.query('SELECT * FROM orders WHERE id=$1', [id]);
     if (orders.length === 0) return res.status(404).send('訂單不存在');
     const order = orders[0];
-    res.render('order_success', { order });
+    
+    // 載入訂單明細
+    const { rows: items } = await pool.query(
+      'SELECT * FROM order_items WHERE order_id=$1 ORDER BY id', 
+      [id]
+    );
+    order.items = items;
+    
+    // 傳遞 LINE 綁定狀態
+    const sessionLine = req.session?.lineUserId || null;
+    
+    res.render('order_success', { order, sessionLine });
   } catch (err) {
     console.error('Order success error:', err);
     res.status(500).send('錯誤');
@@ -3796,6 +3821,131 @@ app.post('/api/admin/basic-settings/reset', ensureAdmin, async (req, res) => {
     });
   }
 });
+
+// 配送區域管理路由
+app.get('/admin/delivery-areas', ensureAdmin, (req, res) => {
+  res.render('admin_delivery_areas');
+});
+
+// API: 獲取配送區域設定
+app.get('/api/admin/delivery-areas', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    if (demoMode) {
+      // 示範模式：回傳預設開放區域
+      const demoAreas = [
+        { city: '台北市', district: '中正區', enabled: true },
+        { city: '台北市', district: '大安區', enabled: true },
+        { city: '台北市', district: '信義區', enabled: true },
+        { city: '新北市', district: '板橋區', enabled: true },
+        { city: '新北市', district: '新店區', enabled: true }
+      ];
+      return res.json({ success: true, data: demoAreas });
+    }
+
+    const result = await pool.query('SELECT city, district, enabled FROM delivery_areas WHERE enabled = true ORDER BY city, district');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('獲取配送區域失敗:', error);
+    res.status(500).json({ success: false, message: '獲取配送區域失敗' });
+  }
+}));
+
+// API: 更新配送區域設定
+app.post('/api/admin/delivery-areas', ensureAdmin, asyncWrapper(async (req, res) => {
+  const { areas } = req.body;
+  
+  if (!Array.isArray(areas)) {
+    return res.status(400).json({ success: false, message: '區域資料格式錯誤' });
+  }
+  
+  try {
+    if (demoMode) {
+      console.log('📝 示範模式：配送區域設定已更新（模擬）', areas.length, '個區域');
+      return res.json({ 
+        success: true, 
+        message: `配送區域設定已儲存（示範模式）- ${areas.length} 個區域`,
+        data: areas 
+      });
+    }
+
+    // 開始資料庫事務
+    await pool.query('BEGIN');
+    
+    // 清除現有設定
+    await pool.query('DELETE FROM delivery_areas');
+    
+    // 插入新設定
+    for (const area of areas) {
+      await pool.query(
+        'INSERT INTO delivery_areas (city, district, enabled) VALUES ($1, $2, $3)',
+        [area.city, area.district, area.enabled]
+      );
+    }
+    
+    // 提交事務
+    await pool.query('COMMIT');
+    
+    console.log('📝 配送區域設定已更新:', areas.length, '個區域');
+    res.json({ 
+      success: true, 
+      message: `配送區域設定已儲存 - ${areas.length} 個區域`,
+      data: areas 
+    });
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error('更新配送區域失敗:', error);
+    res.status(500).json({ success: false, message: '儲存配送區域失敗' });
+  }
+}));
+
+// API: 獲取前台可用的配送區域
+app.get('/api/delivery-areas', asyncWrapper(async (req, res) => {
+  try {
+    if (demoMode) {
+      // 示範模式：回傳預設開放區域
+      const demoAreas = [
+        { city: '台北市', district: '中正區' },
+        { city: '台北市', district: '大安區' },
+        { city: '台北市', district: '信義區' },
+        { city: '台北市', district: '松山區' },
+        { city: '台北市', district: '大同區' },
+        { city: '新北市', district: '板橋區' },
+        { city: '新北市', district: '新店區' },
+        { city: '新北市', district: '中和區' },
+        { city: '新北市', district: '永和區' },
+        { city: '桃園市', district: '桃園區' },
+        { city: '桃園市', district: '中壢區' }
+      ];
+      
+      // 組織成縣市->區域的結構
+      const organized = {};
+      demoAreas.forEach(area => {
+        if (!organized[area.city]) {
+          organized[area.city] = [];
+        }
+        organized[area.city].push(area.district);
+      });
+      
+      return res.json({ success: true, data: organized });
+    }
+
+    const result = await pool.query('SELECT city, district FROM delivery_areas WHERE enabled = true ORDER BY city, district');
+    
+    // 組織成縣市->區域的結構
+    const organized = {};
+    result.rows.forEach(area => {
+      if (!organized[area.city]) {
+        organized[area.city] = [];
+      }
+      organized[area.city].push(area.district);
+    });
+    
+    res.json({ success: true, data: organized });
+  } catch (error) {
+    console.error('獲取可用配送區域失敗:', error);
+    res.status(500).json({ success: false, message: '獲取可用區域失敗' });
+  }
+}));
 
 // 基本設定頁面路由
 app.get('/admin/basic-settings', ensureAdmin, (req, res) => {

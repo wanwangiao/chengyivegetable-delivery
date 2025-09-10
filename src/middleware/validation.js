@@ -26,11 +26,22 @@ const validateOrderData = (req, res, next) => {
     errors.push('購物車不能為空');
   } else {
     items.forEach((item, index) => {
-      if (!item.productId || !Number.isInteger(item.productId)) {
+      // 轉換 productId 為整數並驗證
+      const productId = parseInt(item.productId);
+      if (!item.productId || isNaN(productId) || productId <= 0) {
         errors.push(`商品${index + 1}：商品ID無效`);
+      } else {
+        // 將轉換後的整數存回原物件
+        item.productId = productId;
       }
-      if (!item.quantity || item.quantity < 1 || item.quantity > 100) {
+      
+      // 轉換 quantity 為整數並驗證
+      const quantity = parseInt(item.quantity);
+      if (!item.quantity || isNaN(quantity) || quantity < 1 || quantity > 100) {
         errors.push(`商品${index + 1}：數量必須在1-100之間`);
+      } else {
+        // 將轉換後的整數存回原物件
+        item.quantity = quantity;
       }
     });
   }

@@ -24,11 +24,12 @@ class InventoryAgent extends BaseAgent {
         this.demoMode = false;
         console.log('✅ InventoryAgent 已連接資料庫');
       } catch (error) {
-        console.warn('⚠️ InventoryAgent 無法連接資料庫，啟用示範模式');
-        this.demoMode = true;
+        console.error('❌ InventoryAgent 無法連接資料庫');
+        throw new Error('InventoryAgent 資料庫連線失敗，系統無法啟動');
       }
     } else {
-      this.demoMode = true;
+      console.error('❌ InventoryAgent 未提供資料庫連接池');
+      throw new Error('InventoryAgent 缺少資料庫連接池，系統無法啟動');
     }
 
     // 註冊可處理的任務類型

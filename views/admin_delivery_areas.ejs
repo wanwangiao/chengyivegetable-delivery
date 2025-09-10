@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配送區域管理 - 後台管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2d5a3d;
+            --accent-color: #7cb342;
+            --bg-light: #f8f9fa;
+            --border-light: rgba(0,0,0,0.125);
+        }
+
+        body {
+            background: var(--bg-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), #1e3d2a);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .main-container {
+            margin-top: 2rem;
+        }
+
+        .area-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .area-card-header {
+            background: linear-gradient(135deg, var(--accent-color), #8bc34a);
+            color: white;
+            padding: 1.5rem;
+            border: none;
+        }
+
+        .area-card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .district-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .district-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .district-item:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(124, 179, 66, 0.2);
+        }
+
+        .district-item.active {
+            border-color: var(--accent-color);
+            background: rgba(124, 179, 66, 0.1);
+        }
+
+        .district-item .form-check {
+            margin: 0;
+        }
+
+        .district-item .form-check-input {
+            margin-right: 0.75rem;
+        }
+
+        .district-item .form-check-label {
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-save-areas {
+            background: linear-gradient(135deg, var(--primary-color), #1e3d2a);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save-areas:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(45, 90, 61, 0.3);
+            color: white;
+        }
+
+        .stats-info {
+            background: rgba(124, 179, 66, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .city-toggle {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .city-toggle:hover {
+            background: rgba(124, 179, 66, 0.1);
+        }
+
+        .collapse-content {
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="/admin/dashboard">
+                <i class="fas fa-leaf me-2"></i>誠憶鮮蔬 - 配送區域管理
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/admin/dashboard">
+                    <i class="fas fa-arrow-left me-1"></i>返回後台
+                </a>
+                <a class="nav-link text-white" href="/admin/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>登出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-container">
+        <!-- 統計資訊 -->
+        <div class="stats-info">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6 class="mb-1"><i class="fas fa-map-marked-alt text-success me-2"></i>已開放縣市</h6>
+                    <p class="mb-0 fw-bold" id="enabled-cities-count">0</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-1"><i class="fas fa-map-pin text-success me-2"></i>已開放區域</h6>
+                    <p class="mb-0 fw-bold" id="enabled-districts-count">0</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-1"><i class="fas fa-truck text-success me-2"></i>配送覆蓋率</h6>
+                    <p class="mb-0 fw-bold" id="coverage-rate">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配送區域設定 -->
+        <div class="area-card">
+            <div class="area-card-header">
+                <h5>
+                    <i class="fas fa-map-marked-alt"></i>
+                    配送區域設定
+                </h5>
+                <small>請勾選您要開放配送的縣市和區域，前台結帳時將只顯示已勾選的區域</small>
+            </div>
+            <div class="card-body p-4">
+                <form id="delivery-areas-form">
+                    <!-- 台北市 -->
+                    <div class="mb-4">
+                        <div class="city-toggle p-3 rounded" data-bs-toggle="collapse" data-bs-target="#taipei-districts">
+                            <div class="form-check">
+                                <input class="form-check-input city-checkbox" type="checkbox" value="台北市" id="city-taipei">
+                                <label class="form-check-label fw-bold" for="city-taipei">
+                                    <i class="fas fa-building me-2"></i>台北市
+                                    <small class="text-muted ms-2">(點擊展開區域)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="collapse collapse-content" id="taipei-districts">
+                            <div class="district-grid">
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="中正區" id="taipei-zhongzheng" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-zhongzheng">中正區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="大同區" id="taipei-datong" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-datong">大同區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="中山區" id="taipei-zhongshan" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-zhongshan">中山區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="松山區" id="taipei-songshan" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-songshan">松山區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="大安區" id="taipei-daan" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-daan">大安區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="萬華區" id="taipei-wanhua" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-wanhua">萬華區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="信義區" id="taipei-xinyi" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-xinyi">信義區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="士林區" id="taipei-shilin" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-shilin">士林區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="北投區" id="taipei-beitou" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-beitou">北投區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="內湖區" id="taipei-neihu" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-neihu">內湖區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="南港區" id="taipei-nangang" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-nangang">南港區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="文山區" id="taipei-wenshan" data-city="台北市">
+                                        <label class="form-check-label" for="taipei-wenshan">文山區</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新北市 -->
+                    <div class="mb-4">
+                        <div class="city-toggle p-3 rounded" data-bs-toggle="collapse" data-bs-target="#newtaipei-districts">
+                            <div class="form-check">
+                                <input class="form-check-input city-checkbox" type="checkbox" value="新北市" id="city-newtaipei">
+                                <label class="form-check-label fw-bold" for="city-newtaipei">
+                                    <i class="fas fa-city me-2"></i>新北市
+                                    <small class="text-muted ms-2">(點擊展開區域)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="collapse collapse-content" id="newtaipei-districts">
+                            <div class="district-grid">
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="板橋區" id="newtaipei-banqiao" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-banqiao">板橋區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="三重區" id="newtaipei-sanchong" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-sanchong">三重區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="中和區" id="newtaipei-zhonghe" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-zhonghe">中和區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="永和區" id="newtaipei-yonghe" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-yonghe">永和區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="新莊區" id="newtaipei-xinzhuang" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-xinzhuang">新莊區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="新店區" id="newtaipei-xindian" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-xindian">新店區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="樹林區" id="newtaipei-shulin" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-shulin">樹林區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="鶯歌區" id="newtaipei-yingge" data-city="新北市">
+                                        <label class="form-check-label" for="newtaipei-yingge">鶯歌區</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 桃園市 -->
+                    <div class="mb-4">
+                        <div class="city-toggle p-3 rounded" data-bs-toggle="collapse" data-bs-target="#taoyuan-districts">
+                            <div class="form-check">
+                                <input class="form-check-input city-checkbox" type="checkbox" value="桃園市" id="city-taoyuan">
+                                <label class="form-check-label fw-bold" for="city-taoyuan">
+                                    <i class="fas fa-home me-2"></i>桃園市
+                                    <small class="text-muted ms-2">(點擊展開區域)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="collapse collapse-content" id="taoyuan-districts">
+                            <div class="district-grid">
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="桃園區" id="taoyuan-taoyuan" data-city="桃園市">
+                                        <label class="form-check-label" for="taoyuan-taoyuan">桃園區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="中壢區" id="taoyuan-zhongli" data-city="桃園市">
+                                        <label class="form-check-label" for="taoyuan-zhongli">中壢區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="平鎮區" id="taoyuan-pingzhen" data-city="桃園市">
+                                        <label class="form-check-label" for="taoyuan-pingzhen">平鎮區</label>
+                                    </div>
+                                </div>
+                                <div class="district-item">
+                                    <div class="form-check">
+                                        <input class="form-check-input district-checkbox" type="checkbox" value="八德區" id="taoyuan-bade" data-city="桃園市">
+                                        <label class="form-check-label" for="taoyuan-bade">八德區</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 儲存按鈕 -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-save-areas btn-lg">
+                            <i class="fas fa-save me-2"></i>儲存配送區域設定
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 配送區域管理功能
+        let deliveryAreas = [];
+
+        // 載入現有設定
+        async function loadDeliveryAreas() {
+            try {
+                const response = await fetch('/api/admin/delivery-areas');
+                const result = await response.json();
+                
+                if (result.success) {
+                    deliveryAreas = result.data || [];
+                    updateFormFromData();
+                    updateStatistics();
+                }
+            } catch (error) {
+                console.error('載入配送區域失敗:', error);
+            }
+        }
+
+        // 根據資料更新表單
+        function updateFormFromData() {
+            // 清除所有勾選
+            document.querySelectorAll('.district-checkbox, .city-checkbox').forEach(cb => cb.checked = false);
+            
+            // 根據資料勾選
+            deliveryAreas.forEach(area => {
+                const districtCb = document.querySelector(`input[value="${area.district}"][data-city="${area.city}"]`);
+                if (districtCb) {
+                    districtCb.checked = true;
+                    districtCb.closest('.district-item').classList.add('active');
+                }
+            });
+            
+            // 更新縣市勾選狀態
+            updateCityCheckboxes();
+        }
+
+        // 更新縣市勾選狀態
+        function updateCityCheckboxes() {
+            document.querySelectorAll('.city-checkbox').forEach(cityCheckbox => {
+                const cityName = cityCheckbox.value;
+                const cityDistricts = document.querySelectorAll(`input[data-city="${cityName}"]`);
+                const checkedDistricts = document.querySelectorAll(`input[data-city="${cityName}"]:checked`);
+                
+                cityCheckbox.checked = checkedDistricts.length > 0;
+            });
+        }
+
+        // 更新統計資訊
+        function updateStatistics() {
+            const enabledCities = new Set(deliveryAreas.map(area => area.city));
+            const enabledDistricts = deliveryAreas.length;
+            const totalDistricts = document.querySelectorAll('.district-checkbox').length;
+            const coverageRate = totalDistricts > 0 ? Math.round((enabledDistricts / totalDistricts) * 100) : 0;
+            
+            document.getElementById('enabled-cities-count').textContent = enabledCities.size;
+            document.getElementById('enabled-districts-count').textContent = enabledDistricts;
+            document.getElementById('coverage-rate').textContent = `${coverageRate}%`;
+        }
+
+        // 區域勾選變更
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('district-checkbox')) {
+                const districtItem = e.target.closest('.district-item');
+                if (e.target.checked) {
+                    districtItem.classList.add('active');
+                } else {
+                    districtItem.classList.remove('active');
+                }
+                
+                updateCityCheckboxes();
+            }
+        });
+
+        // 縣市勾選變更
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('city-checkbox')) {
+                const cityName = e.target.value;
+                const cityDistricts = document.querySelectorAll(`input[data-city="${cityName}"]`);
+                
+                cityDistricts.forEach(district => {
+                    district.checked = e.target.checked;
+                    const districtItem = district.closest('.district-item');
+                    if (e.target.checked) {
+                        districtItem.classList.add('active');
+                    } else {
+                        districtItem.classList.remove('active');
+                    }
+                });
+            }
+        });
+
+        // 提交表單
+        document.getElementById('delivery-areas-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const checkedDistricts = document.querySelectorAll('.district-checkbox:checked');
+            const areas = Array.from(checkedDistricts).map(cb => ({
+                city: cb.dataset.city,
+                district: cb.value,
+                enabled: true
+            }));
+            
+            if (areas.length === 0) {
+                alert('請至少選擇一個配送區域');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/delivery-areas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ areas })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    deliveryAreas = areas;
+                    updateStatistics();
+                    alert(`✅ 配送區域設定已儲存！\n已開放 ${new Set(areas.map(a => a.city)).size} 個縣市，共 ${areas.length} 個區域`);
+                } else {
+                    alert(`儲存失敗: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('儲存配送區域失敗:', error);
+                alert('儲存失敗，請稍後再試');
+            }
+        });
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', loadDeliveryAreas);
+    </script>
+</body>
+</html>

@@ -208,7 +208,7 @@ GET  /test/maps                 // Google Maps測試
   "error": {
     "code": "ERROR_CODE",
     "message": "錯誤描述",
-    "details": { /* 詳細信息 */ }
+    "details": { /* 詳細資訊 */ }
   },
   "timestamp": "2025-09-10T15:30:00Z"
 }

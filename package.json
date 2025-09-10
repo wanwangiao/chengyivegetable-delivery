@@ -15,7 +15,8 @@
     "claude-deploy": "node claude-hook-deploy.js",
     "auto-deploy": "node safe-deploy.js",
     "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'",
-    "universal-deploy": "node universal-deploy.js"
+    "universal-deploy": "node universal-deploy.js",
+    "migrate": "node run_migration_via_railway.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",

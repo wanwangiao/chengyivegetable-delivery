@@ -31,11 +31,12 @@ class OrderAgent extends BaseAgent {
         this.demoMode = false;
         console.log('✅ OrderAgent 已連接資料庫');
       } catch (error) {
-        console.warn('⚠️ OrderAgent 無法連接資料庫，啟用示範模式');
-        this.demoMode = true;
+        console.error('❌ OrderAgent 無法連接資料庫');
+        throw new Error('OrderAgent 資料庫連線失敗，系統無法啟動');
       }
     } else {
-      this.demoMode = true;
+      console.error('❌ OrderAgent 未提供資料庫連接池');
+      throw new Error('OrderAgent 缺少資料庫連接池，系統無法啟動');
     }
 
     // 註冊可處理的任務類型

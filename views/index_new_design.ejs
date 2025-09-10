@@ -339,34 +339,16 @@
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-gray-700 text-sm font-medium mb-2">縣市 <span class="text-red-500">*</span></label>
-                  <select name="city" id="checkout-city" required
+                  <select name="city" id="checkout-city" required onchange="loadDistricts()"
                           class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500">
-                    <option value="">請選擇</option>
-                    <option value="台北市">台北市</option>
-                    <option value="新北市">新北市</option>
-                    <option value="桃園市">桃園市</option>
-                    <option value="台中市">台中市</option>
-                    <option value="台南市">台南市</option>
-                    <option value="高雄市">高雄市</option>
+                    <option value="">請選擇縣市</option>
                   </select>
                 </div>
                 <div>
                   <label class="block text-gray-700 text-sm font-medium mb-2">區域 <span class="text-red-500">*</span></label>
                   <select name="district" id="checkout-district" required
                           class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500">
-                    <option value="">請選擇</option>
-                    <option value="中正區">中正區</option>
-                    <option value="大同區">大同區</option>
-                    <option value="中山區">中山區</option>
-                    <option value="松山區">松山區</option>
-                    <option value="大安區">大安區</option>
-                    <option value="萬華區">萬華區</option>
-                    <option value="信義區">信義區</option>
-                    <option value="士林區">士林區</option>
-                    <option value="北投區">北投區</option>
-                    <option value="內湖區">內湖區</option>
-                    <option value="南港區">南港區</option>
-                    <option value="文山區">文山區</option>
+                    <option value="">請先選擇縣市</option>
                   </select>
                 </div>
               </div>
@@ -396,11 +378,11 @@
                 <span class="ml-3 text-gray-700">💰 現金（貨到付款）</span>
               </label>
               <label class="flex items-center cursor-pointer">
-                <input type="radio" name="paymentMethod" value="bank" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                <input type="radio" name="paymentMethod" value="bank_transfer" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
                 <span class="ml-3 text-gray-700">🏦 銀行轉帳</span>
               </label>
               <label class="flex items-center cursor-pointer">
-                <input type="radio" name="paymentMethod" value="linepay" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                <input type="radio" name="paymentMethod" value="line_pay" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
                 <span class="ml-3 text-gray-700">💳 LINE Pay</span>
               </label>
             </div>
@@ -713,6 +695,7 @@ document.getElementById('product-modal').addEventListener('click', function(e) {
 function openCheckoutModal() {
   renderCheckoutItems();
   updateCheckoutTotal();
+  loadDeliveryAreas();
   document.getElementById('checkout-modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -720,6 +703,73 @@ function openCheckoutModal() {
 function closeCheckoutModal() {
   document.getElementById('checkout-modal').classList.add('hidden');
   document.body.style.overflow = 'auto';
+}
+
+// 全域變數存儲配送區域資料
+let deliveryAreas = {};
+
+// 載入配送區域資料
+async function loadDeliveryAreas() {
+  try {
+    const response = await fetch('/api/delivery-areas');
+    const data = await response.json();
+    
+    if (data.success) {
+      deliveryAreas = {};
+      
+      // 整理資料結構：城市為key，區域陣列為value
+      data.areas.forEach(area => {
+        if (!deliveryAreas[area.city]) {
+          deliveryAreas[area.city] = [];
+        }
+        deliveryAreas[area.city].push(area.district);
+      });
+      
+      // 更新縣市選項
+      updateCityOptions();
+    }
+  } catch (error) {
+    console.error('載入配送區域失敗:', error);
+    // 失敗時使用預設區域
+    deliveryAreas = {
+      '台北市': ['中正區', '大同區', '中山區', '松山區', '大安區', '萬華區', '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區']
+    };
+    updateCityOptions();
+  }
+}
+
+// 更新縣市選項
+function updateCityOptions() {
+  const citySelect = document.getElementById('checkout-city');
+  citySelect.innerHTML = '<option value="">請選擇縣市</option>';
+  
+  Object.keys(deliveryAreas).forEach(city => {
+    const option = document.createElement('option');
+    option.value = city;
+    option.textContent = city;
+    citySelect.appendChild(option);
+  });
+}
+
+// 載入區域選項
+function loadDistricts() {
+  const citySelect = document.getElementById('checkout-city');
+  const districtSelect = document.getElementById('checkout-district');
+  const selectedCity = citySelect.value;
+  
+  // 清空區域選項
+  districtSelect.innerHTML = '<option value="">請選擇區域</option>';
+  
+  if (selectedCity && deliveryAreas[selectedCity]) {
+    deliveryAreas[selectedCity].forEach(district => {
+      const option = document.createElement('option');
+      option.value = district;
+      option.textContent = district;
+      districtSelect.appendChild(option);
+    });
+  } else if (!selectedCity) {
+    districtSelect.innerHTML = '<option value="">請先選擇縣市</option>';
+  }
 }
 
 function renderCheckoutItems() {
@@ -869,13 +919,20 @@ async function submitCheckoutOrder() {
       // 關閉彈窗
       closeCheckoutModal();
       
-      // 顯示成功訊息
-      alert(`✅ 訂單建立成功！\n訂單編號：#${result.orderId}\n感謝您的訂購，我們會盡快為您準備商品。`);
+      // 顯示成功訊息並跳轉到訂單確認頁面
+      alert(`✅ 訂單建立成功！\n訂單編號：#${result.orderId}\n即將跳轉到訂單確認頁面...`);
       
-      // 可選：跳轉到訂單查詢頁面
-      // window.location.href = `/order-tracking?orderId=${result.orderId}`;
+      // 跳轉到訂單確認頁面
+      setTimeout(() => {
+        window.location.href = `/order-success?id=${result.orderId}`;
+      }, 1500);
     } else {
-      alert(`下單失敗: ${result.message}`);
+      // 顯示詳細錯誤資訊
+      let errorMessage = `下單失敗: ${result.message}`;
+      if (result.errors && Array.isArray(result.errors)) {
+        errorMessage += '\n\n詳細錯誤：\n' + result.errors.join('\n');
+      }
+      alert(errorMessage);
     }
   } catch (error) {
     console.error('下單錯誤:', error);

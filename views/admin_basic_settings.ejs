@@ -211,6 +211,80 @@
             flex-wrap: wrap;
             align-items: center;
         }
+
+        /* 配送區域管理樣式 */
+        .delivery-areas-grid {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .city-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .city-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px rgba(124, 179, 66, 0.1);
+        }
+
+        .city-header {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .city-header:hover {
+            background: linear-gradient(135deg, var(--accent-color), #8bc34a);
+            color: white;
+        }
+
+        .city-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .city-header:hover .city-name {
+            color: white;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .districts-grid {
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+            background: #fafafa;
+        }
+
+        .district-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .district-item:hover {
+            border-color: var(--accent-color);
+            background: rgba(124, 179, 66, 0.05);
+        }
+
+        .district-checkbox:checked + label {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -336,6 +410,7 @@
                 'store': '🏪 商店資訊',
                 'content': '📋 頁面內容',
                 'features': '🎯 功能開關',
+                'delivery_areas': '🗺️ 配送區域',
                 'mobile': '📱 移動端設定'
             };
 
@@ -363,6 +438,13 @@
         // 渲染設定項目
         function renderSettings() {
             const contentContainer = document.getElementById('settings-content');
+            
+            // 配送區域管理需要特殊處理
+            if (activeCategory === 'delivery_areas') {
+                renderDeliveryAreasSettings();
+                return;
+            }
+            
             const categorySettings = allCategories[activeCategory] || [];
 
             let settingsHtml = `
@@ -488,6 +570,7 @@
                 'store': '🏪 商店基本資訊',
                 'content': '📋 頁面內容管理',
                 'features': '🎯 功能開關設定',
+                'delivery_areas': '🗺️ 配送區域管理',
                 'mobile': '📱 移動端參數設定'
             };
             return names[category] || category;
@@ -616,6 +699,236 @@
             } catch (error) {
                 console.error('重設錯誤:', error);
                 showNotification('重設時發生錯誤', 'error');
+            }
+        }
+
+        // 配送區域管理相關函數
+        let deliveryAreas = {};
+        let deliveryAreasData = [];
+
+        // 渲染配送區域設定
+        async function renderDeliveryAreasSettings() {
+            const contentContainer = document.getElementById('settings-content');
+            
+            // 載入配送區域資料
+            await loadDeliveryAreas();
+            
+            let settingsHtml = `
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <h5><i class="fas fa-map-pin me-2"></i>配送區域管理</h5>
+                        <small>請勾選您要開放配送的縣市和區域，前台結帳時將只顯示已勾選的區域</small>
+                    </div>
+                    <div class="p-4">
+                        <!-- 統計資訊 -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6 class="mb-1"><i class="fas fa-map-pin text-success me-2"></i>已開放區域</h6>
+                                    <h4 class="mb-0" id="enabled-count">0</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6 class="mb-1"><i class="fas fa-truck text-info me-2"></i>配送覆蓋率</h6>
+                                    <h4 class="mb-0" id="coverage-percentage">0%</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 配送區域選擇 -->
+                        <div class="delivery-areas-grid">
+                            ${generateDeliveryAreasHtml()}
+                        </div>
+
+                        <!-- 儲存按鈕 -->
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-success btn-lg" onclick="saveDeliveryAreas()">
+                                <i class="fas fa-save me-2"></i>儲存配送區域設定
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            contentContainer.innerHTML = settingsHtml;
+            updateDeliveryAreasStats();
+        }
+
+        // 載入配送區域資料
+        async function loadDeliveryAreas() {
+            try {
+                const response = await fetch('/api/admin/delivery-areas');
+                const data = await response.json();
+                
+                if (data.success) {
+                    deliveryAreasData = data.areas || [];
+                    
+                    // 建立區域對應表
+                    deliveryAreas = {};
+                    deliveryAreasData.forEach(area => {
+                        const key = `${area.city}-${area.district}`;
+                        deliveryAreas[key] = area.enabled;
+                    });
+                }
+            } catch (error) {
+                console.error('載入配送區域失敗:', error);
+            }
+        }
+
+        // 生成配送區域HTML
+        function generateDeliveryAreasHtml() {
+            const cities = {
+                '台北市': ['中正區', '大同區', '中山區', '松山區', '大安區', '萬華區', '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區'],
+                '新北市': ['板橋區', '三重區', '中和區', '永和區', '新莊區', '新店區', '樹林區', '鶯歌區', '三峽區', '淡水區', '汐止區', '瑞芳區', '土城區', '蘆洲區', '五股區', '泰山區', '林口區', '深坑區', '石碇區', '坪林區', '三芝區', '石門區', '八里區', '平溪區', '雙溪區', '貢寮區', '金山區', '萬里區', '烏來區'],
+                '桃園市': ['桃園區', '中壢區', '大溪區', '楊梅區', '蘆竹區', '大園區', '龜山區', '八德區', '龍潭區', '平鎮區', '新屋區', '觀音區', '復興區']
+            };
+
+            let html = '';
+            
+            Object.keys(cities).forEach(city => {
+                const districts = cities[city];
+                const cityId = city.replace('市', '').replace('縣', '');
+                
+                html += `
+                    <div class="city-card mb-4">
+                        <div class="city-header" onclick="toggleCity('${cityId}')">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-2" 
+                                       id="city-${cityId}" 
+                                       onchange="toggleCityAll('${city}')">
+                                <label for="city-${cityId}" class="city-name h6 mb-0">${city}</label>
+                                <small class="text-muted ms-2">(點擊展開區域)</small>
+                            </div>
+                            <i class="fas fa-chevron-down toggle-icon" id="icon-${cityId}"></i>
+                        </div>
+                        <div class="districts-grid collapse" id="districts-${cityId}">
+                `;
+                
+                districts.forEach(district => {
+                    const key = `${city}-${district}`;
+                    const isChecked = deliveryAreas[key] ? 'checked' : '';
+                    html += `
+                        <div class="form-check district-item">
+                            <input class="form-check-input district-checkbox" 
+                                   type="checkbox" 
+                                   value="${key}" 
+                                   id="district-${key}" 
+                                   ${isChecked}
+                                   onchange="updateDistrictSelection('${city}')">
+                            <label class="form-check-label" for="district-${key}">
+                                ${district}
+                            </label>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        // 切換城市展開/收合
+        function toggleCity(cityId) {
+            const districts = document.getElementById(`districts-${cityId}`);
+            const icon = document.getElementById(`icon-${cityId}`);
+            
+            if (districts.classList.contains('show')) {
+                districts.classList.remove('show');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                districts.classList.add('show');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // 切換整個城市的所有區域
+        function toggleCityAll(city) {
+            const cityCheckbox = document.getElementById(`city-${city.replace('市', '').replace('縣', '')}`);
+            const districtCheckboxes = document.querySelectorAll(`input[value^="${city}-"]`);
+            
+            districtCheckboxes.forEach(checkbox => {
+                checkbox.checked = cityCheckbox.checked;
+            });
+            
+            updateDeliveryAreasStats();
+        }
+
+        // 更新區域選擇
+        function updateDistrictSelection(city) {
+            const cityId = city.replace('市', '').replace('縣', '');
+            const cityCheckbox = document.getElementById(`city-${cityId}`);
+            const districtCheckboxes = document.querySelectorAll(`input[value^="${city}-"]`);
+            
+            const checkedCount = Array.from(districtCheckboxes).filter(cb => cb.checked).length;
+            const totalCount = districtCheckboxes.length;
+            
+            if (checkedCount === 0) {
+                cityCheckbox.checked = false;
+                cityCheckbox.indeterminate = false;
+            } else if (checkedCount === totalCount) {
+                cityCheckbox.checked = true;
+                cityCheckbox.indeterminate = false;
+            } else {
+                cityCheckbox.checked = false;
+                cityCheckbox.indeterminate = true;
+            }
+            
+            updateDeliveryAreasStats();
+        }
+
+        // 更新統計資訊
+        function updateDeliveryAreasStats() {
+            const checkedDistricts = document.querySelectorAll('.district-checkbox:checked');
+            const totalDistricts = document.querySelectorAll('.district-checkbox');
+            
+            const enabledCount = checkedDistricts.length;
+            const totalCount = totalDistricts.length;
+            const percentage = totalCount > 0 ? Math.round((enabledCount / totalCount) * 100) : 0;
+            
+            document.getElementById('enabled-count').textContent = enabledCount;
+            document.getElementById('coverage-percentage').textContent = percentage + '%';
+        }
+
+        // 儲存配送區域設定
+        async function saveDeliveryAreas() {
+            const checkedDistricts = document.querySelectorAll('.district-checkbox:checked');
+            
+            if (checkedDistricts.length === 0) {
+                alert('請至少選擇一個配送區域');
+                return;
+            }
+            
+            const areas = Array.from(checkedDistricts).map(checkbox => {
+                const [city, district] = checkbox.value.split('-');
+                return { city, district, enabled: true };
+            });
+            
+            try {
+                const response = await fetch('/api/admin/delivery-areas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ areas })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ 配送區域設定已儲存！\\n已開放 ${new Set(areas.map(a => a.city)).size} 個縣市，共 ${areas.length} 個區域`);
+                } else {
+                    alert(`儲存失敗: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('儲存配送區域失敗:', error);
+                alert('儲存失敗，請稍後再試');
             }
         }
 
