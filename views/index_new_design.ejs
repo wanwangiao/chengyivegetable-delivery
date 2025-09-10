@@ -303,6 +303,162 @@
   </div>
 </div>
 
+<!-- 結帳彈窗 -->
+<div class="fixed inset-0 bg-black/30 z-40 hidden" id="checkout-modal">
+  <div class="fixed inset-4 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col">
+      <!-- 標題欄 -->
+      <div class="flex items-center p-4 border-b border-gray-100">
+        <button class="text-gray-500 hover:text-gray-800 mr-3" onclick="closeCheckoutModal()">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h2 class="text-gray-900 text-xl font-bold flex-1 text-center pr-8">結帳</h2>
+      </div>
+      
+      <!-- 結帳內容 - 可滾動 -->
+      <div class="flex-1 overflow-y-auto">
+        <form class="p-4 space-y-6" id="checkout-form">
+          <!-- 顧客資訊 -->
+          <div>
+            <h3 class="text-gray-800 text-lg font-bold mb-4">顾客資訊</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-gray-700 text-sm font-medium mb-2">姓名 <span class="text-red-500">*</span></label>
+                <input type="text" name="name" id="checkout-name" required
+                       class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500"
+                       placeholder="請輸入您的姓名">
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 text-sm font-medium mb-2">聯絡電話 <span class="text-red-500">*</span></label>
+                <input type="tel" name="phone" id="checkout-phone" required
+                       class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500"
+                       placeholder="09XXXXXXXX">
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-gray-700 text-sm font-medium mb-2">縣市 <span class="text-red-500">*</span></label>
+                  <select name="city" id="checkout-city" required
+                          class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500">
+                    <option value="">請選擇</option>
+                    <option value="台北市">台北市</option>
+                    <option value="新北市">新北市</option>
+                    <option value="桃園市">桃園市</option>
+                    <option value="台中市">台中市</option>
+                    <option value="台南市">台南市</option>
+                    <option value="高雄市">高雄市</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-gray-700 text-sm font-medium mb-2">區域 <span class="text-red-500">*</span></label>
+                  <select name="district" id="checkout-district" required
+                          class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500">
+                    <option value="">請選擇</option>
+                    <option value="中正區">中正區</option>
+                    <option value="大同區">大同區</option>
+                    <option value="中山區">中山區</option>
+                    <option value="松山區">松山區</option>
+                    <option value="大安區">大安區</option>
+                    <option value="萬華區">萬華區</option>
+                    <option value="信義區">信義區</option>
+                    <option value="士林區">士林區</option>
+                    <option value="北投區">北投區</option>
+                    <option value="內湖區">內湖區</option>
+                    <option value="南港區">南港區</option>
+                    <option value="文山區">文山區</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 text-sm font-medium mb-2">社區名稱</label>
+                <input type="text" name="community" id="checkout-community"
+                       class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500"
+                       placeholder="如：信義花園社區（選填）">
+              </div>
+              
+              <div>
+                <label class="block text-gray-700 text-sm font-medium mb-2">詳細地址 <span class="text-red-500">*</span></label>
+                <input type="text" name="address" id="checkout-address" required
+                       class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500"
+                       placeholder="巷弄、門牌號碼">
+              </div>
+            </div>
+          </div>
+
+          <!-- 付款方式 -->
+          <div>
+            <h3 class="text-gray-800 text-lg font-bold mb-4">付款方式</h3>
+            <div class="space-y-3">
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="paymentMethod" value="cash" checked class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                <span class="ml-3 text-gray-700">💰 現金（貨到付款）</span>
+              </label>
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="paymentMethod" value="bank" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                <span class="ml-3 text-gray-700">🏦 銀行轉帳</span>
+              </label>
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="paymentMethod" value="linepay" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500">
+                <span class="ml-3 text-gray-700">💳 LINE Pay</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 訂購項目 -->
+          <div>
+            <div class="flex items-center justify-between mb-4 cursor-pointer" onclick="toggleCheckoutItems()">
+              <h3 class="text-gray-800 text-lg font-bold">訂購項目</h3>
+              <span class="material-symbols-outlined text-gray-500" id="checkout-toggle-icon">expand_more</span>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-3 hidden" id="checkout-items-detail">
+              <!-- 動態生成訂單項目 -->
+            </div>
+            
+            <div class="mt-3 text-sm text-gray-600">
+              <span id="checkout-items-summary">載入中...</span>
+            </div>
+          </div>
+
+          <!-- 備註 -->
+          <div>
+            <label class="block text-gray-700 text-sm font-medium mb-2">備註</label>
+            <textarea name="notes" id="checkout-notes" rows="3"
+                      class="w-full rounded-lg border-gray-300 p-3 text-sm focus:ring-green-500 focus:border-green-500"
+                      placeholder="特殊需求或配送指示"></textarea>
+          </div>
+        </form>
+      </div>
+      
+      <!-- 底部結帳區域 -->
+      <div class="bg-white p-4 border-t border-gray-100">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <p class="text-gray-600 font-medium">訂單金額</p>
+            <p class="text-xs text-gray-500" id="checkout-delivery-info">滿 $200 免運費</p>
+          </div>
+          <div class="text-right">
+            <p class="text-gray-900 text-xl font-bold" id="checkout-total-amount">$0</p>
+            <p class="text-xs text-gray-500" id="checkout-delivery-fee-info">運費: $50</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" onclick="closeCheckoutModal()" 
+                  class="w-full py-3 px-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+            取消
+          </button>
+          <button type="button" onclick="submitCheckoutOrder()" id="checkout-submit-btn"
+                  class="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+            送出訂單
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // 購物車功能
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -429,7 +585,10 @@ function addToCartFromModal() {
 // 購物車彈窗功能
 function openCartModal() {
   if (cart.length === 0) {
-    alert('購物車內尚無商品');
+    // 顯示空購物車彈窗
+    renderEmptyCartModal();
+    document.getElementById('cart-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     return;
   }
   
@@ -448,7 +607,7 @@ function renderCartModal() {
   const container = document.getElementById('cart-modal-items');
   
   if (cart.length === 0) {
-    container.innerHTML = '<div class="p-8 text-center text-gray-500">購物車內尚無商品</div>';
+    renderEmptyCartModal();
     return;
   }
   
@@ -470,6 +629,9 @@ function renderCartModal() {
       </div>
     </div>
   `).join('');
+  
+  // 顯示結帳按鈕區域
+  document.querySelector('#cart-modal .bg-white.p-4.pt-4.mt-2').style.display = 'block';
 }
 
 function updateCartModalTotal() {
@@ -484,22 +646,46 @@ function updateCartModalTotal() {
 
 function changeCartQuantity(productId, change) {
   const item = cart.find(item => item.productId === productId);
-  if (item) {
+  if (!item) return;
+  
+  // 如果是減少數量且目前數量是1，顯示確認對話框
+  if (change < 0 && item.quantity === 1) {
+    if (confirm(`確定要移除「${item.name}」嗎？`)) {
+      cart = cart.filter(cartItem => cartItem.productId !== productId);
+    } else {
+      return; // 取消移除
+    }
+  } else {
     item.quantity += change;
     if (item.quantity <= 0) {
       cart = cart.filter(cartItem => cartItem.productId !== productId);
     }
-    
-    // 更新所有顯示
-    updateCartDisplay();
+  }
+  
+  // 更新所有顯示
+  updateCartDisplay();
+  
+  // 如果購物車空了，顯示空購物車
+  if (cart.length === 0) {
+    renderEmptyCartModal();
+  } else {
     renderCartModal();
     updateCartModalTotal();
-    
-    // 如果購物車空了，關閉彈窗
-    if (cart.length === 0) {
-      closeCartModal();
-    }
   }
+}
+
+function renderEmptyCartModal() {
+  const container = document.getElementById('cart-modal-items');
+  container.innerHTML = `
+    <div class="p-8 text-center">
+      <div class="text-6xl mb-4">🛒</div>
+      <p class="text-gray-500 text-lg mb-2">購物車內尚無商品</p>
+      <p class="text-gray-400 text-sm">快去挑選喜歡的新鮮蔬果吧！</p>
+    </div>
+  `;
+  
+  // 隱藏結帳按鈕區域
+  document.querySelector('#cart-modal .bg-white.p-4.pt-4.mt-2').style.display = 'none';
 }
 
 function proceedToCheckout() {
@@ -507,7 +693,10 @@ function proceedToCheckout() {
     alert('購物車內尚無商品');
     return;
   }
-  window.location.href = '/checkout';
+  
+  // 關閉購物車彈窗，開啟結帳彈窗
+  closeCartModal();
+  openCheckoutModal();
 }
 
 // 初始化
@@ -520,10 +709,195 @@ document.getElementById('product-modal').addEventListener('click', function(e) {
   }
 });
 
+// 結帳彈窗功能
+function openCheckoutModal() {
+  renderCheckoutItems();
+  updateCheckoutTotal();
+  document.getElementById('checkout-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCheckoutModal() {
+  document.getElementById('checkout-modal').classList.add('hidden');
+  document.body.style.overflow = 'auto';
+}
+
+function renderCheckoutItems() {
+  const container = document.getElementById('checkout-items-detail');
+  const summary = document.getElementById('checkout-items-summary');
+  
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  summary.textContent = `${totalItems} 項商品`;
+  
+  container.innerHTML = cart.map(item => `
+    <div class="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+      <div class="flex-1">
+        <p class="text-gray-800 font-medium text-sm">${item.name}</p>
+        <p class="text-gray-500 text-xs">單價: $${item.price}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="changeCheckoutQuantity('${item.productId}', -1)" 
+                class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors text-sm">-</button>
+        <span class="text-sm font-medium w-6 text-center">${item.quantity}</span>
+        <button onclick="changeCheckoutQuantity('${item.productId}', 1)" 
+                class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors text-sm">+</button>
+        <span class="text-green-600 font-bold text-sm ml-2">$${item.price * item.quantity}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateCheckoutTotal() {
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = subtotal >= 200 ? 0 : 50;
+  const total = subtotal + deliveryFee;
+  
+  document.getElementById('checkout-total-amount').textContent = `$${total}`;
+  document.getElementById('checkout-delivery-fee-info').textContent = deliveryFee > 0 ? `運費: $${deliveryFee}` : '免運費';
+  document.getElementById('checkout-delivery-info').textContent = subtotal >= 200 ? '已達免運門檻' : '滿 $200 免運費';
+}
+
+function changeCheckoutQuantity(productId, change) {
+  const item = cart.find(item => item.productId === productId);
+  if (!item) return;
+  
+  // 如果是減少數量且目前數量是1，顯示確認對話框
+  if (change < 0 && item.quantity === 1) {
+    if (confirm(`確定要移除「${item.name}」嗎？`)) {
+      cart = cart.filter(cartItem => cartItem.productId !== productId);
+    } else {
+      return; // 取消移除
+    }
+  } else {
+    item.quantity += change;
+    if (item.quantity <= 0) {
+      cart = cart.filter(cartItem => cartItem.productId !== productId);
+    }
+  }
+  
+  // 更新所有顯示
+  updateCartDisplay();
+  
+  // 如果購物車空了，關閉結帳彈窗
+  if (cart.length === 0) {
+    closeCheckoutModal();
+    alert('購物車已清空');
+    return;
+  }
+  
+  renderCheckoutItems();
+  updateCheckoutTotal();
+}
+
+function toggleCheckoutItems() {
+  const detail = document.getElementById('checkout-items-detail');
+  const icon = document.getElementById('checkout-toggle-icon');
+  
+  if (detail.classList.contains('hidden')) {
+    detail.classList.remove('hidden');
+    icon.textContent = 'expand_less';
+  } else {
+    detail.classList.add('hidden');
+    icon.textContent = 'expand_more';
+  }
+}
+
+async function submitCheckoutOrder() {
+  // 驗證必填欄位
+  const name = document.getElementById('checkout-name').value.trim();
+  const phone = document.getElementById('checkout-phone').value.trim();
+  const city = document.getElementById('checkout-city').value;
+  const district = document.getElementById('checkout-district').value;
+  const address = document.getElementById('checkout-address').value.trim();
+  const community = document.getElementById('checkout-community').value.trim();
+  
+  if (!name || !phone || !city || !district || !address) {
+    alert('請填寫所有必填欄位');
+    return;
+  }
+  
+  // 手機號碼格式驗證
+  const phoneRegex = /^09\d{8}$/;
+  if (!phoneRegex.test(phone)) {
+    alert('請輸入正確的手機號碼格式 (09XXXXXXXX)');
+    return;
+  }
+  
+  // 準備訂單資料
+  const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+  const notes = document.getElementById('checkout-notes').value.trim();
+  let fullAddress = `${city}${district}${address}`;
+  if (community) {
+    fullAddress = `${city}${district}${community}${address}`;
+  }
+  
+  const orderData = {
+    name: name,
+    phone: phone,
+    address: fullAddress,
+    notes: notes,
+    paymentMethod: paymentMethod,
+    items: cart.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity
+    }))
+  };
+  
+  // 顯示載入狀態
+  const submitBtn = document.getElementById('checkout-submit-btn');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.innerHTML = '送出中...';
+  submitBtn.disabled = true;
+  
+  try {
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // 清空購物車
+      localStorage.removeItem('cart');
+      cart = [];
+      updateCartDisplay();
+      
+      // 關閉彈窗
+      closeCheckoutModal();
+      
+      // 顯示成功訊息
+      alert(`✅ 訂單建立成功！\n訂單編號：#${result.orderId}\n感謝您的訂購，我們會盡快為您準備商品。`);
+      
+      // 可選：跳轉到訂單查詢頁面
+      // window.location.href = `/order-tracking?orderId=${result.orderId}`;
+    } else {
+      alert(`下單失敗: ${result.message}`);
+    }
+  } catch (error) {
+    console.error('下單錯誤:', error);
+    alert('下單失敗，請稍後再試');
+  } finally {
+    // 恢復按鈕狀態
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
+  }
+}
+
 // 購物車彈窗背景點擊關閉
 document.getElementById('cart-modal').addEventListener('click', function(e) {
   if (e.target === this) {
     closeCartModal();
+  }
+});
+
+// 結帳彈窗背景點擊關閉
+document.getElementById('checkout-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeCheckoutModal();
   }
 });
 </script>
