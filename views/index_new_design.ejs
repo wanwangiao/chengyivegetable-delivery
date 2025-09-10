@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8"/>
+  <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+  <link as="style" href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans+TC:wght@400;500;700&family=Space+Grotesk:wght@400;500;700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <title>誠憶鮮蔬</title>
+  <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- PWA 設定 -->
+  <meta name="theme-color" content="#22c55e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <style type="text/tailwindcss">
+    :root {
+      --primary-color: #22c55e;
+    }
+    body {
+      font-family: 'Noto Sans TC', 'Space Grotesk', sans-serif;
+    }
+  </style>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    .product-item {
+      transition: all 0.2s ease-in-out;
+    }
+    .product-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .product-image {
+      aspect-ratio: 1;
+      width: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+<div class="relative flex size-full min-h-screen flex-col">
+  <!-- Header -->
+  <header class="sticky top-0 bg-white z-10 shadow-sm">
+    <div class="relative w-full h-48 bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV");'>
+      <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-end p-4">
+        <h1 class="text-white text-3xl font-bold">誠憶鮮蔬</h1>
+        <div class="flex items-center text-white text-sm mt-1">
+          <span class="material-symbols-outlined text-base mr-1">visibility</span>
+          <span>1,234 次查看</span>
+          <a class="ml-auto bg-white/20 backdrop-blur-sm text-white py-1 px-3 rounded-full text-sm font-medium hover:bg-white/30 transition-colors" href="#">店家資訊</a>
+        </div>
+      </div>
+    </div>
+    <div class="overflow-x-auto whitespace-nowrap border-b border-gray-200">
+      <nav class="flex px-4">
+        <a class="flex flex-col items-center justify-center border-b-2 border-green-500 text-green-600 px-4 py-3 text-sm font-semibold" href="#">全部商品</a>
+        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最新商品</a>
+        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">熱銷商品</a>
+        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最佳推薦</a>
+        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">限時特惠</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow pb-32">
+    <!-- 重要公告 -->
+    <section class="bg-white p-4 my-4 rounded-lg shadow-sm mx-4">
+      <h2 class="text-lg font-bold text-gray-900 mb-2">重要公告</h2>
+      <div class="space-y-2 text-sm text-gray-600">
+        <p><span class="font-semibold">服務範圍：</span>大台北地區（詳細請見店家資訊）。</p>
+        <p><span class="font-semibold">外送門檻：</span>消費滿 $200 免運費。</p>
+        <p><span class="font-semibold">付款方式：</span>線上刷卡、貨到付款。</p>
+        <p><span class="font-semibold">配送時間：</span>週一至週五 9:00 - 18:00。</p>
+      </div>
+    </section>
+
+    <!-- 商品列表 - 新的橫向佈局 -->
+    <section class="px-4">
+      <div class="space-y-4" id="products-container">
+        <% if (products && products.length > 0) { %>
+          <% products.forEach((product, index) => { %>
+            <!-- 商品項目 - 橫向佈局 -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden product-item cursor-pointer" 
+                 onclick="openProductModal('<%= product.id %>', '<%= product.name %>', '<%= product.price %>', '<%= product.unit_hint || "" %>', '<%= product.is_priced_item %>')">
+              <div class="flex">
+                <!-- 左側圖片 (1/3) -->
+                <div class="w-1/3 relative">
+                  <img alt="<%= product.name %>" 
+                       class="product-image" 
+                       src="<%= product.image_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop&crop=center' %>"
+                       loading="lazy">
+                  <% if (index === 0) { %>
+                    <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full">熱銷</span>
+                  <% } else if (index === 2) { %>
+                    <span class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">新品</span>
+                  <% } %>
+                </div>
+                
+                <!-- 右側商品資訊 (2/3) -->
+                <div class="w-2/3 p-4 flex flex-col justify-between">
+                  <div class="flex-grow">
+                    <!-- 商品名稱 -->
+                    <h3 class="font-semibold text-gray-800 text-lg mb-2"><%= getProductEmoji(product.name) %> <%= product.name %></h3>
+                    
+                    <!-- 商品說明 -->
+                    <p class="text-sm text-gray-500 mb-3 line-clamp-2">
+                      <% if (product.name.includes('番茄')) { %>
+                        來自陽光充足的農場，多汁甜美。
+                      <% } else if (product.name.includes('高麗菜')) { %>
+                        清脆爽口，口感極佳。
+                      <% } else if (product.name.includes('胡蘿蔔')) { %>
+                        營養豐富，天然甜味。
+                      <% } else if (product.name.includes('青江菜')) { %>
+                        每日現採，保證新鮮。
+                      <% } else { %>
+                        新鮮蔬果，品質保證。
+                      <% } %>
+                    </p>
+                  </div>
+                  
+                  <!-- 價格和按鈕 -->
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <% if (product.is_priced_item) { %>
+                        <p class="text-green-600 font-bold text-lg">時價 <span class="text-sm font-normal text-gray-500">/ <%= product.unit_hint || '份' %></span></p>
+                      <% } else { %>
+                        <p class="text-green-600 font-bold text-lg">$<%= product.price %> <span class="text-sm font-normal text-gray-500">/ <%= product.unit_hint || '份' %></span></p>
+                      <% } %>
+                    </div>
+                    <button class="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-600 transition-colors" 
+                            onclick="event.stopPropagation(); addToCart('<%= product.id %>', '<%= product.name %>', '<%= product.price %>', '<%= product.is_priced_item %>')">
+                      <span class="material-symbols-outlined">add_shopping_cart</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <!-- 示範資料 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden product-item cursor-pointer" onclick="openProductModal('demo1', '有機番茄', '60', '斤', false)">
+            <div class="flex">
+              <div class="w-1/3 relative">
+                <img alt="有機番茄" class="product-image" src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop&crop=center">
+                <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full">熱銷</span>
+              </div>
+              <div class="w-2/3 p-4 flex flex-col justify-between">
+                <div class="flex-grow">
+                  <h3 class="font-semibold text-gray-800 text-lg mb-2">🍅 有機番茄</h3>
+                  <p class="text-sm text-gray-500 mb-3">來自陽光充足的農場，多汁甜美。</p>
+                </div>
+                <div class="flex justify-between items-center">
+                  <p class="text-green-600 font-bold text-lg">$60 <span class="text-sm font-normal text-gray-500">/ 斤</span></p>
+                  <button class="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-600 transition-colors" onclick="event.stopPropagation(); addToCart('demo1', '有機番茄', '60', false)">
+                    <span class="material-symbols-outlined">add_shopping_cart</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+
+  <!-- 訂單查詢按鈕 -->
+  <button class="fixed bottom-24 right-4 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-green-600 transition-all z-20" onclick="window.location.href='/order-tracking'">
+    <span class="material-symbols-outlined">receipt_long</span>
+    <span class="font-medium">訂單查詢</span>
+  </button>
+
+  <!-- 購物車底部 -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-between items-center shadow-top z-20" id="cart-footer">
+    <div>
+      <span class="text-gray-500">合計：</span>
+      <span class="font-bold text-xl text-green-600" id="cart-total">$0</span>
+    </div>
+    <button class="bg-green-500 text-white font-bold py-3 px-6 rounded-full hover:bg-green-600 transition-colors flex items-center gap-2" id="checkout-btn" onclick="window.location.href='/checkout'">
+      <span class="material-symbols-outlined">shopping_cart_checkout</span>
+      <span id="checkout-text">來去結帳 (0)</span>
+    </button>
+  </footer>
+</div>
+
+<!-- 商品詳情彈窗 -->
+<div class="fixed inset-0 bg-gray-900/50 z-50 hidden" id="product-modal">
+  <div class="relative mx-auto mt-10 flex max-w-sm flex-col overflow-hidden rounded-t-2xl bg-white">
+    <div class="flex-shrink-0">
+      <div class="absolute right-4 top-4 z-10">
+        <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-[#111811] transition-colors hover:bg-gray-200" onclick="closeProductModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="aspect-square w-full bg-cover bg-center bg-no-repeat" id="modal-image"></div>
+    </div>
+    <div class="flex-grow overflow-y-auto">
+      <div class="px-6 pt-5">
+        <h1 class="text-2xl font-bold text-gray-900" id="modal-title">商品名稱</h1>
+        <p class="pt-2 text-gray-600" id="modal-description">商品描述</p>
+      </div>
+      
+      <div class="px-6 pt-6" id="modal-options">
+        <h3 class="text-lg font-bold text-gray-900">選擇規格</h3>
+        <div class="mt-3 flex flex-wrap gap-3" id="modal-size-options">
+          <!-- 動態生成規格選項 -->
+        </div>
+      </div>
+      
+      <div class="px-6 py-6">
+        <label class="text-lg font-bold text-gray-900" for="modal-notes">備註</label>
+        <textarea class="mt-3 w-full resize-none rounded-xl border border-gray-200 bg-white p-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-green-600 focus:ring-green-600" id="modal-notes" placeholder="新增備註（例如：不要洋蔥）" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="sticky bottom-0 flex-shrink-0 border-t border-gray-200 bg-white/95 p-4 backdrop-blur-sm">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 rounded-full bg-gray-100 p-1">
+          <button class="flex h-10 w-10 items-center justify-center rounded-full text-2xl font-medium text-gray-600 transition-colors hover:bg-gray-200" onclick="changeQuantity(-1)">-</button>
+          <span class="w-8 text-center text-lg font-bold" id="modal-quantity">1</span>
+          <button class="flex h-10 w-10 items-center justify-center rounded-full text-2xl font-medium text-gray-600 transition-colors hover:bg-gray-200" onclick="changeQuantity(1)">+</button>
+        </div>
+        <button class="flex h-12 flex-1 items-center justify-center rounded-full bg-green-500 text-base font-bold text-white transition-colors hover:bg-green-600" onclick="addToCartFromModal()">
+          <span class="truncate" id="modal-add-btn">加入購物車</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 購物車功能
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let currentProduct = null;
+let modalQuantity = 1;
+
+// 更新購物車顯示
+function updateCartDisplay() {
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  document.getElementById('cart-total').textContent = `$${totalPrice}`;
+  document.getElementById('checkout-text').textContent = `來去結帳 (${totalItems})`;
+  
+  localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// 加入購物車
+function addToCart(productId, name, price, isPricedItem) {
+  if (isPricedItem === 'true') {
+    alert('時價商品請聯繫客服詢價');
+    return;
+  }
+  
+  const existingItem = cart.find(item => item.productId === productId);
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    cart.push({
+      productId: productId,
+      name: name,
+      price: parseInt(price),
+      quantity: 1
+    });
+  }
+  
+  updateCartDisplay();
+  
+  // 顯示加入成功提示
+  const button = event.target.closest('button');
+  const originalContent = button.innerHTML;
+  button.innerHTML = '<span class="material-symbols-outlined">check</span>';
+  button.classList.add('bg-green-600');
+  
+  setTimeout(() => {
+    button.innerHTML = originalContent;
+    button.classList.remove('bg-green-600');
+  }, 800);
+}
+
+// 打開商品詳情彈窗
+function openProductModal(productId, name, price, unitHint, isPricedItem) {
+  currentProduct = { productId, name, price, unitHint, isPricedItem };
+  modalQuantity = 1;
+  
+  document.getElementById('modal-title').textContent = name;
+  document.getElementById('modal-description').textContent = `新鮮優質的${name}，產地直送，品質保證。`;
+  document.getElementById('modal-quantity').textContent = modalQuantity;
+  document.getElementById('modal-image').style.backgroundImage = `url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop&crop=center')`;
+  
+  const addBtn = document.getElementById('modal-add-btn');
+  if (isPricedItem === 'true') {
+    addBtn.textContent = '聯繫客服詢價';
+  } else {
+    addBtn.textContent = `加入購物車 - $${price * modalQuantity}`;
+  }
+  
+  document.getElementById('product-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+// 關閉商品詳情彈窗
+function closeProductModal() {
+  document.getElementById('product-modal').classList.add('hidden');
+  document.body.style.overflow = 'auto';
+  document.getElementById('modal-notes').value = '';
+}
+
+// 改變數量
+function changeQuantity(change) {
+  modalQuantity = Math.max(1, modalQuantity + change);
+  document.getElementById('modal-quantity').textContent = modalQuantity;
+  
+  if (currentProduct && currentProduct.isPricedItem !== 'true') {
+    document.getElementById('modal-add-btn').textContent = `加入購物車 - $${currentProduct.price * modalQuantity}`;
+  }
+}
+
+// 從彈窗加入購物車
+function addToCartFromModal() {
+  if (!currentProduct) return;
+  
+  if (currentProduct.isPricedItem === 'true') {
+    alert('時價商品請聯繫客服詢價');
+    return;
+  }
+  
+  const existingItem = cart.find(item => item.productId === currentProduct.productId);
+  if (existingItem) {
+    existingItem.quantity += modalQuantity;
+  } else {
+    cart.push({
+      productId: currentProduct.productId,
+      name: currentProduct.name,
+      price: parseInt(currentProduct.price),
+      quantity: modalQuantity
+    });
+  }
+  
+  updateCartDisplay();
+  closeProductModal();
+  
+  // 顯示成功提示
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg z-50';
+  notification.textContent = `${currentProduct.name} 已加入購物車`;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 2000);
+}
+
+// 初始化
+updateCartDisplay();
+
+// 點擊彈窗背景關閉
+document.getElementById('product-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeProductModal();
+  }
+});
+</script>
+
+</body>
+</html>
