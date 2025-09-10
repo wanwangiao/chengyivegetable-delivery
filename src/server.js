@@ -209,41 +209,42 @@ let deliveryEstimationService = null;
     console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
   });
   
-  // 最後選擇 - 強制線上模式，不啟用示範模式
-  console.log('❌ 所有資料庫連線方式都失敗，但強制使用線上模式');
+  // 最後選擇 - 臨時啟動模式（允許服務先啟動，稍後重試資料庫）
+  console.warn('⚠️ 所有資料庫連線方式都失敗');
+  console.warn('🔄 啟動臨時模式 - 服務將正常啟動，但部分功能受限');
+  console.warn('📋 請稍後檢查：');
+  console.warn('1. Railway DATABASE_URL 環境變數設定');
+  console.warn('2. 資料庫服務狀態');
+  console.warn('3. 網路連線狀況');
+  
   demoMode = false;
+  pool = null; // 設為 null，讓服務知道沒有資料庫連線
   
-  // 線上模式：無法連接資料庫時拋出錯誤
-  console.error('🚨 無法建立資料庫連線，應用程式無法啟動');
-  console.error('請檢查以下項目：');
-  console.error('1. Railway DATABASE_URL 環境變數是否正確設定');
-  console.error('2. 資料庫服務是否正常運行');
-  console.error('3. 網路連線是否正常');
+  console.log('🚀 臨時模式啟動 - 服務將嘗試在背景重新連接資料庫');
   
-  process.exit(1); // 強制終止應用程式
+  // 不終止程式，讓服務繼續啟動
 }
 
-// 初始化資料庫連線
+// 初始化資料庫連線並啟動服務
 createDatabasePool().then(async () => {
-  // 執行啟動遷移
+  // 執行智能啟動遷移
   try {
-    console.log('🔧 嘗試載入遷移模組...');
-    const { executeAllStartupMigrations } = require('../auto_migrate_on_startup');
-    console.log('✅ 遷移模組載入成功');
+    console.log('🧠 載入智能遷移模組...');
+    const { smartAutoMigration } = require('../smart_auto_migration');
     
-    console.log('🚀 執行啟動遷移...');
-    const migrationResult = await executeAllStartupMigrations(pool);
+    console.log('🚀 執行智能遷移（不會阻止服務啟動）...');
+    const migrationResult = await smartAutoMigration(pool);
     
-    if (migrationResult && migrationResult.success) {
-      console.log('✅ 啟動遷移完成:', migrationResult.totalMigrations, '個遷移');
+    if (migrationResult.success) {
+      console.log('✅ 智能遷移成功:', migrationResult.message);
+    } else if (migrationResult.skipped) {
+      console.log('⏭️ 遷移已跳過:', migrationResult.reason);
     } else {
-      console.warn('⚠️ 啟動遷移部分失敗，但繼續啟動服務:', migrationResult?.error || '未知錯誤');
+      console.warn('⚠️ 遷移失敗但服務繼續:', migrationResult.message);
     }
   } catch (migrationError) {
-    console.error('❌ 啟動遷移失敗:', migrationError.message);
-    console.error('   完整錯誤:', migrationError);
-    console.log('🔄 跳過遷移，繼續啟動服務...');
-    // 不要因為遷移失敗就停止服務，繼續啟動
+    console.warn('⚠️ 遷移模組載入失敗，跳過遷移:', migrationError.message);
+    // 絕不讓遷移問題阻止服務啟動
   }
 
   // 初始化 Agent 系統
@@ -5563,6 +5564,20 @@ if (process.env.VERCEL) {
     // LINE Bot服務已在上方初始化
   });
 }
+
+}).catch(error => {
+  console.error('❌ 初始化過程發生錯誤:', error);
+  console.log('🚀 啟動緊急模式 - 基本服務仍可運行');
+  
+  // 即使資料庫初始化失敗，也要確保 Express 服務能啟動
+  if (process.env.NODE_ENV !== 'production') {
+    const server = app.listen(port, () => {
+      console.log(`🚨 緊急模式：系統正在監聽埠號 ${port}`);
+      console.log(`📱 前台網址: http://localhost:${port} (功能受限)`);
+      console.log(`⚠️ 部分功能可能無法使用，請檢查資料庫連線`);
+    });
+  }
+});
 
 // 導出 app 供 Vercel serverless 使用
 module.exports = app;
