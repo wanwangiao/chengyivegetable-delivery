@@ -2869,6 +2869,144 @@ app.post('/api/admin/agents/health-check', ensureAdmin, async (req, res) => {
 });
 
 // =====================================
+// 🛠️ 資料庫初始化 API
+// =====================================
+
+app.post('/api/admin/init-database', ensureAdmin, async (req, res) => {
+  console.log('🔧 開始Railway資料庫初始化...');
+  
+  try {
+    // 檢查資料庫連接
+    const timeResult = await pool.query('SELECT NOW(), version()');
+    console.log('✅ 資料庫連接成功');
+    console.log(`📅 時間: ${timeResult.rows[0].now}`);
+    
+    // 讀取並執行SQL檔案
+    const sqlFiles = [
+      { name: 'schema.sql', desc: '主要資料庫架構' },
+      { name: 'realtime_notifications_schema.sql', desc: '即時通訊系統架構' },
+      { name: 'smart_route_system_schema.sql', desc: '智能路線系統架構' },
+      { name: 'geocoding_cache_schema.sql', desc: '地理編碼快取架構' },
+      { name: 'gps_tracking_schema.sql', desc: 'GPS追蹤系統架構' },
+      { name: 'intelligent_routing_schema.sql', desc: '智能路線規劃架構' }
+    ];
+    
+    const results = [];
+    
+    for (const { name, desc } of sqlFiles) {
+      try {
+        const filePath = path.join(__dirname, '..', name);
+        if (require('fs').existsSync(filePath)) {
+          const sql = require('fs').readFileSync(filePath, 'utf8');
+          
+          // 分割SQL語句
+          const statements = sql.split(';').filter(stmt => stmt.trim().length > 0);
+          
+          for (const statement of statements) {
+            if (statement.trim()) {
+              await pool.query(statement);
+            }
+          }
+          
+          results.push({ file: name, status: 'success', description: desc });
+          console.log(`✅ ${desc} 完成`);
+        } else {
+          results.push({ file: name, status: 'not_found', description: desc });
+          console.log(`⚠️ ${name} 檔案不存在`);
+        }
+      } catch (error) {
+        console.error(`❌ ${name} 執行失敗:`, error.message);
+        if (error.message.includes('already exists')) {
+          results.push({ file: name, status: 'already_exists', description: desc });
+        } else {
+          results.push({ file: name, status: 'error', error: error.message, description: desc });
+        }
+      }
+    }
+    
+    // 初始化基礎資料
+    try {
+      await pool.query(`
+        INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES
+        ('高麗菜', 50.00, false, '顆'),
+        ('白蘿蔔', 30.00, false, '條'),
+        ('紅蘿蔔', 25.00, false, '條'),
+        ('青花菜', 40.00, false, '顆'),
+        ('空心菜', 20.00, false, '把'),
+        ('菠菜', 25.00, false, '把'),
+        ('韭菜', 30.00, false, '把'),
+        ('青江菜', 20.00, false, '把'),
+        ('大白菜', 35.00, false, '顆'),
+        ('小白菜', 15.00, false, '把')
+        ON CONFLICT (name) DO NOTHING
+      `);
+      results.push({ task: 'products_init', status: 'success', description: '基礎商品資料' });
+      console.log('✅ 基礎商品資料初始化完成');
+    } catch (error) {
+      results.push({ task: 'products_init', status: 'error', error: error.message });
+    }
+    
+    try {
+      await pool.query(`
+        INSERT INTO system_settings (setting_key, setting_value, description) VALUES
+        ('store_location', '{"lat": 24.1477, "lng": 120.6736}', '店鋪位置座標'),
+        ('max_delivery_radius', '15', '最大配送半徑(公里)'),
+        ('average_preparation_time', '20', '平均準備時間(分鐘)'),
+        ('delivery_fee', '50', '配送費用(元)')
+        ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value
+      `);
+      results.push({ task: 'settings_init', status: 'success', description: '系統設定' });
+      console.log('✅ 系統設定初始化完成');
+    } catch (error) {
+      results.push({ task: 'settings_init', status: 'error', error: error.message });
+    }
+    
+    // 檢查最終狀態
+    const tableResult = await pool.query(`
+      SELECT table_name, 
+             (SELECT count(*) FROM information_schema.columns 
+              WHERE table_name = t.table_name AND table_schema = 'public') as column_count
+      FROM information_schema.tables t
+      WHERE table_schema = 'public' 
+        AND table_name NOT LIKE 'pg_%'
+        AND table_name NOT LIKE 'sql_%'
+      ORDER BY table_name
+    `);
+    
+    // 統計資料
+    let statistics = [];
+    try {
+      const productCount = await pool.query('SELECT COUNT(*) FROM products');
+      statistics.push({ table: 'products', count: parseInt(productCount.rows[0].count) });
+      
+      const settingCount = await pool.query('SELECT COUNT(*) FROM system_settings');
+      statistics.push({ table: 'system_settings', count: parseInt(settingCount.rows[0].count) });
+    } catch (error) {
+      console.log('ℹ️ 部分統計查詢失敗，可能表尚未建立');
+    }
+    
+    console.log('🎉 Railway資料庫初始化完成！');
+    
+    res.json({
+      success: true,
+      message: 'Railway資料庫初始化完成',
+      results: results,
+      tables: tableResult.rows,
+      statistics: statistics,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 資料庫初始化失敗:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// =====================================
 // 📋 基本設定管理 API
 // =====================================
 
