@@ -387,6 +387,9 @@
                     currentSettings = data.settings;
                     allCategories = data.categories;
                     
+                    // 手動添加系統監控分類 (不需要後端設定)
+                    allCategories['system_monitor'] = [];
+                    
                     renderCategoryTabs();
                     renderSettings();
                 } else {
@@ -411,7 +414,8 @@
                 'content': '📋 頁面內容',
                 'features': '🎯 功能開關',
                 'delivery_areas': '🗺️ 配送區域',
-                'mobile': '📱 移動端設定'
+                'mobile': '📱 移動端設定',
+                'system_monitor': '📊 系統監控'
             };
 
             let tabsHtml = '';
@@ -442,6 +446,12 @@
             // 配送區域管理需要特殊處理
             if (activeCategory === 'delivery_areas') {
                 renderDeliveryAreasSettings();
+                return;
+            }
+            
+            // 系統監控需要特殊處理
+            if (activeCategory === 'system_monitor') {
+                renderSystemMonitorSettings();
                 return;
             }
             
@@ -930,6 +940,221 @@
                 console.error('儲存配送區域失敗:', error);
                 alert('儲存失敗，請稍後再試');
             }
+        }
+
+        // 渲染系統監控設定
+        async function renderSystemMonitorSettings() {
+            const contentContainer = document.getElementById('settings-content');
+            
+            contentContainer.innerHTML = `
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <h5><i class="fas fa-chart-line me-2"></i>系統監控面板</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 監控按鈕區域 -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="d-flex gap-2 mb-3">
+                                    <button onclick="refreshMonitorData()" class="btn btn-success">
+                                        <i class="fas fa-sync-alt me-1"></i>重新整理
+                                    </button>
+                                    <span class="text-muted" id="lastMonitorUpdate">最後更新：載入中...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系統狀態總覽 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <i class="fas fa-heartbeat text-success" style="font-size: 2rem;" id="healthIcon"></i>
+                                        </div>
+                                        <h6 class="card-title">系統狀態</h6>
+                                        <p class="card-text fw-bold" id="healthStatus">載入中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <i class="fas fa-clock text-primary" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h6 class="card-title">運行時間</h6>
+                                        <p class="card-text fw-bold" id="uptime">載入中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <i class="fas fa-chart-bar text-info" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h6 class="card-title">總請求數</h6>
+                                        <p class="card-text fw-bold" id="totalRequests">載入中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <i class="fas fa-tachometer-alt text-warning" style="font-size: 2rem;"></i>
+                                        </div>
+                                        <h6 class="card-title">平均響應時間</h6>
+                                        <p class="card-text fw-bold" id="avgResponse">載入中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 詳細資訊 -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-memory me-2"></i>記憶體資訊</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <p class="mb-1 text-muted">已使用</p>
+                                                <p class="fw-bold" id="currentMemory">載入中...</p>
+                                            </div>
+                                            <div class="col-4">
+                                                <p class="mb-1 text-muted">總量</p>
+                                                <p class="fw-bold" id="totalMemory">載入中...</p>
+                                            </div>
+                                            <div class="col-4">
+                                                <p class="mb-1 text-muted">RSS</p>
+                                                <p class="fw-bold" id="rssMemory">載入中...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>錯誤統計</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <p class="mb-1 text-muted">錯誤率</p>
+                                                <p class="fw-bold text-danger" id="errorRate">載入中...</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <p class="mb-1 text-muted">總錯誤數</p>
+                                                <p class="fw-bold text-danger" id="totalErrors">載入中...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系統狀態詳情 -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-list me-2"></i>系統狀態詳情</h6>
+                                    </div>
+                                    <div class="card-body" id="systemIssues">
+                                        <!-- 動態載入 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 載入監控數據
+            await loadMonitoringData();
+        }
+
+        // 載入監控數據
+        async function loadMonitoringData() {
+            try {
+                const response = await fetch('/api/performance');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateMonitoringUI(data.performance);
+                    document.getElementById('lastMonitorUpdate').textContent = \`最後更新：\${new Date().toLocaleString()}\`;
+                }
+            } catch (error) {
+                console.error('載入監控數據失敗:', error);
+                showNotification('無法載入監控數據', 'error');
+            }
+        }
+
+        // 更新監控UI
+        function updateMonitoringUI(performance) {
+            // 系統健康狀態
+            const healthStatus = performance.healthStatus.status;
+            const healthElement = document.getElementById('healthStatus');
+            const healthIcon = document.getElementById('healthIcon');
+            
+            if (healthElement) {
+                healthElement.textContent = healthStatus === 'healthy' ? '正常' : 
+                                           healthStatus === 'warning' ? '警告' : '嚴重';
+                healthElement.className = \`card-text fw-bold text-\${healthStatus === 'healthy' ? 'success' : 
+                                                                    healthStatus === 'warning' ? 'warning' : 'danger'}\`;
+                
+                healthIcon.className = \`fas fa-heartbeat text-\${healthStatus === 'healthy' ? 'success' : 
+                                                               healthStatus === 'warning' ? 'warning' : 'danger'}\`;
+            }
+            
+            // 基本指標
+            if (document.getElementById('uptime')) {
+                document.getElementById('uptime').textContent = formatUptime(performance.uptime);
+                document.getElementById('totalRequests').textContent = performance.totalRequests.toLocaleString();
+                document.getElementById('avgResponse').textContent = performance.averageResponseTime;
+                document.getElementById('errorRate').textContent = performance.errorRate;
+                document.getElementById('totalErrors').textContent = performance.totalErrors.toLocaleString();
+            }
+            
+            // 記憶體資訊
+            if (performance.currentMemory && document.getElementById('currentMemory')) {
+                document.getElementById('currentMemory').textContent = performance.currentMemory.heapUsed;
+                document.getElementById('totalMemory').textContent = performance.currentMemory.heapTotal;
+                document.getElementById('rssMemory').textContent = performance.currentMemory.rss;
+            }
+            
+            // 系統問題
+            const issuesContainer = document.getElementById('systemIssues');
+            if (issuesContainer) {
+                issuesContainer.innerHTML = '';
+                performance.healthStatus.issues.forEach(issue => {
+                    const issueElement = document.createElement('div');
+                    issueElement.className = \`alert \${issue.includes('正常') ? 'alert-success' : 'alert-warning'} mb-2\`;
+                    issueElement.innerHTML = \`<i class="fas fa-info-circle me-2"></i>\${issue}\`;
+                    issuesContainer.appendChild(issueElement);
+                });
+            }
+        }
+
+        // 重新整理監控數據
+        function refreshMonitorData() {
+            loadMonitoringData();
+        }
+
+        // 格式化運行時間
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) return \`\${days}天 \${hours}小時\`;
+            if (hours > 0) return \`\${hours}小時 \${minutes}分鐘\`;
+            return \`\${minutes}分鐘\`;
         }
 
         // 顯示通知

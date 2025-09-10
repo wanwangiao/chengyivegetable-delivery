@@ -2408,10 +2408,6 @@ app.get('/admin/websocket-monitor', ensureAdmin, (req, res) => {
   res.render('admin_websocket_monitor');
 });
 
-// 系統監控面板
-app.get('/admin/system-monitor', ensureAdmin, (req, res) => {
-  res.render('admin/system-monitor');
-});
 
 // WebSocket測試頁面 (開發模式限定)
 app.get('/websocket-test', (req, res) => {
