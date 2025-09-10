@@ -800,9 +800,17 @@ async function fetchProducts() {
     return products;
     
   } catch (error) {
-    console.log('❌ 資料庫查詢失敗，切換到示範模式:', error.message);
-    demoMode = true;
-    return demoProducts;
+    console.log('❌ 資料庫查詢失敗，但不切換到示範模式:', error.message);
+    // 不自動切換demo模式，而是返回空陣列或重試
+    console.log('🔄 嘗試重新查詢基本商品資料...');
+    try {
+      const { rows } = await pool.query('SELECT * FROM products ORDER BY id');
+      console.log('✅ 重新查詢成功，獲取', rows.length, '個商品');
+      return rows;
+    } catch (retryError) {
+      console.log('❌ 重試也失敗，返回空商品列表:', retryError.message);
+      return [];
+    }
   }
 }
 
@@ -854,7 +862,7 @@ function getProductEmoji(productName) {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
-    res.render('index_revolutionary', { 
+    res.render('index_ultimate', { 
       products: products,
       sessionLine: req.session.line || null,
       getProductEmoji: getProductEmoji
