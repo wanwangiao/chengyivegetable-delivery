@@ -227,16 +227,22 @@ let deliveryEstimationService = null;
 createDatabasePool().then(async () => {
   // 執行啟動遷移
   try {
+    console.log('🔧 嘗試載入遷移模組...');
     const { executeAllStartupMigrations } = require('../auto_migrate_on_startup');
+    console.log('✅ 遷移模組載入成功');
+    
+    console.log('🚀 執行啟動遷移...');
     const migrationResult = await executeAllStartupMigrations(pool);
     
-    if (migrationResult.success) {
+    if (migrationResult && migrationResult.success) {
       console.log('✅ 啟動遷移完成:', migrationResult.totalMigrations, '個遷移');
     } else {
-      console.warn('⚠️ 啟動遷移部分失敗，但繼續啟動服務:', migrationResult.error);
+      console.warn('⚠️ 啟動遷移部分失敗，但繼續啟動服務:', migrationResult?.error || '未知錯誤');
     }
   } catch (migrationError) {
-    console.error('❌ 啟動遷移失敗:', migrationError);
+    console.error('❌ 啟動遷移失敗:', migrationError.message);
+    console.error('   完整錯誤:', migrationError);
+    console.log('🔄 跳過遷移，繼續啟動服務...');
     // 不要因為遷移失敗就停止服務，繼續啟動
   }
 
