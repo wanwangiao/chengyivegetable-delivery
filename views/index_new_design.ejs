@@ -45,8 +45,9 @@
 <body class="bg-gray-50 text-gray-800">
 <div class="relative flex size-full min-h-screen flex-col">
   <!-- Header -->
-  <header class="sticky top-0 bg-white z-10 shadow-sm">
-    <div class="relative w-full h-48 bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV");'>
+  <header class="relative">
+    <!-- 大圖片區域 - 滾動時會被隱藏 -->
+    <div class="relative w-full h-48 bg-center bg-no-repeat bg-cover" id="hero-banner" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV");'>
       <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-end p-4">
         <h1 class="text-white text-3xl font-bold">誠憶鮮蔬</h1>
         <div class="flex items-center text-white text-sm mt-1">
@@ -56,14 +57,18 @@
         </div>
       </div>
     </div>
-    <div class="overflow-x-auto whitespace-nowrap border-b border-gray-200">
-      <nav class="flex px-4">
-        <a class="flex flex-col items-center justify-center border-b-2 border-green-500 text-green-600 px-4 py-3 text-sm font-semibold" href="#">全部商品</a>
-        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最新商品</a>
-        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">熱銷商品</a>
-        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最佳推薦</a>
-        <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">限時特惠</a>
-      </nav>
+    
+    <!-- 導航區域 - sticky -->
+    <div class="sticky top-0 bg-white z-10 shadow-sm">
+      <div class="overflow-x-auto whitespace-nowrap border-b border-gray-200">
+        <nav class="flex px-4">
+          <a class="flex flex-col items-center justify-center border-b-2 border-green-500 text-green-600 px-4 py-3 text-sm font-semibold" href="#">全部商品</a>
+          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最新商品</a>
+          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">熱銷商品</a>
+          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最佳推薦</a>
+          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">限時特惠</a>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -190,15 +195,20 @@
 
 <!-- 商品詳情彈窗 -->
 <div class="fixed inset-0 bg-gray-900/50 z-50 hidden" id="product-modal">
-  <div class="relative mx-auto mt-10 flex max-w-sm flex-col overflow-hidden rounded-t-2xl bg-white">
-    <div class="flex-shrink-0">
-      <div class="absolute right-4 top-4 z-10">
-        <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-[#111811] transition-colors hover:bg-gray-200" onclick="closeProductModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div class="aspect-square w-full bg-cover bg-center bg-no-repeat" id="modal-image"></div>
+  <div class="relative mx-auto mt-4 mb-4 flex max-w-sm flex-col bg-white rounded-2xl max-h-[90vh] overflow-hidden">
+    <!-- 關閉按鈕 -->
+    <div class="absolute right-4 top-4 z-10">
+      <button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/80 text-[#111811] transition-colors hover:bg-gray-200" onclick="closeProductModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
+    
+    <!-- 商品圖片 - 縮小高度 -->
+    <div class="flex-shrink-0">
+      <div class="w-full h-48 bg-cover bg-center bg-no-repeat" id="modal-image"></div>
+    </div>
+    
+    <!-- 可滾動的內容區域 -->
     <div class="flex-grow overflow-y-auto">
       <div class="px-6 pt-5">
         <h1 class="text-2xl font-bold text-gray-900" id="modal-title">商品名稱</h1>
@@ -208,7 +218,18 @@
       <div class="px-6 pt-6" id="modal-options">
         <h3 class="text-lg font-bold text-gray-900">選擇規格</h3>
         <div class="mt-3 flex flex-wrap gap-3" id="modal-size-options">
-          <!-- 動態生成規格選項 -->
+          <label class="relative flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-900 ring-offset-2 transition-all has-[:checked]:border-green-600 has-[:checked]:ring-2 has-[:checked]:ring-green-600">
+            小份
+            <input checked class="absolute h-0 w-0 appearance-none" name="modal-size" type="radio" value="small"/>
+          </label>
+          <label class="relative flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-900 ring-offset-2 transition-all has-[:checked]:border-green-600 has-[:checked]:ring-2 has-[:checked]:ring-green-600">
+            中份
+            <input class="absolute h-0 w-0 appearance-none" name="modal-size" type="radio" value="medium"/>
+          </label>
+          <label class="relative flex cursor-pointer items-center justify-center rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-900 ring-offset-2 transition-all has-[:checked]:border-green-600 has-[:checked]:ring-2 has-[:checked]:ring-green-600">
+            大份
+            <input class="absolute h-0 w-0 appearance-none" name="modal-size" type="radio" value="large"/>
+          </label>
         </div>
       </div>
       
@@ -216,8 +237,13 @@
         <label class="text-lg font-bold text-gray-900" for="modal-notes">備註</label>
         <textarea class="mt-3 w-full resize-none rounded-xl border border-gray-200 bg-white p-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-green-600 focus:ring-green-600" id="modal-notes" placeholder="新增備註（例如：不要洋蔥）" rows="3"></textarea>
       </div>
+      
+      <!-- 底部間距，確保內容不會被按鈕遮擋 -->
+      <div class="h-20"></div>
     </div>
-    <div class="sticky bottom-0 flex-shrink-0 border-t border-gray-200 bg-white/95 p-4 backdrop-blur-sm">
+    
+    <!-- 固定底部按鈕區域 -->
+    <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-2 rounded-full bg-gray-100 p-1">
           <button class="flex h-10 w-10 items-center justify-center rounded-full text-2xl font-medium text-gray-600 transition-colors hover:bg-gray-200" onclick="changeQuantity(-1)">-</button>
