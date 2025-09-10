@@ -22,6 +22,7 @@ process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter'),
       { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation'),
       { apiErrorHandler, pageErrorHandler, notFoundHandler, asyncWrapper } = require('./middleware/errorHandler'),
+      performanceMonitor = require('./middleware/performanceMonitor'),
       { createAgentSystem } = require('./agents'),
       { router: driverSimplifiedApiRoutes, setDatabasePool: setDriverSimplifiedDatabasePool } = require('./routes/driver_simplified_api'),
       customerApiRoutes = require('./routes/customer_api'),
@@ -365,6 +366,9 @@ app.use(express.static(path.join(__dirname, '../public'), {
 app.get('/favicon.ico', (req, res) => {
   res.status(204).send(); // 返回 204 No Content
 });
+
+// 性能監控中間件
+app.use(performanceMonitor.requestMonitor());
 
 // 安全性中間件 - 暫時禁用 CSP 來修復 502 錯誤
 app.use(helmet({
@@ -896,6 +900,24 @@ app.get('/api/health', (req, res) => {
     database: pool ? '已連接' : '未連接',
     mode: demoMode ? '示範模式' : '線上模式'
   });
+});
+
+// 性能監控端點
+app.get('/api/performance', (req, res) => {
+  try {
+    const report = performanceMonitor.getPerformanceReport();
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      performance: report
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '無法獲取性能數據',
+      error: error.message
+    });
+  }
 });
 
 app.get('/', async (req, res, next) => {

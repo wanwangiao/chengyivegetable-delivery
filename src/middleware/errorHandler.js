@@ -2,7 +2,16 @@
 
 // API錯誤處理
 const apiErrorHandler = (err, req, res, next) => {
-  console.error('API Error:', err);
+  // 記錄詳細錯誤信息
+  console.error('🚨 API Error:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    userAgent: req.get('User-Agent'),
+    ip: req.ip
+  });
 
   // 資料庫連線錯誤
   if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {

@@ -1,11 +1,14 @@
 # Railway Configuration for 誠憶鮮蔬外送系統
 [build]
 builder = "nixpacks"
+watchPatterns = ["src/**", "views/**", "public/**", "package.json", "railway.toml"]
 
 [deploy]
 startCommand = "npm start"
 healthcheckPath = "/"
+healthcheckTimeout = 300
 restartPolicyType = "always"
+replicas = 1
 
 [variables]
 # Node.js 生產環境設定

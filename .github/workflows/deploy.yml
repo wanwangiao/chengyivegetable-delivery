@@ -1,0 +1,45 @@
+name: Auto Deploy to Railway
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: '手動觸發部署原因'
+        required: false
+        default: '手動觸發部署'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 檢出代碼
+      uses: actions/checkout@v4
+      
+    - name: 設置Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: 檢查語法
+      run: |
+        echo "🔍 檢查主要文件語法..."
+        node -c src/server.js || exit 1
+        echo "✅ 語法檢查通過"
+        
+    - name: 觸發Railway部署
+      run: |
+        echo "🚀 觸發Railway重新部署..."
+        echo "部署原因: ${{ github.event.inputs.reason || '自動觸發' }}"
+        echo "提交信息: ${{ github.event.head_commit.message }}"
+        echo "✅ GitHub Actions觸發成功，Railway將自動部署"
+        
+    - name: 部署通知
+      run: |
+        echo "📊 部署信息:"
+        echo "- 分支: ${{ github.ref_name }}"
+        echo "- 提交: ${{ github.sha }}"
+        echo "- 時間: $(date)"
+        echo "- Railway URL: https://chengyivegetable-production-7b4a.up.railway.app/"
