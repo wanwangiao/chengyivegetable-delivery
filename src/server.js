@@ -3022,6 +3022,62 @@ app.post('/api/system/first-time-init', async (req, res) => {
   }
 });
 
+// 專用商品初始化API
+app.post('/api/system/init-products', async (req, res) => {
+  try {
+    console.log('🛒 開始商品資料初始化...');
+    
+    // 檢查是否已有商品資料
+    const existingProducts = await pool.query('SELECT COUNT(*) FROM products');
+    const productCount = parseInt(existingProducts.rows[0].count);
+    
+    if (productCount > 0) {
+      return res.json({
+        success: true,
+        message: `商品資料已存在 (${productCount}個商品)`,
+        skipped: true,
+        productCount: productCount
+      });
+    }
+    
+    // 新增商品資料
+    await pool.query(`
+      INSERT INTO products (name, price, is_priced_item, unit_hint) VALUES
+      ('高麗菜', 50.00, false, '顆'),
+      ('白蘿蔔', 30.00, false, '條'),
+      ('紅蘿蔔', 25.00, false, '條'),
+      ('青花菜', 40.00, false, '顆'),
+      ('空心菜', 20.00, false, '把'),
+      ('菠菜', 25.00, false, '把'),
+      ('韭菜', 30.00, false, '把'),
+      ('青江菜', 20.00, false, '把'),
+      ('大白菜', 35.00, false, '顆'),
+      ('小白菜', 15.00, false, '把')
+    `);
+    
+    // 檢查插入結果
+    const newProductCount = await pool.query('SELECT COUNT(*) FROM products');
+    const insertedCount = parseInt(newProductCount.rows[0].count);
+    
+    console.log(`✅ 成功新增 ${insertedCount} 個商品`);
+    
+    res.json({
+      success: true,
+      message: `成功初始化 ${insertedCount} 個基礎商品`,
+      productCount: insertedCount,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 商品初始化失敗:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 正式的資料庫初始化API（需要管理員權限）
 app.post('/api/admin/init-database', ensureAdmin, async (req, res) => {
   console.log('🔧 開始Railway資料庫初始化...');
