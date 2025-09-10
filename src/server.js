@@ -225,6 +225,21 @@ let deliveryEstimationService = null;
 
 // 初始化資料庫連線
 createDatabasePool().then(async () => {
+  // 執行啟動遷移
+  try {
+    const { executeAllStartupMigrations } = require('../auto_migrate_on_startup');
+    const migrationResult = await executeAllStartupMigrations(pool);
+    
+    if (migrationResult.success) {
+      console.log('✅ 啟動遷移完成:', migrationResult.totalMigrations, '個遷移');
+    } else {
+      console.warn('⚠️ 啟動遷移部分失敗，但繼續啟動服務:', migrationResult.error);
+    }
+  } catch (migrationError) {
+    console.error('❌ 啟動遷移失敗:', migrationError);
+    // 不要因為遷移失敗就停止服務，繼續啟動
+  }
+
   // 初始化 Agent 系統
   try {
     agentSystem = createAgentSystem(pool);
