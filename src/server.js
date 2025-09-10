@@ -3122,6 +3122,80 @@ app.post('/api/system/refresh-db-status', async (req, res) => {
   }
 });
 
+// SQL修復API - 修復資料庫結構問題
+app.post('/api/system/fix-database', async (req, res) => {
+  try {
+    console.log('🔧 開始修復資料庫結構問題...');
+    
+    const fixes = [];
+    
+    // 修復1: 添加total_amount欄位到orders表
+    try {
+      await pool.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC;');
+      await pool.query('UPDATE orders SET total_amount = total WHERE total_amount IS NULL;');
+      fixes.push({ fix: 'orders.total_amount', status: 'success', description: '新增total_amount欄位並複製total值' });
+      console.log('✅ 修復orders.total_amount欄位完成');
+    } catch (error) {
+      fixes.push({ fix: 'orders.total_amount', status: 'error', error: error.message });
+      console.error('❌ 修復orders.total_amount失敗:', error.message);
+    }
+    
+    // 修復2: 確保driver_id欄位存在
+    try {
+      await pool.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_id INTEGER;');
+      fixes.push({ fix: 'orders.driver_id', status: 'success', description: '確保driver_id欄位存在' });
+      console.log('✅ 修復orders.driver_id欄位完成');
+    } catch (error) {
+      fixes.push({ fix: 'orders.driver_id', status: 'error', error: error.message });
+    }
+    
+    // 修復3: 添加system_settings表（如果不存在）
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+          setting_key VARCHAR(100) PRIMARY KEY,
+          setting_value TEXT NOT NULL,
+          description TEXT,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      fixes.push({ fix: 'system_settings', status: 'success', description: '確保system_settings表存在' });
+      console.log('✅ 修復system_settings表完成');
+    } catch (error) {
+      fixes.push({ fix: 'system_settings', status: 'error', error: error.message });
+    }
+    
+    // 檢查修復結果
+    const tableResult = await pool.query(`
+      SELECT table_name, 
+             (SELECT count(*) FROM information_schema.columns 
+              WHERE table_name = t.table_name AND table_schema = 'public') as column_count
+      FROM information_schema.tables t
+      WHERE table_schema = 'public' 
+        AND table_name IN ('orders', 'system_settings')
+      ORDER BY table_name
+    `);
+    
+    console.log('🎉 資料庫結構修復完成！');
+    
+    res.json({
+      success: true,
+      message: '資料庫結構修復完成',
+      fixes: fixes,
+      tables: tableResult.rows,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ 資料庫修復失敗:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 正式的資料庫初始化API（需要管理員權限）
 app.post('/api/admin/init-database', ensureAdmin, async (req, res) => {
   console.log('🔧 開始Railway資料庫初始化...');
