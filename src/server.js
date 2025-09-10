@@ -879,21 +879,47 @@ app.get('/driver/login', (req, res) => {
 
 // 🚛 外送員登入處理
 app.post('/driver/login', async (req, res) => {
-  const { phone, password } = req.body;
-  
   try {
-    // 這裡可以從資料庫驗證外送員
-    // 暫時使用預設帳號：手機 0912345678，密碼 driver123
-    if (phone === '0912345678' && password === 'driver123') {
-      req.session.driverId = 1;
-      req.session.driverName = '李大明';
-      return res.redirect('/driver/dashboard');
+    const { phone, password } = req.body;
+    
+    // 輸入驗證
+    if (!phone || !password || phone.trim().length === 0 || password.trim().length === 0) {
+      console.log('❌ 外送員登入失敗: 手機或密碼為空');
+      return res.render('driver_login', { error: '請輸入手機號碼和密碼' });
     }
     
+    const trimmedPhone = phone.trim();
+    const trimmedPassword = password.trim();
+    
+    console.log('🚛 外送員登入嘗試:', trimmedPhone);
+    
+    // 驗證外送員帳號（這裡可以從資料庫驗證）
+    // 暫時使用預設帳號：手機 0912345678，密碼 driver123
+    if (trimmedPhone === '0912345678' && trimmedPassword === 'driver123') {
+      // 成功登入
+      const now = new Date();
+      req.session.driverId = 1;
+      req.session.driverName = '李大明';
+      req.session.loginTime = now;
+      req.session.lastActivity = now;
+      req.session.userAgent = req.get('User-Agent'); // 記錄瀏覽器資訊
+      
+      console.log('✅ 外送員登入成功:', req.session.driverName);
+      
+      // 檢查是否有重導向URL
+      const returnTo = req.session.returnTo;
+      delete req.session.returnTo;
+      
+      return res.redirect(returnTo || '/driver/dashboard');
+    }
+    
+    // 登入失敗
+    console.log('❌ 外送員登入失敗: 帳號或密碼錯誤');
     res.render('driver_login', { error: '手機號碼或密碼錯誤' });
+    
   } catch (error) {
-    console.error('外送員登入錯誤:', error);
-    res.render('driver_login', { error: '登入失敗，請重試' });
+    console.error('❌ 外送員登入系統錯誤:', error);
+    res.render('driver_login', { error: '系統錯誤，請稍後再試' });
   }
 });
 
@@ -1718,29 +1744,70 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     );
     const orderId = insertOrder.rows[0].id;
     
-    // 🔄 自動扣庫存 - 調用InventoryAgent預留庫存
+    // 🔄 自動扣庫存機制 - 直接資料庫操作
     try {
-      if (agentSystem) {
-        const inventoryItems = orderItems
-          .filter(item => !item.is_priced_item) // 只有固定價格商品需要扣庫存
-          .map(item => ({
-            productId: item.product_id,
-            name: item.name,
-            quantity: item.quantity,
-            unit: item.selectedUnit // 傳遞客戶選擇的單位
-          }));
+      const inventoryItems = orderItems
+        .filter(item => !item.is_priced_item); // 只有固定價格商品需要扣庫存
         
-        if (inventoryItems.length > 0) {
-          await agentSystem.executeTask('InventoryAgent', 'reserve_stock', {
-            orderId: orderId,
-            items: inventoryItems
-          });
-          console.log(`✅ 訂單 #${orderId} 庫存預留完成: ${inventoryItems.length} 項商品`);
+      if (inventoryItems.length > 0) {
+        let stockUpdated = 0;
+        let stockErrors = [];
+        
+        for (const item of inventoryItems) {
+          try {
+            // 檢查庫存是否足夠
+            const stockCheck = await pool.query(
+              'SELECT current_stock FROM inventory WHERE product_id = $1',
+              [item.product_id]
+            );
+            
+            if (stockCheck.rows.length === 0) {
+              // 如果沒有庫存記錄，創建一個初始記錄（假設無限庫存）
+              await pool.query(
+                'INSERT INTO inventory (product_id, current_stock, min_stock_alert) VALUES ($1, $2, $3)',
+                [item.product_id, 999, 10]
+              );
+              console.log(`⚠️ 商品 ${item.name} 無庫存記錄，已創建初始庫存`);
+            } else {
+              const currentStock = stockCheck.rows[0].current_stock;
+              
+              if (currentStock >= item.quantity) {
+                // 扣除庫存
+                await pool.query(
+                  'UPDATE inventory SET current_stock = current_stock - $1, last_updated = CURRENT_TIMESTAMP WHERE product_id = $2',
+                  [item.quantity, item.product_id]
+                );
+                
+                // 記錄庫存異動
+                await pool.query(
+                  'INSERT INTO stock_movements (product_id, movement_type, quantity, reason, reference_order_id, operator_name) VALUES ($1, $2, $3, $4, $5, $6)',
+                  [item.product_id, 'out', item.quantity, `訂單出貨 #${orderId}`, orderId, '系統自動']
+                );
+                
+                stockUpdated++;
+                console.log(`✅ 商品 ${item.name} 庫存已扣除: ${item.quantity} 件`);
+              } else {
+                stockErrors.push(`${item.name}: 庫存不足 (需要${item.quantity}件，剩餘${currentStock}件)`);
+                console.log(`⚠️ 商品 ${item.name} 庫存不足，跳過扣除`);
+              }
+            }
+          } catch (itemError) {
+            stockErrors.push(`${item.name}: ${itemError.message}`);
+            console.error(`❌ 商品 ${item.name} 庫存處理失敗:`, itemError.message);
+          }
+        }
+        
+        if (stockUpdated > 0) {
+          console.log(`✅ 訂單 #${orderId} 庫存扣除完成: ${stockUpdated}/${inventoryItems.length} 項商品`);
+        }
+        
+        if (stockErrors.length > 0) {
+          console.log(`⚠️ 訂單 #${orderId} 部分商品庫存處理異常: ${stockErrors.join(', ')}`);
         }
       }
     } catch (inventoryError) {
-      console.error(`❌ 庫存預留失敗 (訂單 #${orderId}):`, inventoryError.message);
-      // 庫存預留失敗不影響訂單建立，但要記錄錯誤
+      console.error(`❌ 庫存扣除失敗 (訂單 #${orderId}):`, inventoryError.message);
+      // 庫存扣除失敗不影響訂單建立，但要記錄錯誤
       // 管理員可以在後台手動處理庫存
     }
     
@@ -1952,21 +2019,38 @@ app.get('/admin/login', (req, res) => {
 
 // 處理登入
 app.post('/admin/login', validateAdminPassword, (req, res) => {
-  const { password } = req.body;
-  const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
-  
-  console.log('登入嘗試 - 輸入密碼:', password);
-  console.log('期望密碼:', adminPassword);
-  
-  if (password === adminPassword) {
-    req.session.isAdmin = true;
-    req.session.loginTime = new Date();
-    console.log('登入成功，重導向到 dashboard');
-    return res.redirect('/admin/dashboard');
+  try {
+    const { password } = req.body;
+    const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
+    
+    // 輸入驗證
+    if (!password || password.trim().length === 0) {
+      console.log('❌ 登入失敗: 密碼為空');
+      return res.render('admin_login', { error: '請輸入密碼' });
+    }
+    
+    const trimmedPassword = password.trim();
+    console.log('🔐 管理員登入嘗試');
+    
+    if (trimmedPassword === adminPassword) {
+      // 成功登入
+      req.session.isAdmin = true;
+      req.session.loginTime = new Date();
+      req.session.lastActivity = new Date();
+      req.session.userAgent = req.get('User-Agent'); // 記錄瀏覽器資訊
+      
+      console.log('✅ 管理員登入成功，重導向到 dashboard');
+      return res.redirect('/admin/dashboard');
+    }
+    
+    // 密碼錯誤
+    console.log('❌ 管理員登入失敗: 密碼錯誤');
+    res.render('admin_login', { error: '密碼錯誤，請重新輸入' });
+    
+  } catch (error) {
+    console.error('❌ 登入處理錯誤:', error);
+    res.render('admin_login', { error: '系統錯誤，請稍後再試' });
   }
-  
-  console.log('密碼錯誤');
-  res.render('admin_login', { error: '密碼錯誤' });
 });
 
 // 管理員登出
@@ -2001,44 +2085,132 @@ function ensureAdmin(req, res, next) {
   return res.redirect('/admin/login');
 }
 
-// 外送員驗證中介 - 統一Session檢查
+// 外送員驗證中介 - 強化版本
 function ensureDriver(req, res, next) {
-  // Session健康檢查
-  if (!req.session) {
-    console.warn('⚠️ ensureDriver: Session不存在');
-    return res.status(401).json({ success: false, message: '請先登入' });
-  }
-  
-  // 檢查外送員權限
-  if (req.session.driverId) {
-    // 更新最後活動時間
-    req.session.lastActivity = new Date();
-    
-    // 檢查Session是否過期（額外安全檢查）
-    if (req.session.lastActivity && 
-        (new Date() - new Date(req.session.lastActivity)) > 7 * 24 * 60 * 60 * 1000) {
-      console.warn('⚠️ ensureDriver: Session已過期，清理並返回錯誤');
-      cleanupSession(req);
-      return res.status(401).json({ success: false, message: 'Session已過期，請重新登入' });
+  try {
+    // Session健康檢查
+    if (!req.session) {
+      console.warn('⚠️ ensureDriver: Session不存在');
+      return res.status(401).json({ 
+        success: false, 
+        message: '請先登入',
+        code: 'SESSION_NOT_FOUND'
+      });
     }
     
+    // 檢查外送員權限
+    if (!req.session.driverId) {
+      console.warn('⚠️ ensureDriver: 外送員未登入');
+      return res.status(401).json({ 
+        success: false, 
+        message: '請先登入外送員帳號',
+        code: 'DRIVER_NOT_AUTHENTICATED'
+      });
+    }
+    
+    // 檢查Session有效性
+    const now = new Date();
+    const lastActivity = new Date(req.session.lastActivity || req.session.loginTime);
+    const sessionAge = now - lastActivity;
+    const maxSessionAge = 12 * 60 * 60 * 1000; // 12小時
+    
+    if (sessionAge > maxSessionAge) {
+      console.warn(`⚠️ ensureDriver: Session已過期 (${Math.round(sessionAge/1000/60)}分鐘)`);
+      cleanupSession(req);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Session已過期，請重新登入',
+        code: 'SESSION_EXPIRED'
+      });
+    }
+    
+    // 檢查瀏覽器是否一致（防止Session劫持）
+    const currentUA = req.get('User-Agent');
+    const sessionUA = req.session.userAgent;
+    if (sessionUA && currentUA !== sessionUA) {
+      console.warn('⚠️ ensureDriver: 瀏覽器不一致，可能的安全風險');
+      cleanupSession(req);
+      return res.status(401).json({ 
+        success: false, 
+        message: '安全檢查失敗，請重新登入',
+        code: 'SECURITY_CHECK_FAILED'
+      });
+    }
+    
+    // 更新最後活動時間
+    req.session.lastActivity = now;
+    
+    // 添加外送員資訊到req物件
+    req.driver = {
+      id: req.session.driverId,
+      name: req.session.driverName,
+      loginTime: req.session.loginTime,
+      lastActivity: now
+    };
+    
     return next();
+    
+  } catch (error) {
+    console.error('❌ ensureDriver錯誤:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: '認證系統錯誤',
+      code: 'AUTH_SYSTEM_ERROR'
+    });
   }
-  
-  return res.status(401).json({ success: false, message: '請先登入' });
 }
 
-// 外送員頁面驗證中介（用於頁面路由）
+// 外送員頁面驗證中介 - 強化版本
 function ensureDriverPage(req, res, next) {
-  // Session健康檢查
-  if (!req.session || !req.session.driverId) {
-    console.warn('⚠️ ensureDriverPage: Session不存在或未登入，重定向到登入');
+  try {
+    // Session健康檢查
+    if (!req.session || !req.session.driverId) {
+      console.warn('⚠️ ensureDriverPage: Session不存在或未登入');
+      req.session.returnTo = req.originalUrl; // 記住原始URL
+      return res.redirect('/driver/login');
+    }
+    
+    // 檢查Session有效性
+    const now = new Date();
+    const lastActivity = new Date(req.session.lastActivity || req.session.loginTime);
+    const sessionAge = now - lastActivity;
+    const maxSessionAge = 12 * 60 * 60 * 1000; // 12小時
+    
+    if (sessionAge > maxSessionAge) {
+      console.warn(`⚠️ ensureDriverPage: Session已過期 (${Math.round(sessionAge/1000/60)}分鐘)`);
+      cleanupSession(req);
+      req.flash('error', 'Session已過期，請重新登入');
+      return res.redirect('/driver/login');
+    }
+    
+    // 檢查瀏覽器是否一致
+    const currentUA = req.get('User-Agent');
+    const sessionUA = req.session.userAgent;
+    if (sessionUA && currentUA !== sessionUA) {
+      console.warn('⚠️ ensureDriverPage: 瀏覽器不一致');
+      cleanupSession(req);
+      req.flash('error', '安全檢查失敗，請重新登入');
+      return res.redirect('/driver/login');
+    }
+    
+    // 更新最後活動時間
+    req.session.lastActivity = now;
+    
+    // 添加外送員資訊到req物件
+    req.driver = {
+      id: req.session.driverId,
+      name: req.session.driverName,
+      loginTime: req.session.loginTime,
+      lastActivity: now
+    };
+    
+    return next();
+    
+  } catch (error) {
+    console.error('❌ ensureDriverPage錯誤:', error);
+    req.flash('error', '認證系統錯誤');
     return res.redirect('/driver/login');
   }
-  
-  // 更新最後活動時間
-  req.session.lastActivity = new Date();
-  return next();
 }
 
 // ---------------- LINE 登入與綁定 ----------------
