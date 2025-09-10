@@ -1,6 +1,6 @@
 {
   "name": "chengyivegetable-delivery-db",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "蔬果外送資料庫版本系統",
   "main": "src/server.js",
   "scripts": {
