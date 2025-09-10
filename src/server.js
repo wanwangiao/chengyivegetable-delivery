@@ -886,6 +886,18 @@ function getProductEmoji(productName) {
   return '🥬'; // 預設蔬菜表情符號
 }
 
+// 健康檢查端點 - 用於測試 Railway 部署
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: '誠憶鮮蔬外送系統',
+    version: DEPLOY_VERSION,
+    database: pool ? '已連接' : '未連接',
+    mode: demoMode ? '示範模式' : '線上模式'
+  });
+});
+
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
