@@ -3626,7 +3626,23 @@ const defaultBasicSettings = {
   // 功能開關
   line_notification_enabled: true,
   sms_notification_enabled: false,
-  auto_accept_orders: false
+  auto_accept_orders: false,
+  
+  // 進階主題設定
+  custom_css: '',
+  font_family: '系統預設',
+  
+  // 服務設定
+  service_area: '台北市、新北市、桃園市',
+  delivery_time_slots: '09:00-12:00\n13:00-17:00\n18:00-21:00',
+  
+  // 頁面內容
+  homepage_banner_text: '新鮮蔬果，送到您家',
+  about_us_content: '我們致力於提供最新鮮的蔬果給每一位客戶',
+  
+  // 移動端設定
+  mobile_app_enabled: true,
+  pwa_enabled: true
 };
 
 // 設定分類結構
@@ -3758,6 +3774,71 @@ const basicSettingsCategories = {
       description: '新訂單自動標記為已確認',
       type: 'boolean',
       value: defaultBasicSettings.auto_accept_orders
+    }
+  ],
+  'theme_advanced': [
+    {
+      key: 'custom_css',
+      display_name: '自訂CSS樣式',
+      description: '額外的CSS樣式代碼，用於自訂外觀',
+      type: 'textarea',
+      value: ''
+    },
+    {
+      key: 'font_family',
+      display_name: '字體系列',
+      description: '網站使用的主要字體',
+      type: 'select',
+      options: ['系統預設', 'Microsoft JhengHei', 'Noto Sans TC', 'PingFang TC'],
+      value: '系統預設'
+    }
+  ],
+  'service': [
+    {
+      key: 'service_area',
+      display_name: '服務區域',
+      description: '主要服務的地理區域',
+      type: 'text',
+      value: '台北市、新北市、桃園市'
+    },
+    {
+      key: 'delivery_time_slots',
+      display_name: '配送時段',
+      description: '可選擇的配送時間段',
+      type: 'textarea',
+      value: '09:00-12:00\n13:00-17:00\n18:00-21:00'
+    }
+  ],
+  'content': [
+    {
+      key: 'homepage_banner_text',
+      display_name: '首頁橫幅文字',
+      description: '顯示在首頁頂部的宣傳文字',
+      type: 'text',
+      value: '新鮮蔬果，送到您家'
+    },
+    {
+      key: 'about_us_content',
+      display_name: '關於我們內容',
+      description: '關於我們頁面的詳細內容',
+      type: 'textarea',
+      value: '我們致力於提供最新鮮的蔬果給每一位客戶'
+    }
+  ],
+  'mobile': [
+    {
+      key: 'mobile_app_enabled',
+      display_name: '手機App功能',
+      description: '啟用手機應用程式相關功能',
+      type: 'boolean',
+      value: true
+    },
+    {
+      key: 'pwa_enabled',
+      display_name: 'PWA功能',
+      description: '啟用漸進式網頁應用功能',
+      type: 'boolean',
+      value: true
     }
   ]
 };
