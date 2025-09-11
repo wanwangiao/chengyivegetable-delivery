@@ -379,31 +379,59 @@
 
         // 載入設定
         async function loadSettings() {
+            console.log('🔄 開始載入設定...');
+            
+            // 顯示載入狀態
+            document.getElementById('settings-content').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-success" role="status"><span class="visually-hidden">載入中...</span></div><p class="mt-3">正在載入設定...</p></div>';
+            
             try {
+                console.log('📡 正在發送API請求...');
                 const response = await fetch('/api/admin/basic-settings');
+                console.log('📊 API回應狀態:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`API回應錯誤: ${response.status} ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('📋 收到的資料:', data);
 
                 if (data.success) {
+                    console.log('✅ 設定載入成功');
                     currentSettings = data.settings;
                     allCategories = data.categories;
                     
+                    console.log('📂 分類數量:', Object.keys(allCategories).length);
+                    console.log('📂 分類列表:', Object.keys(allCategories));
+                    
                     // 手動添加系統監控分類 (不需要後端設定)
                     allCategories['system_monitor'] = [];
+                    console.log('📊 添加系統監控分類後，總分類數:', Object.keys(allCategories).length);
                     
                     renderCategoryTabs();
                     renderSettings();
                 } else {
+                    console.error('❌ 載入設定失敗:', data.message);
+                    document.getElementById('settings-content').innerHTML = '<div class="alert alert-danger">載入設定失敗: ' + data.message + '</div>';
                     showNotification('載入設定失敗: ' + data.message, 'error');
                 }
             } catch (error) {
-                console.error('載入設定錯誤:', error);
-                showNotification('載入設定時發生錯誤', 'error');
+                console.error('❌ 載入設定錯誤:', error);
+                document.getElementById('settings-content').innerHTML = '<div class="alert alert-danger">載入設定時發生錯誤: ' + error.message + '</div>';
+                showNotification('載入設定時發生錯誤: ' + error.message, 'error');
             }
         }
 
         // 渲染分類標籤
         function renderCategoryTabs() {
+            console.log('🏷️ 開始渲染分類標籤...');
+            
             const tabsContainer = document.getElementById('category-tabs');
+            if (!tabsContainer) {
+                console.error('❌ 找不到 category-tabs 元素');
+                return;
+            }
+            
             const categoryNames = {
                 'notifications': '📢 通知訊息',
                 'theme': '🎨 主題色彩',
@@ -418,10 +446,13 @@
                 'system_monitor': '📊 系統監控'
             };
 
+            console.log('📋 可用分類:', Object.keys(allCategories));
+            
             let tabsHtml = '';
             Object.keys(allCategories).forEach(category => {
                 const displayName = categoryNames[category] || category;
                 const isActive = category === activeCategory ? 'active' : '';
+                console.log(`🔹 生成標籤: ${category} => ${displayName} (${isActive ? '啟用' : '未啟用'})`);
                 tabsHtml += `
                     <button class="category-tab ${isActive}" onclick="switchCategory('${category}')">
                         ${displayName}
@@ -429,7 +460,9 @@
                 `;
             });
 
+            console.log('📝 生成的HTML長度:', tabsHtml.length);
             tabsContainer.innerHTML = tabsHtml;
+            console.log('✅ 分類標籤渲染完成');
         }
 
         // 切換分類
