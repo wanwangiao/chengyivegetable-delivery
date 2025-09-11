@@ -1120,7 +1120,7 @@
                 
                 if (data.success) {
                     updateMonitoringUI(data.performance);
-                    document.getElementById('lastMonitorUpdate').textContent = \`最後更新：\${new Date().toLocaleString()}\`;
+                    document.getElementById('lastMonitorUpdate').textContent = `最後更新：${new Date().toLocaleString()}`;
                 }
             } catch (error) {
                 console.error('載入監控數據失敗:', error);
@@ -1138,11 +1138,11 @@
             if (healthElement) {
                 healthElement.textContent = healthStatus === 'healthy' ? '正常' : 
                                            healthStatus === 'warning' ? '警告' : '嚴重';
-                healthElement.className = \`card-text fw-bold text-\${healthStatus === 'healthy' ? 'success' : 
-                                                                    healthStatus === 'warning' ? 'warning' : 'danger'}\`;
+                healthElement.className = `card-text fw-bold text-${healthStatus === 'healthy' ? 'success' : 
+                                                                    healthStatus === 'warning' ? 'warning' : 'danger'}`;
                 
-                healthIcon.className = \`fas fa-heartbeat text-\${healthStatus === 'healthy' ? 'success' : 
-                                                               healthStatus === 'warning' ? 'warning' : 'danger'}\`;
+                healthIcon.className = `fas fa-heartbeat text-${healthStatus === 'healthy' ? 'success' : 
+                                                               healthStatus === 'warning' ? 'warning' : 'danger'}`;
             }
             
             // 基本指標
@@ -1167,8 +1167,8 @@
                 issuesContainer.innerHTML = '';
                 performance.healthStatus.issues.forEach(issue => {
                     const issueElement = document.createElement('div');
-                    issueElement.className = \`alert \${issue.includes('正常') ? 'alert-success' : 'alert-warning'} mb-2\`;
-                    issueElement.innerHTML = \`<i class="fas fa-info-circle me-2"></i>\${issue}\`;
+                    issueElement.className = `alert ${issue.includes('正常') ? 'alert-success' : 'alert-warning'} mb-2`;
+                    issueElement.innerHTML = `<i class="fas fa-info-circle me-2"></i>${issue}`;
                     issuesContainer.appendChild(issueElement);
                 });
             }
@@ -1185,9 +1185,9 @@
             const hours = Math.floor((seconds % 86400) / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
             
-            if (days > 0) return \`\${days}天 \${hours}小時\`;
-            if (hours > 0) return \`\${hours}小時 \${minutes}分鐘\`;
-            return \`\${minutes}分鐘\`;
+            if (days > 0) return `${days}天 ${hours}小時`;
+            if (hours > 0) return `${hours}小時 ${minutes}分鐘`;
+            return `${minutes}分鐘`;
         }
 
         // 顯示通知
