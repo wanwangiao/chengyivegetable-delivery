@@ -3642,7 +3642,11 @@ const defaultBasicSettings = {
   
   // 移動端設定
   mobile_app_enabled: true,
-  pwa_enabled: true
+  pwa_enabled: true,
+  
+  // 配送區域設定
+  delivery_enabled_areas: [],
+  delivery_coverage_info: '目前開放台北市、新北市、桃園市部分區域配送服務'
 };
 
 // 設定分類結構
@@ -3839,6 +3843,22 @@ const basicSettingsCategories = {
       description: '啟用漸進式網頁應用功能',
       type: 'boolean',
       value: true
+    }
+  ],
+  'delivery_areas': [
+    {
+      key: 'delivery_enabled_areas',
+      display_name: '開放配送區域',
+      description: '選擇開放配送的縣市和區域設定',
+      type: 'json',
+      value: []
+    },
+    {
+      key: 'delivery_coverage_info',
+      display_name: '配送覆蓋說明',
+      description: '配送區域的詳細說明文字',
+      type: 'textarea',
+      value: '目前開放台北市、新北市、桃園市部分區域配送服務'
     }
   ]
 };
