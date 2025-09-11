@@ -1552,6 +1552,21 @@
     
     // 💰 應用營業設定
     function applyBusinessSettings(settings) {
+      // 處理服務區域格式轉換
+      let serviceAreasText = '';
+      if (Array.isArray(settings.service_area)) {
+        // 新格式：陣列包含 {city: '縣市', district: '區域'} 物件
+        serviceAreasText = settings.service_area
+          .map(area => area.district || area)
+          .join('、');
+      } else if (typeof settings.service_area === 'string') {
+        // 舊格式：字串
+        serviceAreasText = settings.service_area.replace(/,/g, '、');
+      } else {
+        // 預設值
+        serviceAreasText = '三峽區、樹林區、鶯歌區、桃園區';
+      }
+      
       // 儲存營業設定到全域變數供其他功能使用
       window.businessSettings = {
         freeShippingThreshold: settings.free_shipping_threshold || 300,
@@ -1559,7 +1574,8 @@
         minimumOrderAmount: settings.minimum_order_amount || 100,
         serviceHoursStart: settings.service_hours_start || '08:00',
         serviceHoursEnd: settings.service_hours_end || '20:00',
-        serviceAreas: settings.service_areas || '三峽區,樹林區,鶯歌區,土城區,板橋區',
+        serviceAreas: serviceAreasText,
+        serviceAreasList: settings.service_area, // 保存原始陣列格式供結帳使用
         deliveryNote: settings.delivery_note || '當日新鮮配送，保證品質'
       };
     }

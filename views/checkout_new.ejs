@@ -66,32 +66,14 @@
               <p class="text-stone-700 text-base font-medium leading-normal pb-2">縣市 <span class="text-red-500">*</span></p>
               <select name="city" id="customer-city" required
                       class="form-select flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-stone-900 border-stone-300 bg-white h-14 placeholder:text-stone-400 p-4 text-base font-normal leading-normal">
-                <option disabled selected>請選擇</option>
-                <option value="台北市">台北市</option>
-                <option value="新北市">新北市</option>
-                <option value="桃園市">桃園市</option>
-                <option value="台中市">台中市</option>
-                <option value="台南市">台南市</option>
-                <option value="高雄市">高雄市</option>
+                <option disabled selected>載入中...</option>
               </select>
             </label>
             <label class="flex flex-col">
               <p class="text-stone-700 text-base font-medium leading-normal pb-2">區域 <span class="text-red-500">*</span></p>
-              <select name="district" id="customer-district" required
+              <select name="district" id="customer-district" required disabled
                       class="form-select flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-stone-900 border-stone-300 bg-white h-14 placeholder:text-stone-400 p-4 text-base font-normal leading-normal">
-                <option disabled selected>請選擇</option>
-                <option value="中正區">中正區</option>
-                <option value="大同區">大同區</option>
-                <option value="中山區">中山區</option>
-                <option value="松山區">松山區</option>
-                <option value="大安區">大安區</option>
-                <option value="萬華區">萬華區</option>
-                <option value="信義區">信義區</option>
-                <option value="士林區">士林區</option>
-                <option value="北投區">北投區</option>
-                <option value="內湖區">內湖區</option>
-                <option value="南港區">南港區</option>
-                <option value="文山區">文山區</option>
+                <option disabled selected>請先選擇縣市</option>
               </select>
             </label>
           </div>
@@ -193,10 +175,88 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let deliveryFee = 50;
 
 // 初始化頁面
-function initCheckout() {
+async function initCheckout() {
   updateCartSummary();
   updateTotalAmount();
   renderCartItems();
+  await loadServiceAreas(); // 載入服務區域
+}
+
+// 載入服務區域設定
+async function loadServiceAreas() {
+  try {
+    // 從 localStorage 獲取設定（如果之前有載入過）
+    let settings = JSON.parse(localStorage.getItem('businessSettings') || '{}');
+    
+    // 如果沒有設定或設定過舊，則重新從 API 載入
+    if (!settings.service_area || !Array.isArray(settings.service_area)) {
+      const response = await fetch('/api/basic-settings');
+      const data = await response.json();
+      if (data.success) {
+        settings = data.settings;
+        localStorage.setItem('businessSettings', JSON.stringify(settings));
+      }
+    }
+    
+    // 更新城市和區域選項
+    updateCityDistrictOptions(settings.service_area || []);
+    
+  } catch (error) {
+    console.error('載入服務區域失敗:', error);
+    // 使用預設值
+    const defaultAreas = [
+      { city: '新北市', district: '三峽區' },
+      { city: '新北市', district: '樹林區' },
+      { city: '新北市', district: '鶯歌區' },
+      { city: '桃園市', district: '桃園區' }
+    ];
+    updateCityDistrictOptions(defaultAreas);
+  }
+}
+
+// 更新城市和區域選項
+function updateCityDistrictOptions(serviceAreas) {
+  const citySelect = document.getElementById('customer-city');
+  const districtSelect = document.getElementById('customer-district');
+  
+  // 清空現有選項
+  citySelect.innerHTML = '<option disabled selected>請選擇</option>';
+  districtSelect.innerHTML = '<option disabled selected>請選擇</option>';
+  
+  // 整理可用的城市和區域
+  const cityDistrictMap = {};
+  serviceAreas.forEach(area => {
+    if (!cityDistrictMap[area.city]) {
+      cityDistrictMap[area.city] = [];
+    }
+    cityDistrictMap[area.city].push(area.district);
+  });
+  
+  // 添加城市選項
+  Object.keys(cityDistrictMap).forEach(city => {
+    const option = document.createElement('option');
+    option.value = city;
+    option.textContent = city;
+    citySelect.appendChild(option);
+  });
+  
+  // 當選擇城市時更新區域選項
+  citySelect.addEventListener('change', function() {
+    const selectedCity = this.value;
+    districtSelect.innerHTML = '<option disabled selected>請選擇</option>';
+    
+    if (selectedCity && cityDistrictMap[selectedCity]) {
+      cityDistrictMap[selectedCity].forEach(district => {
+        const option = document.createElement('option');
+        option.value = district;
+        option.textContent = district;
+        districtSelect.appendChild(option);
+      });
+      districtSelect.disabled = false;
+    } else {
+      districtSelect.disabled = true;
+    }
+  });
 }
 
 // 更新購物車摘要
