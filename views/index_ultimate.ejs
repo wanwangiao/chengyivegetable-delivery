@@ -206,6 +206,248 @@
       line-height: 1.5;
       margin-bottom: 1.5rem;
     }
+
+    /* =================================================
+       📋 訂單管理彈窗樣式
+       ================================================= */
+    .order-management-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+      padding: 1rem;
+    }
+
+    .order-management-content {
+      background: white;
+      border-radius: 20px;
+      max-width: 95vw;
+      max-height: 90vh;
+      width: 100%;
+      max-width: 500px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: orderPopupIn 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes orderPopupIn {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .order-management-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      background: linear-gradient(135deg, #2d5a3d, #1e3d2a);
+      color: white;
+      position: relative;
+    }
+
+    .order-management-header h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .order-management-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s ease;
+    }
+
+    .order-management-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .order-management-tabs {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .order-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #6c757d;
+    }
+
+    .order-tab.active {
+      background: white;
+      color: #2d5a3d;
+      border-bottom: 3px solid #7cb342;
+    }
+
+    .order-tab:hover:not(.active) {
+      background: #e9ecef;
+      color: #495057;
+    }
+
+    .order-management-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 300px;
+      max-height: 60vh;
+    }
+
+    .order-tab-content {
+      display: none;
+      padding: 1rem;
+    }
+
+    .order-tab-content.active {
+      display: block;
+    }
+
+    .order-loading {
+      text-align: center;
+      padding: 2rem;
+      color: #6c757d;
+      font-size: 1rem;
+    }
+
+    .order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .order-item {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1rem;
+      border-left: 4px solid #7cb342;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .order-item:hover {
+      background: #e9ecef;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .order-item-id {
+      font-weight: 700;
+      color: #2d5a3d;
+      font-size: 1.1rem;
+    }
+
+    .order-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .order-status.placed { background: #fff3cd; color: #856404; }
+    .order-status.confirmed { background: #d4edda; color: #155724; }
+    .order-status.preparing { background: #cff4fc; color: #055160; }
+    .order-status.ready { background: #e7f3ff; color: #084298; }
+    .order-status.delivering { background: #ffeaa7; color: #6c5700; }
+    .order-status.completed { background: #d1ecf1; color: #0c5460; }
+    .order-status.cancelled { background: #f8d7da; color: #721c24; }
+
+    .order-item-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .order-item-date {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .order-item-total {
+      font-weight: 700;
+      color: #2d5a3d;
+      font-size: 1.1rem;
+    }
+
+    .order-item-products {
+      margin-top: 0.5rem;
+      color: #495057;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .no-orders {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6c757d;
+    }
+
+    .no-orders-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    /* 響應式調整 */
+    @media (max-width: 400px) {
+      .order-management-content {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+      }
+
+      .order-management-header {
+        padding: 1rem 1.5rem;
+      }
+
+      .order-management-header h2 {
+        font-size: 1.1rem;
+      }
+
+      .order-tab {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      .order-item {
+        padding: 0.8rem;
+      }
+    }
     
     .brand-section {
       display: flex;
@@ -1323,8 +1565,8 @@
       
       <div class="header-actions">
         <% if (sessionLine) { %>
-          <button class="action-btn" title="LINE 已綁定">
-            <span>✅</span>
+          <button class="action-btn" onclick="openOrderManagement()" title="訂單管理">
+            <span>📋</span>
           </button>
         <% } else { %>
           <a href="/auth/line/login" class="action-btn" title="綁定 LINE">
@@ -1351,6 +1593,33 @@
       <div class="order-time-icon" id="popup-time-icon">⏰</div>
       <div class="order-time-title" id="popup-time-title">訂單時間提醒</div>
       <div class="order-time-desc" id="popup-time-desc">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 📋 訂單管理彈窗 -->
+  <div class="order-management-popup" id="order-management-popup" style="display: none;">
+    <div class="order-management-content">
+      <div class="order-management-header">
+        <h2>📋 我的訂單</h2>
+        <button class="order-management-close" onclick="closeOrderManagement()">×</button>
+      </div>
+      
+      <div class="order-management-tabs">
+        <button class="order-tab active" onclick="switchOrderTab('current')">目前訂單</button>
+        <button class="order-tab" onclick="switchOrderTab('history')">歷史訂單</button>
+      </div>
+      
+      <div class="order-management-body">
+        <div class="order-tab-content active" id="current-orders">
+          <div class="order-loading" id="current-loading">載入中...</div>
+          <div class="order-list" id="current-orders-list"></div>
+        </div>
+        
+        <div class="order-tab-content" id="history-orders">
+          <div class="order-loading" id="history-loading">載入中...</div>
+          <div class="order-list" id="history-orders-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2613,6 +2882,189 @@
             initOrderTimeDisplay();
           }
         }, 100);
+      }
+    });
+
+    // =================================================
+    // 📋 訂單管理功能
+    // =================================================
+    
+    let currentOrderTab = 'current';
+    
+    function openOrderManagement() {
+      const popup = document.getElementById('order-management-popup');
+      if (popup) {
+        popup.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // 載入當前訂單
+        loadUserOrders('current');
+        
+        // 如果當前tab是歷史訂單，也載入歷史訂單
+        if (currentOrderTab === 'history') {
+          loadUserOrders('history');
+        }
+      }
+    }
+    
+    function closeOrderManagement() {
+      const popup = document.getElementById('order-management-popup');
+      if (popup) {
+        popup.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    }
+    
+    function switchOrderTab(tabType) {
+      currentOrderTab = tabType;
+      
+      // 更新tab樣式
+      document.querySelectorAll('.order-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[onclick="switchOrderTab('${tabType}')"]`).classList.add('active');
+      
+      // 更新內容區域
+      document.querySelectorAll('.order-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(tabType === 'current' ? 'current-orders' : 'history-orders').classList.add('active');
+      
+      // 載入對應資料
+      loadUserOrders(tabType);
+    }
+    
+    async function loadUserOrders(type) {
+      const loadingId = type === 'current' ? 'current-loading' : 'history-loading';
+      const listId = type === 'current' ? 'current-orders-list' : 'history-orders-list';
+      
+      const loadingEl = document.getElementById(loadingId);
+      const listEl = document.getElementById(listId);
+      
+      if (!loadingEl || !listEl) return;
+      
+      // 顯示載入狀態
+      loadingEl.style.display = 'block';
+      listEl.innerHTML = '';
+      
+      try {
+        // 獲取LINE用戶ID (從session或其他方式)
+        const response = await fetch('/api/user/orders', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('無法載入訂單資料');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayOrders(data.orders, type, listEl);
+        } else {
+          showNoOrders(listEl, '載入訂單失敗');
+        }
+        
+      } catch (error) {
+        console.error('載入訂單失敗:', error);
+        showNoOrders(listEl, '載入訂單時發生錯誤');
+      } finally {
+        loadingEl.style.display = 'none';
+      }
+    }
+    
+    function displayOrders(orders, type, container) {
+      if (!orders || orders.length === 0) {
+        showNoOrders(container, type === 'current' ? '目前沒有進行中的訂單' : '尚無歷史訂單');
+        return;
+      }
+      
+      // 篩選訂單
+      const filteredOrders = orders.filter(order => {
+        if (type === 'current') {
+          return ['placed', 'confirmed', 'preparing', 'ready', 'delivering'].includes(order.status);
+        } else {
+          return ['completed', 'cancelled'].includes(order.status);
+        }
+      });
+      
+      if (filteredOrders.length === 0) {
+        showNoOrders(container, type === 'current' ? '目前沒有進行中的訂單' : '尚無歷史訂單');
+        return;
+      }
+      
+      container.innerHTML = filteredOrders.map(order => createOrderItemHTML(order)).join('');
+    }
+    
+    function createOrderItemHTML(order) {
+      const statusText = getStatusText(order.status);
+      const statusClass = order.status;
+      const orderDate = new Date(order.created_at).toLocaleDateString('zh-TW', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      // 處理商品列表
+      let productsText = '載入中...';
+      if (order.items && order.items.length > 0) {
+        productsText = order.items.map(item => `${item.name} x${item.quantity}`).join('、');
+        if (productsText.length > 50) {
+          productsText = productsText.substring(0, 50) + '...';
+        }
+      }
+      
+      return `
+        <div class="order-item" onclick="showOrderDetail(${order.id})">
+          <div class="order-item-header">
+            <div class="order-item-id">訂單 #${order.id}</div>
+            <div class="order-status ${statusClass}">${statusText}</div>
+          </div>
+          <div class="order-item-products">${productsText}</div>
+          <div class="order-item-info">
+            <div class="order-item-date">${orderDate}</div>
+            <div class="order-item-total">$${order.total}</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function getStatusText(status) {
+      const statusMap = {
+        'placed': '待確認',
+        'confirmed': '已確認',
+        'preparing': '包裝中',
+        'ready': '包裝完成',
+        'delivering': '配送中',
+        'completed': '已完成',
+        'cancelled': '已取消'
+      };
+      return statusMap[status] || status;
+    }
+    
+    function showNoOrders(container, message) {
+      container.innerHTML = `
+        <div class="no-orders">
+          <div class="no-orders-icon">📝</div>
+          <div>${message}</div>
+        </div>
+      `;
+    }
+    
+    function showOrderDetail(orderId) {
+      // TODO: 實作訂單詳情彈窗
+      alert(`顯示訂單 #${orderId} 的詳細資料`);
+    }
+    
+    // 點擊背景關閉彈窗
+    document.addEventListener('click', function(e) {
+      const popup = document.getElementById('order-management-popup');
+      if (e.target === popup) {
+        closeOrderManagement();
       }
     });
     

@@ -5353,6 +5353,98 @@ app.get('/api/line/order-history/:userId', async (req, res) => {
   }
 });
 
+// API：獲取當前用戶的訂單 (基於session)
+app.get('/api/user/orders', async (req, res) => {
+  try {
+    // 從session獲取LINE用戶ID
+    const lineUserId = req.session?.line?.userId || req.session?.lineUserId;
+    
+    if (!lineUserId) {
+      return res.status(401).json({
+        success: false,
+        message: '用戶未綁定LINE或session已過期'
+      });
+    }
+
+    if (demoMode) {
+      // 示範模式：返回模擬訂單資料
+      const mockOrders = [
+        {
+          id: 1001,
+          status: 'confirmed',
+          total: 250,
+          created_at: new Date(Date.now() - 86400000 * 1).toISOString(), // 1天前
+          items: [
+            { name: '高麗菜', quantity: 1 },
+            { name: '紅蘿蔔', quantity: 2 }
+          ],
+          contact_name: '示範用戶',
+          contact_phone: '0912345678',
+          address: '新北市三峽區示範路123號'
+        },
+        {
+          id: 1002,
+          status: 'completed',
+          total: 180,
+          created_at: new Date(Date.now() - 86400000 * 3).toISOString(), // 3天前
+          items: [
+            { name: '青江菜', quantity: 3 },
+            { name: '番茄', quantity: 1 }
+          ],
+          contact_name: '示範用戶',
+          contact_phone: '0912345678',
+          address: '新北市三峽區示範路123號'
+        },
+        {
+          id: 1003,
+          status: 'preparing',
+          total: 320,
+          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
+          items: [
+            { name: '白蘿蔔', quantity: 1 },
+            { name: '花椰菜', quantity: 2 },
+            { name: '蔥', quantity: 1 }
+          ],
+          contact_name: '示範用戶',
+          contact_phone: '0912345678',
+          address: '新北市三峽區示範路123號'
+        }
+      ];
+
+      console.log(`📝 示範模式：返回 ${mockOrders.length} 筆模擬訂單`);
+      return res.json({
+        success: true,
+        orders: mockOrders,
+        userId: lineUserId
+      });
+    }
+
+    // 生產模式：查詢真實訂單資料
+    if (!lineUserService) {
+      return res.status(503).json({
+        success: false,
+        message: 'LINE 用戶服務未初始化'
+      });
+    }
+
+    const orders = await lineUserService.getUserOrderHistory(lineUserId);
+
+    res.json({
+      success: true,
+      orders: orders || [],
+      userId: lineUserId
+    });
+
+  } catch (error) {
+    console.error('❌ 獲取用戶訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單記錄時發生錯誤',
+      error: demoMode ? error.message : undefined
+    });
+  }
+});
+
 // 透過電話號碼查詢 LINE User ID
 app.get('/api/line/user-id/:phone', async (req, res) => {
   try {
