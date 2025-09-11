@@ -231,6 +231,41 @@
             opacity: 1;
         }
 
+        .weekly-schedule-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+
+        .weekly-schedule-container .table {
+            background-color: white;
+            margin-bottom: 0;
+        }
+
+        .weekly-schedule-container .table th {
+            background-color: #f1f3f4;
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .weekly-schedule-container .table td {
+            vertical-align: middle;
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .weekly-schedule-container input[type="time"] {
+            border-radius: 6px;
+        }
+
+        .weekly-schedule-container input[type="time"]:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.6;
+        }
+
         .preview-section {
             background: #f8f9fa;
             border-radius: 12px;
@@ -521,8 +556,7 @@
                 'notifications': '📢 通知訊息',
                 'theme': '🎨 主題色彩',
                 'theme_advanced': '🎯 進階主題',
-                'business': '💰 營業設定',
-                'service': '📍 服務設定',
+                'business': '💰 營業與服務設定',
                 'store': '🏪 商店資訊',
                 'content': '📋 頁面內容',
                 'features': '🎯 功能開關',
@@ -790,6 +824,89 @@
                         </div>
                     `;
                     return timeSlotsHtml;
+
+                case 'weekly_schedule':
+                    const schedule = setting.value || {};
+                    const dayNames = {
+                        'monday': '週一',
+                        'tuesday': '週二', 
+                        'wednesday': '週三',
+                        'thursday': '週四',
+                        'friday': '週五',
+                        'saturday': '週六',
+                        'sunday': '週日'
+                    };
+                    
+                    let scheduleHtml = `
+                        <div class="weekly-schedule-container">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>星期</th>
+                                            <th>營業狀態</th>
+                                            <th>開始時間</th>
+                                            <th>結束時間</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    Object.keys(dayNames).forEach(dayKey => {
+                        const dayData = schedule[dayKey] || { open: true, start: '06:00', end: '11:00' };
+                        scheduleHtml += `
+                            <tr>
+                                <td class="fw-bold">${dayNames[dayKey]}</td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" class="form-check-input" 
+                                               id="schedule_${dayKey}_open" 
+                                               ${dayData.open ? 'checked' : ''}
+                                               onchange="updateWeeklySchedule('${setting.key}', '${dayKey}', 'open', this.checked)">
+                                        <label class="form-check-label" for="schedule_${dayKey}_open">
+                                            ${dayData.open ? '營業' : '休息'}
+                                        </label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="time" class="form-control" 
+                                           id="schedule_${dayKey}_start"
+                                           value="${dayData.start || '06:00'}"
+                                           ${!dayData.open ? 'disabled' : ''}
+                                           onchange="updateWeeklySchedule('${setting.key}', '${dayKey}', 'start', this.value)">
+                                </td>
+                                <td>
+                                    <input type="time" class="form-control"
+                                           id="schedule_${dayKey}_end" 
+                                           value="${dayData.end || '11:00'}"
+                                           ${!dayData.open ? 'disabled' : ''}
+                                           onchange="updateWeeklySchedule('${setting.key}', '${dayKey}', 'end', this.value)">
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    scheduleHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" 
+                                        onclick="setAllDaysSchedule('${setting.key}', true)">
+                                    全部設為營業
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" 
+                                        onclick="setAllDaysSchedule('${setting.key}', false)">
+                                    全部設為休息
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="copyTomorrowSchedule('${setting.key}')">
+                                    複製週一設定到其他天
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return scheduleHtml;
                 
                 default: // text, string 等
                     return `
@@ -809,8 +926,7 @@
                 'notifications': '📢 通知訊息設定',
                 'theme': '🎨 主題色彩設定',
                 'theme_advanced': '🎯 進階主題設定',
-                'business': '💰 營業參數設定',
-                'service': '📍 服務範圍設定',
+                'business': '💰 營業與服務設定',
                 'store': '🏪 商店基本資訊',
                 'content': '📋 頁面內容管理',
                 'features': '🎯 功能開關設定',
@@ -960,6 +1076,66 @@
                 currentSettings[key].splice(index, 1);
                 renderSettings();
             }
+        }
+
+        // 更新每週營業時間
+        function updateWeeklySchedule(key, dayKey, field, value) {
+            if (!currentSettings[key]) {
+                currentSettings[key] = {};
+            }
+            if (!currentSettings[key][dayKey]) {
+                currentSettings[key][dayKey] = { open: true, start: '06:00', end: '11:00' };
+            }
+            
+            currentSettings[key][dayKey][field] = value;
+            
+            // 如果改變營業狀態，需要更新時間輸入框的disabled狀態
+            if (field === 'open') {
+                const startInput = document.getElementById(`schedule_${dayKey}_start`);
+                const endInput = document.getElementById(`schedule_${dayKey}_end`);
+                const label = document.querySelector(`label[for="schedule_${dayKey}_open"]`);
+                
+                if (startInput) startInput.disabled = !value;
+                if (endInput) endInput.disabled = !value;
+                if (label) label.textContent = value ? '營業' : '休息';
+            }
+        }
+
+        // 設定所有天的營業狀態
+        function setAllDaysSchedule(key, isOpen) {
+            const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            if (!currentSettings[key]) {
+                currentSettings[key] = {};
+            }
+            
+            dayKeys.forEach(dayKey => {
+                if (!currentSettings[key][dayKey]) {
+                    currentSettings[key][dayKey] = { open: true, start: '06:00', end: '11:00' };
+                }
+                currentSettings[key][dayKey].open = isOpen;
+            });
+            
+            // 重新渲染設定
+            renderSettings();
+        }
+
+        // 複製週一設定到其他天
+        function copyTomorrowSchedule(key) {
+            if (!currentSettings[key] || !currentSettings[key]['monday']) {
+                alert('請先設定週一的營業時間');
+                return;
+            }
+            
+            const mondaySchedule = currentSettings[key]['monday'];
+            const dayKeys = ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            dayKeys.forEach(dayKey => {
+                currentSettings[key][dayKey] = { ...mondaySchedule };
+            });
+            
+            // 重新渲染設定
+            renderSettings();
         }
 
         // 儲存所有設定
