@@ -47,9 +47,9 @@
   <!-- Header -->
   <header class="relative">
     <!-- 大圖片區域 - 滾動時會被隱藏 -->
-    <div class="relative w-full h-48 bg-center bg-no-repeat bg-cover" id="hero-banner" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV");'>
+    <div class="relative w-full h-48 bg-center bg-no-repeat bg-cover" id="hero-banner" style='background-image: url("<%= settings.banner_image_url %>");'>
       <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-end p-4">
-        <h1 class="text-white text-3xl font-bold">誠憶鮮蔬</h1>
+        <h1 class="text-white text-3xl font-bold"><%= settings.store_name %></h1>
         <div class="flex items-center text-white text-sm mt-1">
           <span class="material-symbols-outlined text-base mr-1">visibility</span>
           <span>1,234 次查看</span>
@@ -97,10 +97,7 @@
     <section class="bg-white p-4 my-4 rounded-lg shadow-sm mx-4">
       <h2 class="text-lg font-bold text-gray-900 mb-2">重要公告</h2>
       <div class="space-y-2 text-sm text-gray-600">
-        <p><span class="font-semibold">服務範圍：</span>大台北地區（詳細請見店家資訊）。</p>
-        <p><span class="font-semibold">外送門檻：</span>消費滿 $200 免運費。</p>
-        <p><span class="font-semibold">付款方式：</span>線上刷卡、貨到付款。</p>
-        <p><span class="font-semibold">配送時間：</span>週一至週五 9:00 - 18:00。</p>
+        <%- settings.announcement_content %>
       </div>
     </section>
 

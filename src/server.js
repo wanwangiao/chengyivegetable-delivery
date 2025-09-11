@@ -925,10 +925,15 @@ app.get('/api/performance', (req, res) => {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
+    
+    // 獲取網站設定 (示範模式使用預設值)
+    const settings = demoMode ? defaultBasicSettings : defaultBasicSettings; // TODO: 實際從資料庫載入
+    
     res.render('index_new_design', { 
       products: products,
       sessionLine: req.session.line || null,
-      getProductEmoji: getProductEmoji
+      getProductEmoji: getProductEmoji,
+      settings: settings
     });
   } catch (err) {
     next(err);
@@ -3687,7 +3692,16 @@ const defaultBasicSettings = {
   
   // 配送區域設定
   delivery_enabled_areas: [],
-  delivery_coverage_info: '目前開放台北市、新北市、桃園市部分區域配送服務'
+  delivery_coverage_info: '目前開放台北市、新北市、桃園市部分區域配送服務',
+  
+  // 網站內容管理
+  banner_image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV',
+  announcement_content: `<p><span class="font-semibold">服務範圍：</span>大台北地區（詳細請見店家資訊）。</p>
+<p><span class="font-semibold">外送門檻：</span>消費滿 $200 免運費。</p>
+<p><span class="font-semibold">付款方式：</span>線上刷卡、貨到付款。</p>
+<p><span class="font-semibold">配送時間：</span>週一至週五 9:00 - 18:00。</p>`,
+  store_name: '誠憶鮮蔬',
+  store_tagline: '新鮮蔬果，品質保證'
 };
 
 // 設定分類結構
@@ -3953,6 +3967,40 @@ const basicSettingsCategories = {
       description: '配送區域的詳細說明文字',
       type: 'textarea',
       value: '目前開放台北市、新北市、桃園市部分區域配送服務'
+    }
+  ],
+  'website_content': [
+    {
+      key: 'banner_image_url',
+      display_name: '🖼️ 頂部橫幅圖片',
+      description: '前台頁面頂部的橫幅背景圖片網址。建議尺寸：1200x400px',
+      type: 'url',
+      value: defaultBasicSettings.banner_image_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYdTdlixB_n8Zy86hYdXUVXOGl7hsTam3iliOOdgIsoqecsdP7UhM1ozScaYbdZb9f9nSJFTvYzh4wNmW1xO8dtv4cdTg4i5oEzI9zkTMP3d3nK5iH9hWtQpYYAoE2s8EVZloq9FpYJWxupyb4uKlJXHejcUAqs0fzI80q8JTx6wcfpGidZdAmOO94v437EZt4YwQg3J6XKaBaxM2PDov2Tm1ABBVZxWOITZWvk4jeniENA2cbJLThbeBLAcN0qSgyK8aMh7i-P1qV'
+    },
+    {
+      key: 'announcement_content',
+      display_name: '📢 重要公告內容',
+      description: '前台頁面重要公告區塊的內容。支援HTML格式，可包含多項公告內容',
+      type: 'textarea',
+      rows: 8,
+      value: defaultBasicSettings.announcement_content || `<p><span class="font-semibold">服務範圍：</span>大台北地區（詳細請見店家資訊）。</p>
+<p><span class="font-semibold">外送門檻：</span>消費滿 $200 免運費。</p>
+<p><span class="font-semibold">付款方式：</span>線上刷卡、貨到付款。</p>
+<p><span class="font-semibold">配送時間：</span>週一至週五 9:00 - 18:00。</p>`
+    },
+    {
+      key: 'store_name',
+      display_name: '🏪 商店名稱',
+      description: '顯示在前台頁面的商店名稱',
+      type: 'text',
+      value: defaultBasicSettings.store_name || '誠憶鮮蔬'
+    },
+    {
+      key: 'store_tagline', 
+      display_name: '✨ 商店標語',
+      description: '商店的品牌標語或簡介',
+      type: 'text',
+      value: defaultBasicSettings.store_tagline || '新鮮蔬果，品質保證'
     }
   ]
 };
