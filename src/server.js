@@ -5831,6 +5831,220 @@ app.put('/api/admin/orders/:orderId', ensureAdmin, async (req, res) => {
 });
 
 // =================================================
+// 📋 客戶訂單管理API
+// =================================================
+
+// 獲取單一訂單詳情 (客戶專用)
+app.get('/api/user/orders/:orderId/details', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const lineUserId = req.session?.line?.userId || req.session?.lineUserId;
+    
+    if (!lineUserId) {
+      return res.status(401).json({
+        success: false,
+        message: '用戶未綁定LINE或session已過期'
+      });
+    }
+
+    if (demoMode) {
+      // 示範模式：返回模擬訂單詳情
+      const mockOrderDetail = {
+        id: parseInt(orderId),
+        status: 'confirmed',
+        total: 250,
+        subtotal: 200,
+        delivery_fee: 50,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        address: '新北市三峽區示範路123號',
+        notes: '請小心包裝',
+        contact_name: '示範用戶',
+        contact_phone: '0912345678'
+      };
+
+      const mockItems = [
+        {
+          id: 1,
+          product_id: 1,
+          name: '高麗菜',
+          quantity: 1,
+          unit_price: 30,
+          line_total: 30,
+          is_priced_item: false,
+          unit_hint: '顆'
+        },
+        {
+          id: 2,
+          product_id: 2,
+          name: '紅蘿蔔',
+          quantity: 2,
+          unit_price: 85,
+          line_total: 170,
+          is_priced_item: true,
+          unit_hint: '斤'
+        }
+      ];
+
+      console.log(`📝 示範模式：返回訂單 #${orderId} 詳情`);
+      return res.json({
+        success: true,
+        order: mockOrderDetail,
+        items: mockItems
+      });
+    }
+
+    // 生產模式：查詢真實資料
+    const orderResult = await pool.query(`
+      SELECT o.*, u.line_user_id 
+      FROM orders o
+      LEFT JOIN users u ON o.contact_phone = u.phone
+      WHERE o.id = $1 AND u.line_user_id = $2
+    `, [orderId, lineUserId]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到指定的訂單或無權限查看'
+      });
+    }
+    
+    const itemsResult = await pool.query(`
+      SELECT 
+        id, product_id, name, is_priced_item, 
+        quantity, unit_price, line_total, actual_weight
+      FROM order_items 
+      WHERE order_id = $1 
+      ORDER BY id
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      order: orderResult.rows[0],
+      items: itemsResult.rows
+    });
+
+  } catch (error) {
+    console.error('❌ 獲取訂單詳情失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單詳情時發生錯誤',
+      error: demoMode ? error.message : undefined
+    });
+  }
+});
+
+// 取消訂單中的單一商品 (客戶專用)
+app.delete('/api/orders/:orderId/items/:itemId/cancel', async (req, res) => {
+  try {
+    const { orderId, itemId } = req.params;
+    const lineUserId = req.session?.line?.userId || req.session?.lineUserId;
+    
+    if (!lineUserId) {
+      return res.status(401).json({
+        success: false,
+        message: '用戶未綁定LINE或session已過期'
+      });
+    }
+
+    if (demoMode) {
+      console.log(`📝 示範模式：模擬取消訂單 #${orderId} 中的商品 #${itemId}`);
+      return res.json({
+        success: true,
+        message: '商品已成功取消',
+        demo: true
+      });
+    }
+
+    // 檢查訂單權限和狀態
+    const orderResult = await pool.query(`
+      SELECT o.id, o.status, u.line_user_id 
+      FROM orders o
+      LEFT JOIN users u ON o.contact_phone = u.phone
+      WHERE o.id = $1 AND u.line_user_id = $2
+    `, [orderId, lineUserId]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到指定的訂單或無權限操作'
+      });
+    }
+
+    const order = orderResult.rows[0];
+    
+    // 只允許取消待確認和已確認的訂單中的商品
+    if (!['placed', 'confirmed'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: '此訂單狀態不允許取消商品'
+      });
+    }
+
+    // 開始交易
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // 檢查商品是否存在
+      const itemResult = await client.query(`
+        SELECT id, line_total FROM order_items 
+        WHERE id = $1 AND order_id = $2
+      `, [itemId, orderId]);
+      
+      if (itemResult.rows.length === 0) {
+        throw new Error('找不到指定的商品');
+      }
+      
+      const itemTotal = itemResult.rows[0].line_total;
+      
+      // 刪除商品
+      await client.query('DELETE FROM order_items WHERE id = $1', [itemId]);
+      
+      // 更新訂單總額
+      await client.query(`
+        UPDATE orders 
+        SET total = total - $1,
+            subtotal = GREATEST(subtotal - $1, 0)
+        WHERE id = $2
+      `, [itemTotal, orderId]);
+      
+      // 檢查訂單是否還有商品
+      const remainingItems = await client.query(`
+        SELECT COUNT(*) as count FROM order_items WHERE order_id = $1
+      `, [orderId]);
+      
+      if (remainingItems.rows[0].count === 0) {
+        // 如果沒有商品了，將訂單標記為已取消
+        await client.query(`
+          UPDATE orders SET status = 'cancelled' WHERE id = $1
+        `, [orderId]);
+      }
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: '商品已成功取消',
+        orderEmpty: remainingItems.rows[0].count === 0
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('❌ 取消商品失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '取消商品時發生錯誤: ' + error.message
+    });
+  }
+});
+
+// =================================================
 // 💰 價格變動通知系統API
 // =================================================
 

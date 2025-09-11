@@ -448,6 +448,244 @@
         padding: 0.8rem;
       }
     }
+
+    /* =================================================
+       📋 訂單詳情彈窗樣式
+       ================================================= */
+    .order-detail-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+      padding: 1rem;
+    }
+
+    .order-detail-content {
+      background: white;
+      border-radius: 20px;
+      max-width: 95vw;
+      max-height: 90vh;
+      width: 100%;
+      max-width: 600px;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+      animation: orderDetailIn 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes orderDetailIn {
+      from {
+        transform: scale(0.9) translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .order-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      background: linear-gradient(135deg, #2d5a3d, #1e3d2a);
+      color: white;
+    }
+
+    .order-detail-header h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .order-detail-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.3rem;
+      transition: all 0.2s ease;
+    }
+
+    .order-detail-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .order-detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem;
+      max-height: 70vh;
+    }
+
+    .order-basic-info {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #495057;
+      min-width: 100px;
+    }
+
+    .order-items-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .order-items-section h3 {
+      margin: 0 0 1rem 0;
+      color: #2d5a3d;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .order-items-list {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .order-item-detail {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-item-detail:last-child {
+      margin-bottom: 0;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: 600;
+      color: #2d5a3d;
+      margin-bottom: 0.3rem;
+    }
+
+    .item-details {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .item-total {
+      font-weight: 700;
+      color: #2d5a3d;
+      font-size: 1.1rem;
+    }
+
+    .item-cancel-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .item-cancel-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
+    .order-summary {
+      background: #e9ecef;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 2px solid #7cb342;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      color: #495057;
+    }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 1rem 0 0 0;
+      border-top: 2px solid #7cb342;
+      margin-top: 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2d5a3d;
+    }
+
+    /* 響應式調整 */
+    @media (max-width: 600px) {
+      .order-detail-content {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+      }
+
+      .order-detail-header {
+        padding: 1rem 1.5rem;
+      }
+
+      .order-detail-body {
+        padding: 1.5rem;
+      }
+
+      .order-item-detail {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .item-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
     
     .brand-section {
       display: flex;
@@ -3056,8 +3294,182 @@
     }
     
     function showOrderDetail(orderId) {
-      // TODO: 實作訂單詳情彈窗
-      alert(`顯示訂單 #${orderId} 的詳細資料`);
+      // 載入訂單詳情並顯示彈窗
+      loadOrderDetails(orderId);
+    }
+    
+    async function loadOrderDetails(orderId) {
+      try {
+        const response = await fetch(`/api/user/orders/${orderId}/details`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('無法載入訂單詳情');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayOrderDetails(data.order, data.items);
+        } else {
+          showOrderError('載入訂單詳情失敗');
+        }
+        
+      } catch (error) {
+        console.error('載入訂單詳情失敗:', error);
+        showOrderError('載入訂單詳情時發生錯誤');
+      }
+    }
+    
+    function displayOrderDetails(order, items) {
+      // 創建訂單詳情彈窗
+      const detailPopup = document.createElement('div');
+      detailPopup.className = 'order-detail-popup';
+      detailPopup.id = 'order-detail-popup';
+      
+      const canCancel = ['placed', 'confirmed'].includes(order.status);
+      
+      detailPopup.innerHTML = `
+        <div class="order-detail-content">
+          <div class="order-detail-header">
+            <h2>📋 訂單詳情 #${order.id}</h2>
+            <button class="order-detail-close" onclick="closeOrderDetail()">×</button>
+          </div>
+          
+          <div class="order-detail-body">
+            <div class="order-basic-info">
+              <div class="info-row">
+                <span class="info-label">訂單狀態：</span>
+                <span class="order-status ${order.status}">${getStatusText(order.status)}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">下單時間：</span>
+                <span>${new Date(order.created_at).toLocaleString('zh-TW')}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">配送地址：</span>
+                <span>${order.address}</span>
+              </div>
+              ${order.notes ? `<div class="info-row"><span class="info-label">備註：</span><span>${order.notes}</span></div>` : ''}
+            </div>
+            
+            <div class="order-items-section">
+              <h3>📦 訂單商品</h3>
+              <div class="order-items-list">
+                ${items.map(item => createOrderItemHTML(item, canCancel, order.id)).join('')}
+              </div>
+            </div>
+            
+            <div class="order-summary">
+              <div class="summary-row">
+                <span>商品小計：</span>
+                <span>$${order.subtotal || (order.total - 50)}</span>
+              </div>
+              <div class="summary-row">
+                <span>配送費：</span>
+                <span>$${order.delivery_fee || 50}</span>
+              </div>
+              <div class="summary-total">
+                <span>總計：</span>
+                <span>$${order.total}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(detailPopup);
+      detailPopup.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      
+      // 點擊背景關閉
+      detailPopup.addEventListener('click', function(e) {
+        if (e.target === detailPopup) {
+          closeOrderDetail();
+        }
+      });
+    }
+    
+    function createOrderItemHTML(item, canCancel, orderId) {
+      return `
+        <div class="order-item-detail" data-item-id="${item.id}">
+          <div class="item-info">
+            <div class="item-name">${item.name}</div>
+            <div class="item-details">
+              數量: ${item.quantity} ${item.unit_hint || '份'}
+              ${item.unit_price ? ` | 單價: $${item.unit_price}` : ''}
+            </div>
+          </div>
+          <div class="item-actions">
+            <div class="item-total">$${item.line_total}</div>
+            ${canCancel ? `
+              <button class="item-cancel-btn" onclick="cancelOrderItem(${orderId}, ${item.id}, '${item.name}')">
+                取消
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    function closeOrderDetail() {
+      const popup = document.getElementById('order-detail-popup');
+      if (popup) {
+        popup.remove();
+        document.body.style.overflow = 'auto';
+      }
+    }
+    
+    async function cancelOrderItem(orderId, itemId, itemName) {
+      if (!confirm(`確定要取消「${itemName}」嗎？`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/orders/${orderId}/items/${itemId}/cancel`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('取消商品失敗');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // 移除商品元素
+          const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+          if (itemElement) {
+            itemElement.remove();
+          }
+          
+          // 顯示成功訊息
+          alert(`已成功取消「${itemName}」`);
+          
+          // 重新載入訂單管理以更新資料
+          if (currentOrderTab === 'current') {
+            loadUserOrders('current');
+          }
+          
+        } else {
+          alert('取消商品失敗：' + data.message);
+        }
+        
+      } catch (error) {
+        console.error('取消商品失敗:', error);
+        alert('取消商品時發生錯誤');
+      }
+    }
+    
+    function showOrderError(message) {
+      alert(message);
     }
     
     // 點擊背景關閉彈窗
