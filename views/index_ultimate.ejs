@@ -91,6 +91,121 @@
       max-width: 430px;
       margin: 0 auto;
     }
+
+    /* =================================================
+       📢 訂單時間橫幅與彈窗
+       ================================================= */
+    .order-time-banner {
+      position: fixed;
+      top: 80px;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      display: none;
+    }
+
+    .order-time-banner.status-active {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+    }
+
+    .order-time-banner.status-warning {
+      background: linear-gradient(135deg, #ffc107, #fd7e14);
+      color: #000;
+    }
+
+    .order-time-banner.status-closed {
+      background: linear-gradient(135deg, #dc3545, #e83e8c);
+      color: white;
+    }
+
+    .order-time-banner.status-holiday {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      color: white;
+    }
+
+    .order-time-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .order-time-popup-content {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transform: scale(0.9);
+      opacity: 0;
+      animation: popupAppear 0.3s ease forwards;
+      position: relative;
+    }
+
+    @keyframes popupAppear {
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .order-time-popup-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #666;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .order-time-popup-close:hover {
+      background: #f8f9fa;
+      color: #dc3545;
+    }
+
+    .order-time-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .order-time-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .order-time-desc {
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
     
     .brand-section {
       display: flex;
@@ -168,7 +283,7 @@
        ================================================= */
     .smart-search-container {
       position: fixed;
-      top: 80px;
+      top: 130px;
       left: 0;
       right: 0;
       z-index: 999;
@@ -1224,6 +1339,21 @@
     </div>
   </header>
 
+  <!-- 📢 訂單時間橫幅 -->
+  <div class="order-time-banner" id="order-time-banner">
+    <span id="order-time-message">載入中...</span>
+  </div>
+
+  <!-- 📢 訂單時間彈窗 -->
+  <div class="order-time-popup" id="order-time-popup" style="display: none;">
+    <div class="order-time-popup-content">
+      <button class="order-time-popup-close" onclick="closeOrderTimePopup()">×</button>
+      <div class="order-time-icon" id="popup-time-icon">⏰</div>
+      <div class="order-time-title" id="popup-time-title">訂單時間提醒</div>
+      <div class="order-time-desc" id="popup-time-desc">載入中...</div>
+    </div>
+  </div>
+
   <!-- 🔍 智能搜尋 -->
   <div class="smart-search-container">
     <div class="smart-search-wrapper">
@@ -1576,8 +1706,15 @@
         serviceHoursEnd: settings.service_hours_end || '20:00',
         serviceAreas: serviceAreasText,
         serviceAreasList: settings.service_area, // 保存原始陣列格式供結帳使用
-        deliveryNote: settings.delivery_note || '當日新鮮配送，保證品質'
+        deliveryNote: settings.delivery_note || '當日新鮮配送，保證品質',
+        // 訂單時間設定
+        orderCutoffTime: settings.order_cutoff_time || '11:00',
+        nextDayOrderStart: settings.next_day_order_start || '14:00',
+        weeklySchedule: settings.weekly_schedule || {}
       };
+      
+      // 初始化訂單時間顯示
+      initOrderTimeDisplay();
     }
     
     // 📱 應用移動端設定
@@ -2343,6 +2480,141 @@
       }
     `;
     document.head.appendChild(cartDetailStyles);
+
+    // =================================================
+    // 📢 訂單時間管理系統
+    // =================================================
+    
+    function initOrderTimeDisplay() {
+      // 檢查是否首次訪問（顯示彈窗）
+      const hasSeenPopup = sessionStorage.getItem('orderTimePopupSeen');
+      if (!hasSeenPopup) {
+        showOrderTimePopup();
+      }
+      
+      // 顯示橫幅並設定定時更新
+      updateOrderTimeBanner();
+      setInterval(updateOrderTimeBanner, 30000); // 每30秒更新一次
+    }
+
+    function getOrderTimeStatus() {
+      const now = new Date();
+      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()];
+      
+      // 獲取營業設定
+      const cutoffTime = window.businessSettings?.orderCutoffTime || '11:00';
+      const nextDayStart = window.businessSettings?.nextDayOrderStart || '14:00';
+      const schedule = window.businessSettings?.weeklySchedule || {};
+      
+      // 檢查今天是否營業
+      const todaySchedule = schedule[dayKey];
+      if (!todaySchedule || !todaySchedule.open) {
+        return {
+          status: 'holiday',
+          icon: '💤',
+          title: '今日休息',
+          message: '今日為休假日',
+          description: '感謝您的支持，我們今天休息，請明天再來訂購新鮮蔬果！'
+        };
+      }
+      
+      // 判斷訂單時間狀態
+      if (currentTime <= cutoffTime) {
+        // 00:00-11:00 → 今日配送訂單
+        return {
+          status: 'active',
+          icon: '🚚',
+          title: '今日配送訂單',
+          message: `🚚 今日配送訂單，${cutoffTime}前截止`,
+          description: `現在是 ${currentTime}，您可以下今日配送的訂單，截止時間為 ${cutoffTime}。`
+        };
+      } else if (currentTime < nextDayStart) {
+        // 11:01-13:59 → 暫停接單
+        return {
+          status: 'closed',
+          icon: '⏰',
+          title: '暫停接單',
+          message: `⏰ 今日訂單已截止，${nextDayStart}開放明日預訂`,
+          description: `今日 ${cutoffTime} 後暫停接單，${nextDayStart} 開始接受明日配送預訂。`
+        };
+      } else {
+        // 14:00-23:59 → 明日預訂開放
+        return {
+          status: 'warning',
+          icon: '📅',
+          title: '明日配送預訂',
+          message: '📅 明日配送訂單，開放預訂中',
+          description: `現在是 ${currentTime}，您可以預訂明日配送的新鮮蔬果。`
+        };
+      }
+    }
+
+    function updateOrderTimeBanner() {
+      const banner = document.getElementById('order-time-banner');
+      const message = document.getElementById('order-time-message');
+      
+      if (!banner || !message) return;
+      
+      const timeStatus = getOrderTimeStatus();
+      
+      // 更新橫幅內容和樣式
+      message.textContent = timeStatus.message;
+      banner.className = `order-time-banner status-${timeStatus.status}`;
+      banner.style.display = 'block';
+      
+      // 調整搜尋欄位置（如果橫幅顯示）
+      const searchContainer = document.querySelector('.smart-search-container');
+      if (searchContainer) {
+        searchContainer.style.top = '130px';
+      }
+    }
+
+    function showOrderTimePopup() {
+      const popup = document.getElementById('order-time-popup');
+      const icon = document.getElementById('popup-time-icon');
+      const title = document.getElementById('popup-time-title');
+      const desc = document.getElementById('popup-time-desc');
+      
+      if (!popup || !icon || !title || !desc) return;
+      
+      const timeStatus = getOrderTimeStatus();
+      
+      // 更新彈窗內容
+      icon.textContent = timeStatus.icon;
+      title.textContent = timeStatus.title;
+      desc.textContent = timeStatus.description;
+      
+      // 顯示彈窗
+      popup.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      
+      // 標記已顯示過彈窗
+      sessionStorage.setItem('orderTimePopupSeen', 'true');
+    }
+
+    function closeOrderTimePopup() {
+      const popup = document.getElementById('order-time-popup');
+      if (popup) {
+        popup.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    }
+
+    // 頁面載入時初始化（如果還沒有businessSettings，則延遲執行）
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.businessSettings) {
+        initOrderTimeDisplay();
+      } else {
+        // 等待設定載入後再初始化
+        const checkSettings = setInterval(() => {
+          if (window.businessSettings) {
+            clearInterval(checkSettings);
+            initOrderTimeDisplay();
+          }
+        }, 100);
+      }
+    });
     
   </script>
 </body>
