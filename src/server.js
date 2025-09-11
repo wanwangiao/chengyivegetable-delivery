@@ -3801,16 +3801,44 @@ const basicSettingsCategories = {
     {
       key: 'service_area',
       display_name: '服務區域',
-      description: '主要服務的地理區域',
-      type: 'text',
-      value: '台北市、新北市、桃園市'
+      description: '選擇主要服務的縣市區域',
+      type: 'multiselect',
+      options: [
+        '台北市',
+        '新北市',
+        '桃園市',
+        '台中市',
+        '台南市',
+        '高雄市',
+        '基隆市',
+        '新竹市',
+        '新竹縣',
+        '苗栗縣',
+        '彰化縣',
+        '南投縣',
+        '雲林縣',
+        '嘉義市',
+        '嘉義縣',
+        '屏東縣',
+        '宜蘭縣',
+        '花蓮縣',
+        '台東縣',
+        '澎湖縣',
+        '金門縣',
+        '連江縣'
+      ],
+      value: ['台北市', '新北市', '桃園市']
     },
     {
       key: 'delivery_time_slots',
       display_name: '配送時段',
-      description: '可選擇的配送時間段',
-      type: 'textarea',
-      value: '09:00-12:00\n13:00-17:00\n18:00-21:00'
+      description: '設定可選擇的配送時間段',
+      type: 'time_slots',
+      value: [
+        { start: '09:00', end: '12:00', label: '上午時段' },
+        { start: '13:00', end: '17:00', label: '下午時段' },
+        { start: '18:00', end: '21:00', label: '晚間時段' }
+      ]
     }
   ],
   'content': [

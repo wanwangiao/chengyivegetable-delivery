@@ -146,6 +146,42 @@
             padding: 0.5rem 1rem;
         }
 
+        .multiselect-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem;
+            background-color: #fff;
+        }
+
+        .multiselect-container .form-check {
+            margin-bottom: 0.5rem;
+        }
+
+        .multiselect-container .form-check:last-child {
+            margin-bottom: 0;
+        }
+
+        .time-slots-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+
+        .time-slot-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .time-slots-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
         .preview-section {
             background: #f8f9fa;
             border-radius: 12px;
@@ -590,6 +626,69 @@
                                onchange="updateSetting('${setting.key}', this.value)">
                     `;
                 
+                case 'multiselect':
+                    const selectedValues = Array.isArray(setting.value) ? setting.value : [];
+                    let multiselectHtml = '<div class="multiselect-container">';
+                    
+                    setting.options.forEach(option => {
+                        const isChecked = selectedValues.includes(option);
+                        multiselectHtml += `
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="${setting.key}_${option}" 
+                                       value="${option}"
+                                       ${isChecked ? 'checked' : ''}
+                                       onchange="updateMultiSelectSetting('${setting.key}', '${option}', this.checked)">
+                                <label class="form-check-label" for="${setting.key}_${option}">
+                                    ${option}
+                                </label>
+                            </div>
+                        `;
+                    });
+                    
+                    multiselectHtml += '</div>';
+                    return multiselectHtml;
+                
+                case 'time_slots':
+                    const timeSlots = Array.isArray(setting.value) ? setting.value : [];
+                    let timeSlotsHtml = `
+                        <div class="time-slots-container">
+                            <div class="time-slots-list" id="timeSlotsList_${setting.key}">
+                    `;
+                    
+                    timeSlots.forEach((slot, index) => {
+                        timeSlotsHtml += `
+                            <div class="time-slot-item d-flex align-items-center mb-2">
+                                <input type="time" class="form-control me-2" style="width: 120px;" 
+                                       value="${slot.start || ''}" 
+                                       onchange="updateTimeSlot('${setting.key}', ${index}, 'start', this.value)">
+                                <span class="me-2">至</span>
+                                <input type="time" class="form-control me-2" style="width: 120px;" 
+                                       value="${slot.end || ''}" 
+                                       onchange="updateTimeSlot('${setting.key}', ${index}, 'end', this.value)">
+                                <input type="text" class="form-control me-2" style="width: 150px;" 
+                                       placeholder="時段名稱" 
+                                       value="${slot.label || ''}"
+                                       onchange="updateTimeSlot('${setting.key}', ${index}, 'label', this.value)">
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="removeTimeSlot('${setting.key}', ${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    
+                    timeSlotsHtml += `
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" 
+                                    onclick="addTimeSlot('${setting.key}')">
+                                <i class="fas fa-plus"></i> 新增時段
+                            </button>
+                        </div>
+                    `;
+                    return timeSlotsHtml;
+                
                 default: // text, string 等
                     return `
                         <input type="text" 
@@ -638,6 +737,58 @@
                 if (label) {
                     label.textContent = value ? '已啟用' : '已停用';
                 }
+            }
+        }
+
+        // 更新多選設定
+        function updateMultiSelectSetting(key, option, isChecked) {
+            if (!Array.isArray(currentSettings[key])) {
+                currentSettings[key] = [];
+            }
+            
+            if (isChecked) {
+                if (!currentSettings[key].includes(option)) {
+                    currentSettings[key].push(option);
+                }
+            } else {
+                currentSettings[key] = currentSettings[key].filter(item => item !== option);
+            }
+        }
+
+        // 更新時段設定
+        function updateTimeSlot(key, index, field, value) {
+            if (!Array.isArray(currentSettings[key])) {
+                currentSettings[key] = [];
+            }
+            
+            if (!currentSettings[key][index]) {
+                currentSettings[key][index] = {};
+            }
+            
+            currentSettings[key][index][field] = value;
+        }
+
+        // 新增時段
+        function addTimeSlot(key) {
+            if (!Array.isArray(currentSettings[key])) {
+                currentSettings[key] = [];
+            }
+            
+            currentSettings[key].push({
+                start: '09:00',
+                end: '12:00',
+                label: '新時段'
+            });
+            
+            // 重新渲染設定
+            renderSettings();
+        }
+
+        // 移除時段
+        function removeTimeSlot(key, index) {
+            if (Array.isArray(currentSettings[key])) {
+                currentSettings[key].splice(index, 1);
+                renderSettings();
             }
         }
 
