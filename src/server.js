@@ -37,6 +37,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       LineBotService = require('./services/LineBotService'),
       LineUserService = require('./services/LineUserService'),
       PriceChangeNotificationService = require('./services/PriceChangeNotificationService'),
+      BasicSettingsService = require('./services/BasicSettingsService'),
       UnitConverter = require('./utils/unitConverter');
 
 let agentSystem = null;
@@ -47,6 +48,7 @@ let lineNotificationService = null;
 let lineBotService = null;
 let lineUserService = null;
 let priceChangeNotificationService = null;
+let basicSettingsService = null;
 
 // 系統模式設定
 let demoMode = true; // 預設為示範模式，當資料庫連線成功後會切換為線上模式
@@ -926,8 +928,20 @@ app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
     
-    // 獲取網站設定 (示範模式使用預設值)
-    const settings = demoMode ? defaultBasicSettings : defaultBasicSettings; // TODO: 實際從資料庫載入
+    // 獲取網站設定 - 實際從資料庫載入或使用預設值
+    let settings = defaultBasicSettings;
+    
+    if (!demoMode && basicSettingsService) {
+      try {
+        const dbSettings = await basicSettingsService.getAllSettings();
+        // 合併資料庫設定與預設值
+        settings = BasicSettingsService.mergeWithDefaults(dbSettings, defaultBasicSettings);
+        console.log('✅ 前台載入資料庫設定成功');
+      } catch (error) {
+        console.error('⚠️ 載入資料庫設定失敗，使用預設值:', error.message);
+        // 使用預設值作為fallback
+      }
+    }
     
     res.render('index_new_design', { 
       products: products,
@@ -4008,30 +4022,22 @@ const basicSettingsCategories = {
 // 獲取基本設定
 app.get('/api/admin/basic-settings', ensureAdmin, async (req, res) => {
   try {
-    if (demoMode) {
-      // 示範模式：使用預設設定
-      const settings = { ...defaultBasicSettings };
-      
-      // 更新分類中的值
-      const categories = JSON.parse(JSON.stringify(basicSettingsCategories));
-      Object.keys(categories).forEach(categoryKey => {
-        categories[categoryKey].forEach(setting => {
-          setting.value = settings[setting.key] || setting.value;
-        });
-      });
-      
-      return res.json({
-        success: true,
-        settings,
-        categories
-      });
-    }
-
-    // 生產模式：從資料庫讀取設定
-    // 這裡可以實作資料庫查詢邏輯
-    const settings = { ...defaultBasicSettings };
-    const categories = JSON.parse(JSON.stringify(basicSettingsCategories));
+    let settings = { ...defaultBasicSettings };
     
+    // 嘗試從資料庫載入設定
+    if (!demoMode && basicSettingsService) {
+      try {
+        const dbSettings = await basicSettingsService.getAllSettings();
+        settings = BasicSettingsService.mergeWithDefaults(dbSettings, defaultBasicSettings);
+        console.log('✅ 後台載入資料庫設定成功');
+      } catch (error) {
+        console.error('⚠️ 後台載入資料庫設定失敗，使用預設值:', error.message);
+        // 繼續使用預設值
+      }
+    }
+    
+    // 更新分類中的值
+    const categories = JSON.parse(JSON.stringify(basicSettingsCategories));
     Object.keys(categories).forEach(categoryKey => {
       categories[categoryKey].forEach(setting => {
         setting.value = settings[setting.key] || setting.value;
@@ -4041,7 +4047,9 @@ app.get('/api/admin/basic-settings', ensureAdmin, async (req, res) => {
     res.json({
       success: true,
       settings,
-      categories
+      categories,
+      mode: demoMode ? '示範模式' : '線上模式',
+      source: (!demoMode && basicSettingsService) ? '資料庫' : '預設值'
     });
 
   } catch (error) {
@@ -4074,14 +4082,39 @@ app.post('/api/admin/basic-settings/update', ensureAdmin, async (req, res) => {
       });
     }
 
-    // 生產模式：儲存到資料庫
-    // 這裡可以實作資料庫更新邏輯
-    console.log('📝 設定已更新:', Object.keys(settings));
+    // 生產模式：實際儲存到資料庫
+    if (basicSettingsService) {
+      try {
+        const updateResult = await basicSettingsService.updateMultipleSettings(settings);
+        console.log(`📝 設定更新完成: 成功 ${updateResult.success}, 失敗 ${updateResult.failed}`);
+        
+        if (updateResult.failed > 0) {
+          console.error('部分設定更新失敗:', updateResult.errors);
+          return res.json({
+            success: true,
+            message: `設定部分儲存成功 (${updateResult.success}/${updateResult.success + updateResult.failed})`,
+            warnings: updateResult.errors
+          });
+        }
 
-    res.json({
-      success: true,
-      message: '設定儲存成功'
-    });
+        return res.json({
+          success: true,
+          message: `設定儲存成功 (${updateResult.success} 項)`
+        });
+      } catch (error) {
+        console.error('資料庫設定更新失敗:', error);
+        return res.status(500).json({
+          success: false,
+          message: '資料庫儲存失敗: ' + error.message
+        });
+      }
+    } else {
+      console.log('⚠️ 基本設定服務未初始化，設定變更未儲存');
+      return res.status(503).json({
+        success: false,
+        message: '設定服務未可用'
+      });
+    }
 
   } catch (error) {
     console.error('更新基本設定失敗:', error);
@@ -6211,6 +6244,14 @@ if (process.env.VERCEL) {
   // Vercel serverless 環境：立即初始化服務
   console.log('🔧 Vercel serverless 環境初始化');
   
+  // 初始化基本設定服務
+  try {
+    basicSettingsService = new BasicSettingsService(pool);
+    console.log('⚙️  基本設定服務已初始化');
+  } catch (error) {
+    console.error('❌ 基本設定服務初始化失敗:', error);
+  }
+
   // 初始化LINE通知服務
   try {
     lineNotificationService = new LineNotificationService();
@@ -6251,6 +6292,14 @@ if (process.env.VERCEL) {
       }
     }
     
+    // 初始化基本設定服務
+    try {
+      basicSettingsService = new BasicSettingsService(pool);
+      console.log('⚙️  基本設定服務已初始化');
+    } catch (error) {
+      console.error('❌ 基本設定服務初始化失敗:', error);
+    }
+
     // 初始化LINE通知服務
     try {
       lineNotificationService = new LineNotificationService();
