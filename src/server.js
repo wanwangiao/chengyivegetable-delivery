@@ -30,6 +30,8 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
       { router: googleMapsSecureApiRoutes, setDatabasePool: setGoogleMapsSecureDatabasePool } = require('./routes/google_maps_secure_api'),
       { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
+      dbSetupRoutes = require('./routes/db_setup'),
+      { router: dbSetupApiRoutes, setDatabasePool: setDbSetupDatabasePool, setBasicSettingsService: setDbSetupBasicSettingsService } = require('./routes/db_setup_api'),
       WebSocketManager = require('./services/WebSocketManager'),
       SmartRouteService = require('./services/SmartRouteService'),
       RouteOptimizationService = require('./services/RouteOptimizationService'),
@@ -269,8 +271,10 @@ createDatabasePool().then(async () => {
     setGoogleMapsDatabasePool(pool);
     setGoogleMapsSecureDatabasePool(pool);
     setDriverSimplifiedDatabasePool(pool, demoMode);
+    setDbSetupDatabasePool(pool);
     console.log('🗺️ Google Maps API 服務已初始化');
     console.log('🔒 Google Maps 安全API 服務已初始化');
+    console.log('🔧 資料庫設置 API 已初始化');
 
   // 暫時註解即時通知系統初始化
   // try {
@@ -614,6 +618,10 @@ app.use('/api/google-maps-secure', googleMapsSecureApiRoutes);
 
 // WebSocket API路由
 app.use('/api/websocket', websocketApiRoutes);
+
+// 資料庫設置路由 (僅管理員)
+app.use('/admin/db-setup', dbSetupRoutes);
+app.use('/api/db-setup', dbSetupApiRoutes);
 
 // 智能路線API端點
 app.post('/api/smart-route/plan', ensureAdmin, async (req, res) => {
@@ -6247,6 +6255,7 @@ if (process.env.VERCEL) {
   // 初始化基本設定服務
   try {
     basicSettingsService = new BasicSettingsService(pool);
+    setDbSetupBasicSettingsService(basicSettingsService);
     console.log('⚙️  基本設定服務已初始化');
   } catch (error) {
     console.error('❌ 基本設定服務初始化失敗:', error);
@@ -6295,6 +6304,7 @@ if (process.env.VERCEL) {
     // 初始化基本設定服務
     try {
       basicSettingsService = new BasicSettingsService(pool);
+      setDbSetupBasicSettingsService(basicSettingsService);
       console.log('⚙️  基本設定服務已初始化');
     } catch (error) {
       console.error('❌ 基本設定服務初始化失敗:', error);
