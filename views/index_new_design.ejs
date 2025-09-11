@@ -72,6 +72,25 @@
     </div>
   </header>
 
+  <!-- 📢 訂單時間橫幅 -->
+  <div class="order-time-banner sticky top-0 z-20 px-4 py-2 text-center text-sm font-medium transition-all duration-300" id="order-time-banner">
+    <span id="order-time-message">載入中...</span>
+  </div>
+
+  <!-- 📢 訂單時間彈窗 -->
+  <div class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center" id="order-time-popup">
+    <div class="bg-white rounded-2xl shadow-lg p-6 mx-4 max-w-sm w-full">
+      <div class="text-center">
+        <div class="text-4xl mb-4" id="popup-time-icon">⏰</div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2" id="popup-time-title">訂單時間提醒</h3>
+        <p class="text-gray-600 mb-6" id="popup-time-desc">載入中...</p>
+        <button class="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors" onclick="closeOrderTimePopup()">
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content -->
   <main class="flex-grow pb-32">
     <!-- 重要公告 -->
@@ -956,6 +975,92 @@ document.getElementById('checkout-modal').addEventListener('click', function(e) 
   if (e.target === this) {
     closeCheckoutModal();
   }
+});
+
+// 📢 訂單時間提醒系統
+function initOrderTimeSystem() {
+  const now = new Date();
+  const hour = now.getHours();
+  const minutes = now.getMinutes();
+  const day = now.getDay(); // 0=週日, 1=週一, ..., 6=週六
+  
+  let status, message, color, icon, description;
+  
+  // 檢查是否為休假日 (假設週日休息)
+  if (day === 0) {
+    status = 'holiday';
+    message = '💤 今日為休假日';
+    color = '#9ca3af'; // gray-400
+    icon = '💤';
+    description = '今天是休假日，暫不提供服務。明天14:00開放訂購。';
+  }
+  // 00:00-11:00 今日配送接單中
+  else if (hour < 11) {
+    status = 'accepting';
+    message = `🚚 今日配送訂單，${11 - hour}小時${60 - minutes}分鐘後截止`;
+    color = '#22c55e'; // green-500  
+    icon = '🚚';
+    description = '現在可以下訂今天配送的商品，11:00前截止下單。';
+  }
+  // 11:01-13:59 今日截止，等待明日開放
+  else if (hour < 14) {
+    status = 'waiting';
+    message = `⏰ 今日訂單已截止，${14 - hour}小時${60 - minutes}分鐘後開放明日預訂`;
+    color = '#f59e0b'; // amber-500
+    icon = '⏰';
+    description = '今天的配送訂單已經截止，14:00開放明天的預訂。';
+  }
+  // 14:00-23:59 明日配送預訂中
+  else {
+    status = 'booking';
+    message = '📅 明日配送訂單，開放預訂中';
+    color = '#3b82f6'; // blue-500
+    icon = '📅';
+    description = '現在可以預訂明天配送的商品。';
+  }
+  
+  // 更新橫幅
+  const banner = document.getElementById('order-time-banner');
+  const messageEl = document.getElementById('order-time-message');
+  
+  banner.style.backgroundColor = color;
+  banner.style.color = 'white';
+  messageEl.textContent = message;
+  
+  // 更新彈窗內容
+  document.getElementById('popup-time-icon').textContent = icon;
+  document.getElementById('popup-time-title').textContent = '訂單時間提醒';
+  document.getElementById('popup-time-desc').textContent = description;
+  
+  // 首次訪問顯示彈窗
+  if (!localStorage.getItem('orderTimePopupShown_' + new Date().toDateString())) {
+    setTimeout(() => {
+      showOrderTimePopup();
+    }, 1000);
+  }
+}
+
+function showOrderTimePopup() {
+  document.getElementById('order-time-popup').classList.remove('hidden');
+  document.getElementById('order-time-popup').classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderTimePopup() {
+  document.getElementById('order-time-popup').classList.add('hidden');
+  document.getElementById('order-time-popup').classList.remove('flex');
+  document.body.style.overflow = 'auto';
+  
+  // 標記今日已顯示過彈窗
+  localStorage.setItem('orderTimePopupShown_' + new Date().toDateString(), 'true');
+}
+
+// 頁面載入完成後初始化
+document.addEventListener('DOMContentLoaded', function() {
+  initOrderTimeSystem();
+  
+  // 每分鐘更新一次狀態
+  setInterval(initOrderTimeSystem, 60000);
 });
 </script>
 

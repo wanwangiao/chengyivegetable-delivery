@@ -925,7 +925,7 @@ app.get('/api/performance', (req, res) => {
 app.get('/', async (req, res, next) => {
   try {
     const products = await fetchProducts();
-    res.render('index_ultimate', { 
+    res.render('index_new_design', { 
       products: products,
       sessionLine: req.session.line || null,
       getProductEmoji: getProductEmoji
