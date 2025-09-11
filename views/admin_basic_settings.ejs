@@ -182,6 +182,55 @@
             overflow-y: auto;
         }
 
+        .district-selector-container {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+        }
+
+        .selected-districts {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .selected-list {
+            min-height: 50px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .selected-list:empty::after {
+            content: '尚未選擇任何服務區域';
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .add-district {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            font-size: 0.9em;
+            padding: 0.5em 0.75em;
+        }
+
+        .btn-close-white {
+            filter: invert(1);
+            opacity: 0.8;
+        }
+
+        .btn-close-white:hover {
+            opacity: 1;
+        }
+
         .preview-section {
             background: #f8f9fa;
             border-radius: 12px;
@@ -649,6 +698,59 @@
                     
                     multiselectHtml += '</div>';
                     return multiselectHtml;
+
+                case 'district_selector':
+                    const selectedDistricts = Array.isArray(setting.value) ? setting.value : [];
+                    let districtHtml = `
+                        <div class="district-selector-container">
+                            <div class="selected-districts mb-3">
+                                <h6>已選擇的服務區域：</h6>
+                                <div id="selectedDistrictsList_${setting.key}" class="selected-list">
+                    `;
+                    
+                    selectedDistricts.forEach((item, index) => {
+                        districtHtml += `
+                            <span class="badge bg-success me-2 mb-2">
+                                ${item.city} ${item.district}
+                                <button type="button" class="btn-close btn-close-white ms-1" 
+                                        onclick="removeDistrict('${setting.key}', ${index})"></button>
+                            </span>
+                        `;
+                    });
+                    
+                    districtHtml += `
+                                </div>
+                            </div>
+                            <div class="add-district">
+                                <h6>新增服務區域：</h6>
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <select class="form-select" id="citySelect_${setting.key}" 
+                                                onchange="updateDistrictOptions('${setting.key}')">
+                                            <option value="">選擇縣市</option>
+                    `;
+                    
+                    Object.keys(setting.areas).forEach(city => {
+                        districtHtml += `<option value="${city}">${city}</option>`;
+                    });
+                    
+                    districtHtml += `
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <select class="form-select" id="districtSelect_${setting.key}" disabled>
+                                            <option value="">請先選擇縣市</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="addDistrict('${setting.key}')">新增</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    return districtHtml;
                 
                 case 'time_slots':
                     const timeSlots = Array.isArray(setting.value) ? setting.value : [];
@@ -786,6 +888,74 @@
 
         // 移除時段
         function removeTimeSlot(key, index) {
+            if (Array.isArray(currentSettings[key])) {
+                currentSettings[key].splice(index, 1);
+                renderSettings();
+            }
+        }
+
+        // 更新區域選項
+        function updateDistrictOptions(key) {
+            const citySelect = document.getElementById(`citySelect_${key}`);
+            const districtSelect = document.getElementById(`districtSelect_${key}`);
+            const selectedCity = citySelect.value;
+            
+            // 清空區域選項
+            districtSelect.innerHTML = '<option value="">選擇區域</option>';
+            
+            if (selectedCity) {
+                // 找到對應的設定
+                const categorySetting = Object.values(allCategories).flat().find(s => s.key === key);
+                if (categorySetting && categorySetting.areas[selectedCity]) {
+                    categorySetting.areas[selectedCity].forEach(district => {
+                        districtSelect.innerHTML += `<option value="${district}">${district}</option>`;
+                    });
+                    districtSelect.disabled = false;
+                } else {
+                    districtSelect.disabled = true;
+                }
+            } else {
+                districtSelect.disabled = true;
+            }
+        }
+
+        // 新增區域
+        function addDistrict(key) {
+            const citySelect = document.getElementById(`citySelect_${key}`);
+            const districtSelect = document.getElementById(`districtSelect_${key}`);
+            
+            const city = citySelect.value;
+            const district = districtSelect.value;
+            
+            if (!city || !district) {
+                alert('請選擇縣市和區域');
+                return;
+            }
+            
+            // 初始化設定值
+            if (!Array.isArray(currentSettings[key])) {
+                currentSettings[key] = [];
+            }
+            
+            // 檢查是否已存在
+            const exists = currentSettings[key].some(item => 
+                item.city === city && item.district === district
+            );
+            
+            if (exists) {
+                alert('該區域已經存在');
+                return;
+            }
+            
+            // 新增區域
+            currentSettings[key].push({ city: city, district: district });
+            
+            // 重新渲染設定
+            renderSettings();
+        }
+
+        // 移除區域
+        function removeDistrict(key, index) {
             if (Array.isArray(currentSettings[key])) {
                 currentSettings[key].splice(index, 1);
                 renderSettings();
