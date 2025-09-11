@@ -36,6 +36,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService'),
       LineUserService = require('./services/LineUserService'),
+      PriceChangeNotificationService = require('./services/PriceChangeNotificationService'),
       UnitConverter = require('./utils/unitConverter');
 
 let agentSystem = null;
@@ -45,6 +46,7 @@ let webSocketManager = null;
 let lineNotificationService = null;
 let lineBotService = null;
 let lineUserService = null;
+let priceChangeNotificationService = null;
 
 // 系統模式設定
 let demoMode = true; // 預設為示範模式，當資料庫連線成功後會切換為線上模式
@@ -2554,6 +2556,21 @@ app.post('/admin/products/:id/update', ensureAdmin, async (req, res, next) => {
     const priced = isPricedItem === 'on' || isPricedItem === 'true';
     const weightPriceVal = weightPricePerUnit === '' || weightPricePerUnit === null ? null : parseFloat(weightPricePerUnit);
     
+    // 獲取舊價格以供價格變動檢測
+    let oldPrice = null;
+    let productName = null;
+    if (!demoMode) {
+      try {
+        const oldProductResult = await pool.query('SELECT price, name FROM products WHERE id = $1', [id]);
+        if (oldProductResult.rows.length > 0) {
+          oldPrice = oldProductResult.rows[0].price;
+          productName = oldProductResult.rows[0].name;
+        }
+      } catch (error) {
+        console.error('獲取舊價格失敗:', error);
+      }
+    }
+    
     // 檢查是否需要添加稱重商品欄位
     const result = await pool.query('SELECT column_name FROM information_schema.columns WHERE table_name = $1', ['products']);
     const columns = result.rows.map(row => row.column_name);
@@ -2569,6 +2586,30 @@ app.post('/admin/products/:id/update', ensureAdmin, async (req, res, next) => {
         'UPDATE products SET price=$1, is_priced_item=$2, unit_hint=$3 WHERE id=$4',
         [priceVal, priced, unitHint || null, id]
       );
+    }
+    
+    // 價格變動檢測和通知
+    if (priceChangeNotificationService && oldPrice !== null && priceVal !== null && oldPrice !== priceVal) {
+      try {
+        console.log(`💰 檢測到價格變動: ${productName} ${oldPrice} → ${priceVal}`);
+        
+        // 非同步檢測和發送通知，不阻塞頁面回應
+        setTimeout(async () => {
+          try {
+            await priceChangeNotificationService.checkAndNotifyPriceChanges([{
+              id: id,
+              name: productName,
+              oldPrice: parseFloat(oldPrice),
+              newPrice: priceVal
+            }]);
+          } catch (error) {
+            console.error('價格變動通知失敗:', error);
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('價格變動檢測失敗:', error);
+      }
     }
     
     res.redirect('/admin/products');
@@ -3672,6 +3713,20 @@ const basicSettingsCategories = {
       description: '當訂單成功送達時發送給客戶的訊息。可使用 {orderId} 和 {totalAmount} 作為變數。',
       type: 'textarea',
       value: defaultBasicSettings.notification_delivered
+    },
+    {
+      key: 'notification_price_increase',
+      display_name: '📈 價格上漲通知',
+      description: '當商品價格上漲超過閾值時發送的通知模板。可使用變數: {productName} {oldPrice} {newPrice} {changePercent} {orderId}',
+      type: 'textarea',
+      value: defaultBasicSettings.notification_price_increase || '⚠️ 價格異動通知\n\n您的訂單 #{orderId} 中的【{productName}】價格有所調整：\n💰 昨日參考價: ${oldPrice}\n💰 今日實際價: ${newPrice}\n📊 變動幅度: {changePercent}\n\n如需調整訂單，請於30分鐘內至訂單管理頁面處理，逾時將視為接受此價格。\n\n感謝您的理解 🙏'
+    },
+    {
+      key: 'notification_price_decrease',
+      display_name: '📉 價格下跌通知', 
+      description: '當商品價格下跌超過閾值時發送的通知模板。可使用變數: {productName} {oldPrice} {newPrice} {changePercent} {orderId}',
+      type: 'textarea',
+      value: defaultBasicSettings.notification_price_decrease || '🎉 好消息！價格調降通知\n\n您的訂單 #{orderId} 中的【{productName}】價格已調降：\n💰 昨日參考價: ${oldPrice}\n💰 今日實際價: ${newPrice}\n📊 降幅: {changePercent}\n\n系統已自動為您更新至最新優惠價格！\n\n謝謝您的支持 ❤️'
     }
   ],
   'theme': [
@@ -3790,6 +3845,26 @@ const basicSettingsCategories = {
       description: '從此時間開始可以下隔日配送的訂單',
       type: 'time',
       value: '14:00'
+    },
+    {
+      key: 'price_change_threshold',
+      display_name: '價格變動通知閾值 (%)',
+      description: '當商品價格變動超過此百分比時，發送通知給已預訂客戶',
+      type: 'number',
+      min: 0,
+      max: 100,
+      step: 1,
+      value: defaultBasicSettings.price_change_threshold || 15
+    },
+    {
+      key: 'price_notification_timeout',
+      display_name: '客戶回應時限 (分鐘)',
+      description: '發送價格變動通知後，客戶需在此時間內回應，逾時視為接受',
+      type: 'number',
+      min: 10,
+      max: 120,
+      step: 5,
+      value: defaultBasicSettings.price_notification_timeout || 30
     }
   ],
   'features': [
@@ -5755,6 +5830,105 @@ app.put('/api/admin/orders/:orderId', ensureAdmin, async (req, res) => {
   }
 });
 
+// =================================================
+// 💰 價格變動通知系統API
+// =================================================
+
+// 手動觸發價格變動檢測 (管理員專用)
+app.post('/api/admin/price-check/manual', ensureAdmin, async (req, res) => {
+  try {
+    if (!priceChangeNotificationService) {
+      return res.status(503).json({
+        success: false,
+        message: '價格變動通知服務未初始化'
+      });
+    }
+
+    const result = await priceChangeNotificationService.triggerManualPriceCheck();
+    
+    res.json({
+      success: true,
+      message: '價格變動檢測完成',
+      ...result
+    });
+
+  } catch (error) {
+    console.error('❌ 手動價格檢測失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '價格變動檢測失敗: ' + error.message
+    });
+  }
+});
+
+// 獲取價格變動通知統計 (管理員專用)
+app.get('/api/admin/price-notifications/stats', ensureAdmin, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    
+    if (!priceChangeNotificationService) {
+      return res.status(503).json({
+        success: false,
+        message: '價格變動通知服務未初始化'
+      });
+    }
+
+    const stats = await priceChangeNotificationService.getNotificationStats(days);
+    
+    res.json({
+      success: true,
+      stats: {
+        ...stats,
+        period: `過去${days}天`
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ 獲取通知統計失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取統計資料失敗: ' + error.message
+    });
+  }
+});
+
+// 測試價格變動通知 (管理員專用，示範模式)
+app.post('/api/admin/price-notifications/test', ensureAdmin, async (req, res) => {
+  try {
+    if (!demoMode) {
+      return res.status(400).json({
+        success: false,
+        message: '此功能僅在示範模式下可用'
+      });
+    }
+
+    const { productName = '測試商品', oldPrice = 25, newPrice = 35 } = req.body;
+    const changePercent = Math.round(((newPrice - oldPrice) / oldPrice) * 100);
+
+    console.log(`📝 示範模式：測試價格變動通知 ${productName} ${oldPrice} → ${newPrice} (${changePercent}%)`);
+
+    res.json({
+      success: true,
+      message: '測試通知已模擬發送',
+      testData: {
+        productName,
+        oldPrice,
+        newPrice,
+        changePercent: `${changePercent}%`,
+        affectedOrders: 2,
+        notificationsSent: 2
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ 測試通知失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '測試通知失敗: ' + error.message
+    });
+  }
+});
+
 // 404處理 (必須放在所有路由的最後)
 app.use(notFoundHandler);
 
@@ -5782,6 +5956,19 @@ if (process.env.VERCEL) {
   } catch (error) {
     console.error('❌ LINE通知服務初始化失敗:', error);
   }
+  
+  // 初始化價格變動通知服務
+  try {
+    priceChangeNotificationService = new PriceChangeNotificationService(
+      demoMode ? null : pool, 
+      lineNotificationService,
+      // 這裡會在基本設定載入後更新
+      {}
+    );
+    console.log('💰 價格變動通知服務已初始化');
+  } catch (error) {
+    console.error('❌ 價格變動通知服務初始化失敗:', error);
+  }
 } else {
   // 本地開發環境：啟動伺服器
   const server = app.listen(port, () => {
@@ -5808,6 +5995,19 @@ if (process.env.VERCEL) {
       console.log('🔔 LINE通知服務已初始化');
     } catch (error) {
       console.error('❌ LINE通知服務初始化失敗:', error);
+    }
+    
+    // 初始化價格變動通知服務
+    try {
+      priceChangeNotificationService = new PriceChangeNotificationService(
+        demoMode ? null : pool, 
+        lineNotificationService,
+        // 這裡會在基本設定載入後更新
+        {}
+      );
+      console.log('💰 價格變動通知服務已初始化');
+    } catch (error) {
+      console.error('❌ 價格變動通知服務初始化失敗:', error);
     }
     
     // LINE Bot服務已在上方初始化
