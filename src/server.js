@@ -1049,7 +1049,7 @@ app.post('/driver/login', async (req, res) => {
       const returnTo = req.session.returnTo;
       delete req.session.returnTo;
       
-      return res.redirect(returnTo || '/driver/dashboard');
+      return res.redirect(returnTo || '/driver');
     }
     
     // 登入失敗
@@ -2258,7 +2258,7 @@ app.post('/api/batch-convert', (req, res) => {
 
 // 前台：訂單成功頁（供外部連結使用）
 app.get('/order-success', async (req, res) => {
-  const id = parseInt(req.query.id, 10);
+  const id = parseInt(req.query.id, 10) || parseInt(req.query.orderId, 10);
   if (!id) return res.status(400).send('訂單不存在');
   
   if (demoMode) {
