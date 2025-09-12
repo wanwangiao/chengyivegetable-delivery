@@ -48,20 +48,6 @@ const COMPRESSED_DIR = path.join(UPLOAD_DIR, 'compressed');
 
 // 匯出設置函數
 router.setDatabasePool = setDatabasePool;
-n// 中介軟體：驗證外送員身份
-function ensureDriver(req, res, next) {
-    if (demoMode) {
-        req.driverId = 1;
-        req.driverName = "Demo Driver";
-        return next();
-    }
-    if (!req.session?.driverId) {
-        return res.status(401).json({ success: false, error: "需要外送員登入", code: "DRIVER_LOGIN_REQUIRED" });
-    }
-    req.driverId = req.session.driverId;
-    req.driverName = req.session.driverName || "未知外送員";
-    next();
-}
 
 // 獲取各地區訂單數量
 router.get('/order-counts', async (req, res) => {
