@@ -1,7 +1,7 @@
 # Railway Configuration for 誠憶鮮蔬外送系統
 [build]
 builder = "nixpacks"
-watchPatterns = ["src/**", "views/**", "public/**", "package.json", "railway.toml"]
+watchPatterns = ["src/**", "views/**", "public/**", "package.json", "railway.toml", "*.sql", "*.js", "*.md"]
 
 [deploy]
 startCommand = "npm start"
