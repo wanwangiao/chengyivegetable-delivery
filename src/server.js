@@ -6110,6 +6110,937 @@ app.put('/api/admin/orders/:orderId', ensureAdmin, async (req, res) => {
   }
 });
 
+// =====================================
+// 🛍️ 後台商品管理 API
+// =====================================
+
+// 後台商品管理 - 獲取商品列表
+app.get('/api/admin/products', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const { search, category, limit = 50, offset = 0 } = req.query;
+    
+    if (demoMode) {
+      console.log('📦 後台API：使用示範產品資料');
+      let products = [...demoProducts];
+      
+      // 搜尋篩選
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        products = products.filter(p => 
+          p.name.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      return res.json({
+        success: true,
+        products,
+        total: products.length,
+        count: products.length,
+        mode: 'demo',
+        pagination: {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          total: products.length
+        }
+      });
+    }
+    
+    // 構建查詢條件
+    let whereConditions = ['1=1'];
+    let queryParams = [];
+    let paramIndex = 1;
+    
+    // 商品名稱搜尋
+    if (search) {
+      whereConditions.push(`LOWER(name) LIKE LOWER($${paramIndex})`);
+      queryParams.push(`%${search}%`);
+      paramIndex++;
+    }
+    
+    const whereClause = whereConditions.join(' AND ');
+    
+    // 查詢商品總數
+    const countQuery = `SELECT COUNT(*) FROM products WHERE ${whereClause}`;
+    const { rows: countResult } = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult[0].count);
+    
+    // 查詢商品列表
+    const productsQuery = `
+      SELECT 
+        p.*,
+        i.current_stock,
+        i.min_stock_alert,
+        i.unit_cost,
+        i.supplier_name,
+        i.last_updated as stock_updated
+      FROM products p 
+      LEFT JOIN inventory i ON p.id = i.product_id
+      WHERE ${whereClause}
+      ORDER BY p.id 
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    
+    queryParams.push(parseInt(limit), parseInt(offset));
+    const { rows: products } = await pool.query(productsQuery, queryParams);
+    
+    res.json({
+      success: true,
+      products,
+      total,
+      count: products.length,
+      mode: 'database',
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total
+      }
+    });
+    
+  } catch (error) {
+    console.error('獲取後台商品列表失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取商品列表失敗: ' + error.message,
+      products: [],
+      total: 0,
+      count: 0
+    });
+  }
+}));
+
+// 後台商品管理 - 新增商品
+app.post('/api/admin/products', ensureAdmin, sanitizeInput, asyncWrapper(async (req, res) => {
+  try {
+    const { 
+      name, 
+      price, 
+      is_priced_item = false, 
+      unit_hint,
+      initial_stock = 0,
+      min_stock_alert = 10,
+      unit_cost,
+      supplier_name 
+    } = req.body;
+    
+    // 輸入驗證
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '商品名稱必填'
+      });
+    }
+    
+    if (demoMode) {
+      console.log('📝 示範模式：模擬新增商品', { name, price });
+      
+      // 生成模擬ID
+      const mockId = Math.max(...demoProducts.map(p => p.id)) + 1;
+      const newProduct = {
+        id: mockId,
+        name: name.trim(),
+        price: price ? parseFloat(price) : null,
+        is_priced_item: is_priced_item === true || is_priced_item === 'true',
+        unit_hint: unit_hint || null,
+        current_stock: parseInt(initial_stock) || 0,
+        min_stock_alert: parseInt(min_stock_alert) || 10,
+        unit_cost: unit_cost ? parseFloat(unit_cost) : null,
+        supplier_name: supplier_name || null
+      };
+      
+      return res.status(201).json({
+        success: true,
+        message: '商品新增成功（示範模式）',
+        product: newProduct,
+        mode: 'demo'
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 插入商品
+      const productQuery = `
+        INSERT INTO products (name, price, is_priced_item, unit_hint) 
+        VALUES ($1, $2, $3, $4) 
+        RETURNING *
+      `;
+      
+      const priceValue = price && price !== '' ? parseFloat(price) : null;
+      const isPricedItem = is_priced_item === true || is_priced_item === 'true';
+      
+      const { rows: productRows } = await client.query(productQuery, [
+        name.trim(),
+        priceValue,
+        isPricedItem,
+        unit_hint || null
+      ]);
+      
+      const newProduct = productRows[0];
+      
+      // 如果提供了庫存資訊，插入庫存記錄
+      if (initial_stock || min_stock_alert || unit_cost || supplier_name) {
+        const inventoryQuery = `
+          INSERT INTO inventory 
+          (product_id, current_stock, min_stock_alert, unit_cost, supplier_name) 
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING *
+        `;
+        
+        const stockValue = parseInt(initial_stock) || 0;
+        const minAlert = parseInt(min_stock_alert) || 10;
+        const costValue = unit_cost && unit_cost !== '' ? parseFloat(unit_cost) : null;
+        
+        const { rows: inventoryRows } = await client.query(inventoryQuery, [
+          newProduct.id,
+          stockValue,
+          minAlert,
+          costValue,
+          supplier_name || null
+        ]);
+        
+        // 合併庫存資訊到商品資料
+        newProduct.current_stock = inventoryRows[0].current_stock;
+        newProduct.min_stock_alert = inventoryRows[0].min_stock_alert;
+        newProduct.unit_cost = inventoryRows[0].unit_cost;
+        newProduct.supplier_name = inventoryRows[0].supplier_name;
+        
+        // 記錄庫存異動（如果有初始庫存）
+        if (stockValue > 0) {
+          await client.query(`
+            INSERT INTO stock_movements 
+            (product_id, movement_type, quantity, unit_cost, reason, operator_name) 
+            VALUES ($1, 'in', $2, $3, $4, $5)
+          `, [
+            newProduct.id, 
+            stockValue, 
+            costValue,
+            '初始庫存', 
+            '系統管理員'
+          ]);
+        }
+      }
+      
+      await client.query('COMMIT');
+      
+      console.log('✅ 成功新增商品:', newProduct.name, '(ID:', newProduct.id, ')');
+      
+      res.status(201).json({
+        success: true,
+        message: '商品新增成功',
+        product: newProduct,
+        mode: 'database'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('新增商品失敗:', error);
+    
+    // 檢查是否為重複名稱錯誤
+    if (error.message && error.message.includes('duplicate key')) {
+      return res.status(409).json({
+        success: false,
+        message: '商品名稱已存在，請使用其他名稱'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: '新增商品失敗: ' + error.message
+    });
+  }
+}));
+
+// 後台商品管理 - 更新商品
+app.put('/api/admin/products/:id', ensureAdmin, sanitizeInput, asyncWrapper(async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    const { 
+      name, 
+      price, 
+      is_priced_item, 
+      unit_hint,
+      current_stock,
+      min_stock_alert,
+      unit_cost,
+      supplier_name 
+    } = req.body;
+    
+    if (!productId || isNaN(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: '無效的商品ID'
+      });
+    }
+    
+    // 基本驗證
+    if (name !== undefined && (!name || name.trim().length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: '商品名稱不可為空'
+      });
+    }
+    
+    if (demoMode) {
+      console.log('📝 示範模式：模擬更新商品', { id: productId, name });
+      
+      const existingProduct = demoProducts.find(p => p.id === productId);
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      const updatedProduct = {
+        ...existingProduct,
+        ...(name !== undefined && { name: name.trim() }),
+        ...(price !== undefined && { price: price ? parseFloat(price) : null }),
+        ...(is_priced_item !== undefined && { is_priced_item: is_priced_item === true || is_priced_item === 'true' }),
+        ...(unit_hint !== undefined && { unit_hint }),
+        ...(current_stock !== undefined && { current_stock: parseInt(current_stock) || 0 }),
+        ...(min_stock_alert !== undefined && { min_stock_alert: parseInt(min_stock_alert) || 10 }),
+        ...(unit_cost !== undefined && { unit_cost: unit_cost ? parseFloat(unit_cost) : null }),
+        ...(supplier_name !== undefined && { supplier_name })
+      };
+      
+      return res.json({
+        success: true,
+        message: '商品更新成功（示範模式）',
+        product: updatedProduct,
+        mode: 'demo'
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 檢查商品是否存在
+      const { rows: existingProducts } = await client.query(
+        'SELECT * FROM products WHERE id = $1', 
+        [productId]
+      );
+      
+      if (existingProducts.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      const existingProduct = existingProducts[0];
+      
+      // 構建更新語句
+      let updateFields = [];
+      let updateValues = [];
+      let paramIndex = 1;
+      
+      if (name !== undefined) {
+        updateFields.push(`name = $${paramIndex}`);
+        updateValues.push(name.trim());
+        paramIndex++;
+      }
+      
+      if (price !== undefined) {
+        updateFields.push(`price = $${paramIndex}`);
+        updateValues.push(price && price !== '' ? parseFloat(price) : null);
+        paramIndex++;
+      }
+      
+      if (is_priced_item !== undefined) {
+        updateFields.push(`is_priced_item = $${paramIndex}`);
+        updateValues.push(is_priced_item === true || is_priced_item === 'true');
+        paramIndex++;
+      }
+      
+      if (unit_hint !== undefined) {
+        updateFields.push(`unit_hint = $${paramIndex}`);
+        updateValues.push(unit_hint || null);
+        paramIndex++;
+      }
+      
+      let updatedProduct = existingProduct;
+      
+      // 如果有商品基本資訊要更新
+      if (updateFields.length > 0) {
+        const productUpdateQuery = `
+          UPDATE products 
+          SET ${updateFields.join(', ')}
+          WHERE id = $${paramIndex}
+          RETURNING *
+        `;
+        
+        updateValues.push(productId);
+        const { rows: productRows } = await client.query(productUpdateQuery, updateValues);
+        updatedProduct = productRows[0];
+      }
+      
+      // 處理庫存資訊更新
+      if (current_stock !== undefined || min_stock_alert !== undefined || 
+          unit_cost !== undefined || supplier_name !== undefined) {
+        
+        // 檢查是否已有庫存記錄
+        const { rows: inventoryRows } = await client.query(
+          'SELECT * FROM inventory WHERE product_id = $1', 
+          [productId]
+        );
+        
+        if (inventoryRows.length > 0) {
+          // 更新現有庫存記錄
+          let inventoryUpdateFields = [];
+          let inventoryUpdateValues = [];
+          let inventoryParamIndex = 1;
+          
+          if (current_stock !== undefined) {
+            inventoryUpdateFields.push(`current_stock = $${inventoryParamIndex}`);
+            inventoryUpdateValues.push(parseInt(current_stock) || 0);
+            inventoryParamIndex++;
+          }
+          
+          if (min_stock_alert !== undefined) {
+            inventoryUpdateFields.push(`min_stock_alert = $${inventoryParamIndex}`);
+            inventoryUpdateValues.push(parseInt(min_stock_alert) || 10);
+            inventoryParamIndex++;
+          }
+          
+          if (unit_cost !== undefined) {
+            inventoryUpdateFields.push(`unit_cost = $${inventoryParamIndex}`);
+            inventoryUpdateValues.push(unit_cost && unit_cost !== '' ? parseFloat(unit_cost) : null);
+            inventoryParamIndex++;
+          }
+          
+          if (supplier_name !== undefined) {
+            inventoryUpdateFields.push(`supplier_name = $${inventoryParamIndex}`);
+            inventoryUpdateValues.push(supplier_name || null);
+            inventoryParamIndex++;
+          }
+          
+          inventoryUpdateFields.push(`last_updated = CURRENT_TIMESTAMP`);
+          
+          const inventoryUpdateQuery = `
+            UPDATE inventory 
+            SET ${inventoryUpdateFields.join(', ')}
+            WHERE product_id = $${inventoryParamIndex}
+            RETURNING *
+          `;
+          
+          inventoryUpdateValues.push(productId);
+          const { rows: updatedInventoryRows } = await client.query(inventoryUpdateQuery, inventoryUpdateValues);
+          
+          // 合併庫存資訊
+          const inventoryInfo = updatedInventoryRows[0];
+          updatedProduct.current_stock = inventoryInfo.current_stock;
+          updatedProduct.min_stock_alert = inventoryInfo.min_stock_alert;
+          updatedProduct.unit_cost = inventoryInfo.unit_cost;
+          updatedProduct.supplier_name = inventoryInfo.supplier_name;
+          updatedProduct.stock_updated = inventoryInfo.last_updated;
+          
+        } else {
+          // 新建庫存記錄
+          const inventoryInsertQuery = `
+            INSERT INTO inventory 
+            (product_id, current_stock, min_stock_alert, unit_cost, supplier_name) 
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+          `;
+          
+          const { rows: newInventoryRows } = await client.query(inventoryInsertQuery, [
+            productId,
+            parseInt(current_stock) || 0,
+            parseInt(min_stock_alert) || 10,
+            unit_cost && unit_cost !== '' ? parseFloat(unit_cost) : null,
+            supplier_name || null
+          ]);
+          
+          // 合併庫存資訊
+          const inventoryInfo = newInventoryRows[0];
+          updatedProduct.current_stock = inventoryInfo.current_stock;
+          updatedProduct.min_stock_alert = inventoryInfo.min_stock_alert;
+          updatedProduct.unit_cost = inventoryInfo.unit_cost;
+          updatedProduct.supplier_name = inventoryInfo.supplier_name;
+          updatedProduct.stock_updated = inventoryInfo.last_updated;
+        }
+      }
+      
+      await client.query('COMMIT');
+      
+      console.log('✅ 成功更新商品:', updatedProduct.name, '(ID:', updatedProduct.id, ')');
+      
+      res.json({
+        success: true,
+        message: '商品更新成功',
+        product: updatedProduct,
+        mode: 'database'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('更新商品失敗:', error);
+    
+    // 檢查是否為重複名稱錯誤
+    if (error.message && error.message.includes('duplicate key')) {
+      return res.status(409).json({
+        success: false,
+        message: '商品名稱已存在，請使用其他名稱'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: '更新商品失敗: ' + error.message
+    });
+  }
+}));
+
+// 後台商品管理 - 刪除商品
+app.delete('/api/admin/products/:id', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    
+    if (!productId || isNaN(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: '無效的商品ID'
+      });
+    }
+    
+    if (demoMode) {
+      console.log('🗑️ 示範模式：模擬刪除商品', { id: productId });
+      
+      const existingProduct = demoProducts.find(p => p.id === productId);
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: '商品刪除成功（示範模式）',
+        product: existingProduct,
+        mode: 'demo'
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 檢查商品是否存在
+      const { rows: existingProducts } = await client.query(
+        'SELECT * FROM products WHERE id = $1', 
+        [productId]
+      );
+      
+      if (existingProducts.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      const productToDelete = existingProducts[0];
+      
+      // 檢查是否有相關的訂單項目
+      const { rows: relatedOrderItems } = await client.query(
+        'SELECT COUNT(*) as count FROM order_items WHERE product_id = $1', 
+        [productId]
+      );
+      
+      const orderItemCount = parseInt(relatedOrderItems[0].count);
+      
+      if (orderItemCount > 0) {
+        // 如果有相關訂單，不直接刪除，而是標記為已停用
+        // 由於目前schema沒有status欄位，我們在這裡給出警告
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          success: false,
+          message: `該商品已被 ${orderItemCount} 個訂單使用，無法直接刪除。建議將商品設為停售狀態或聯絡系統管理員處理。`,
+          relatedOrdersCount: orderItemCount
+        });
+      }
+      
+      // 先刪除庫存記錄
+      await client.query('DELETE FROM inventory WHERE product_id = $1', [productId]);
+      
+      // 刪除庫存異動記錄
+      await client.query('DELETE FROM stock_movements WHERE product_id = $1', [productId]);
+      
+      // 最後刪除商品
+      const { rows: deletedProducts } = await client.query(
+        'DELETE FROM products WHERE id = $1 RETURNING *', 
+        [productId]
+      );
+      
+      const deletedProduct = deletedProducts[0];
+      
+      await client.query('COMMIT');
+      
+      console.log('✅ 成功刪除商品:', deletedProduct.name, '(ID:', deletedProduct.id, ')');
+      
+      res.json({
+        success: true,
+        message: '商品刪除成功',
+        product: deletedProduct,
+        mode: 'database'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('刪除商品失敗:', error);
+    
+    // 檢查是否為外鍵約束錯誤
+    if (error.message && (error.message.includes('foreign key') || error.message.includes('violates'))) {
+      return res.status(409).json({
+        success: false,
+        message: '該商品仍有相關資料，無法刪除。請先處理相關訂單或庫存記錄。'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: '刪除商品失敗: ' + error.message
+    });
+  }
+}));
+
+// =====================================
+// 📦 後台訂單管理 API  
+// =====================================
+
+// 後台訂單管理 - 獲取訂單列表
+app.get('/api/admin/orders', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const { 
+      search, 
+      status, 
+      dateFrom, 
+      dateTo,
+      limit = 50, 
+      offset = 0 
+    } = req.query;
+    
+    if (demoMode) {
+      console.log('📋 後台API：使用示範訂單資料');
+      
+      let mockOrders = [
+        {
+          id: 1001,
+          contact_name: '張三',
+          contact_phone: '0912345678',
+          address: '台北市大安區信義路四段123號',
+          status: 'placed',
+          total: 350,
+          subtotal: 320,
+          delivery_fee: 30,
+          payment_method: 'cash',
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+          notes: '請送到一樓管理室'
+        },
+        {
+          id: 1002,
+          contact_name: '李小美',
+          contact_phone: '0923456789',
+          address: '新北市板橋區文化路二段456號',
+          status: 'confirmed',
+          total: 480,
+          subtotal: 450,
+          delivery_fee: 30,
+          payment_method: 'card',
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+          notes: '二樓左邊第一間'
+        },
+        {
+          id: 1003,
+          contact_name: '王大明',
+          contact_phone: '0934567890',
+          address: '桃園市中壢區中正路三段789號',
+          status: 'delivered',
+          total: 220,
+          subtotal: 200,
+          delivery_fee: 20,
+          payment_method: 'cash',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          notes: ''
+        }
+      ];
+      
+      // 搜尋篩選
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        mockOrders = mockOrders.filter(order => 
+          order.contact_name.toLowerCase().includes(searchTerm) ||
+          order.contact_phone.includes(searchTerm) ||
+          order.address.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // 狀態篩選
+      if (status) {
+        mockOrders = mockOrders.filter(order => order.status === status);
+      }
+      
+      // 日期篩選（簡化版）
+      if (dateFrom || dateTo) {
+        const fromDate = dateFrom ? new Date(dateFrom) : new Date('2020-01-01');
+        const toDate = dateTo ? new Date(dateTo + ' 23:59:59') : new Date();
+        
+        mockOrders = mockOrders.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate >= fromDate && orderDate <= toDate;
+        });
+      }
+      
+      return res.json({
+        success: true,
+        orders: mockOrders,
+        total: mockOrders.length,
+        count: mockOrders.length,
+        mode: 'demo',
+        pagination: {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          total: mockOrders.length
+        }
+      });
+    }
+    
+    // 構建查詢條件
+    let whereConditions = ['1=1'];
+    let queryParams = [];
+    let paramIndex = 1;
+    
+    // 搜尋條件（聯合搜尋客戶姓名、電話、地址）
+    if (search) {
+      whereConditions.push(`(
+        LOWER(contact_name) LIKE LOWER($${paramIndex}) OR 
+        contact_phone LIKE $${paramIndex} OR 
+        LOWER(address) LIKE LOWER($${paramIndex})
+      )`);
+      queryParams.push(`%${search}%`);
+      paramIndex++;
+    }
+    
+    // 狀態篩選
+    if (status) {
+      whereConditions.push(`status = $${paramIndex}`);
+      queryParams.push(status);
+      paramIndex++;
+    }
+    
+    // 日期範圍篩選
+    if (dateFrom) {
+      whereConditions.push(`DATE(created_at) >= $${paramIndex}`);
+      queryParams.push(dateFrom);
+      paramIndex++;
+    }
+    
+    if (dateTo) {
+      whereConditions.push(`DATE(created_at) <= $${paramIndex}`);
+      queryParams.push(dateTo);
+      paramIndex++;
+    }
+    
+    const whereClause = whereConditions.join(' AND ');
+    
+    // 查詢訂單總數
+    const countQuery = `SELECT COUNT(*) FROM orders WHERE ${whereClause}`;
+    const { rows: countResult } = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult[0].count);
+    
+    // 查詢訂單列表
+    const ordersQuery = `
+      SELECT 
+        o.*,
+        COUNT(oi.id) as item_count
+      FROM orders o 
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE ${whereClause}
+      GROUP BY o.id
+      ORDER BY o.created_at DESC 
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    
+    queryParams.push(parseInt(limit), parseInt(offset));
+    const { rows: orders } = await pool.query(ordersQuery, queryParams);
+    
+    res.json({
+      success: true,
+      orders,
+      total,
+      count: orders.length,
+      mode: 'database',
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total
+      }
+    });
+    
+  } catch (error) {
+    console.error('獲取後台訂單列表失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '獲取訂單列表失敗: ' + error.message,
+      orders: [],
+      total: 0,
+      count: 0
+    });
+  }
+}));
+
+// 後台訂單管理 - 更新訂單狀態（簡化版）
+app.put('/api/admin/orders/:id', ensureAdmin, sanitizeInput, asyncWrapper(async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const { status, notes } = req.body;
+    
+    if (!orderId || isNaN(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: '無效的訂單ID'
+      });
+    }
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: '訂單狀態必填'
+      });
+    }
+    
+    // 驗證狀態值
+    const validStatuses = ['placed', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: '無效的訂單狀態',
+        validStatuses
+      });
+    }
+    
+    if (demoMode) {
+      console.log('📝 示範模式：模擬更新訂單狀態', { id: orderId, status });
+      
+      const mockOrder = {
+        id: orderId,
+        contact_name: '示範客戶',
+        contact_phone: '0912345678',
+        address: '台北市大安區示範路123號',
+        status,
+        total: 350,
+        notes: notes || '狀態已更新',
+        updated_at: new Date().toISOString()
+      };
+      
+      return res.json({
+        success: true,
+        message: '訂單狀態更新成功（示範模式）',
+        order: mockOrder,
+        mode: 'demo'
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 檢查訂單是否存在並獲取當前狀態
+      const { rows: existingOrders } = await client.query(
+        'SELECT * FROM orders WHERE id = $1', 
+        [orderId]
+      );
+      
+      if (existingOrders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定訂單'
+        });
+      }
+      
+      const existingOrder = existingOrders[0];
+      const oldStatus = existingOrder.status;
+      
+      // 更新訂單狀態和備註
+      const updateQuery = `
+        UPDATE orders 
+        SET status = $1, notes = COALESCE($2, notes)
+        WHERE id = $3 
+        RETURNING *
+      `;
+      
+      const { rows: updatedOrders } = await client.query(updateQuery, [
+        status,
+        notes,
+        orderId
+      ]);
+      
+      const updatedOrder = updatedOrders[0];
+      
+      await client.query('COMMIT');
+      
+      console.log(`✅ 成功更新訂單狀態: ${orderId} (${oldStatus} -> ${status})`);
+      
+      // 獲取訂單項目詳情（可選）
+      const { rows: orderItems } = await pool.query(
+        'SELECT * FROM order_items WHERE order_id = $1 ORDER BY id',
+        [orderId]
+      );
+      
+      updatedOrder.items = orderItems;
+      updatedOrder.item_count = orderItems.length;
+      
+      res.json({
+        success: true,
+        message: '訂單狀態更新成功',
+        order: updatedOrder,
+        statusChange: {
+          from: oldStatus,
+          to: status
+        },
+        mode: 'database'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('更新訂單狀態失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新訂單狀態失敗: ' + error.message
+    });
+  }
+}));
+
 // =================================================
 // 📋 客戶訂單管理API
 // =================================================
