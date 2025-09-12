@@ -125,6 +125,53 @@ console.log('2. 確保 package.json 有正確的 start 腳本');
 console.log('3. 檢查 Railway 專案設定');
 console.log('4. 嘗試重新部署');
 
-console.log('\n🌐 測試 URL:');
-console.log('- https://chengyivegetable-delivery.railway.app');
-console.log('- 檢查 Railway 控制台獲取正確的專案 URL');
+console.log('\n🌐 測試可能的 URL...');
+
+const possibleUrls = [
+    'https://chengyivegetable-production.up.railway.app',
+    'https://chengyivegetable-delivery-production.up.railway.app',
+    'https://web-production.up.railway.app',
+    'https://chengyivegetable.railway.app'
+];
+
+async function testUrls() {
+    const https = require('https');
+    
+    for (const url of possibleUrls) {
+        try {
+            console.log(`\n測試: ${url}`);
+            
+            const req = https.get(url, { timeout: 5000 }, (res) => {
+                console.log(`   狀態: ${res.statusCode}`);
+                if (res.statusCode < 400) {
+                    console.log('   ✅ 回應正常 - 這可能是正確的 URL!');
+                    
+                    // 測試 API 端點
+                    const apiUrl = `${url}/api/system/info`;
+                    https.get(apiUrl, (apiRes) => {
+                        console.log(`   API測試 (/api/system/info): ${apiRes.statusCode}`);
+                    });
+                } else {
+                    console.log('   ❌ 錯誤狀態碼');
+                }
+            });
+            
+            req.on('timeout', () => {
+                console.log('   ⏱️ 請求逾時');
+                req.destroy();
+            });
+            
+            req.on('error', (err) => {
+                console.log(`   ❌ 連線錯誤: ${err.code}`);
+            });
+            
+            // 等待請求完成
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+        } catch (error) {
+            console.log(`   ❌ 測試失敗: ${error.message}`);
+        }
+    }
+}
+
+testUrls().catch(console.error);
