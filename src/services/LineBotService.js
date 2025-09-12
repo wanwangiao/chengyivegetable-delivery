@@ -14,8 +14,11 @@ class LineBotService {
     
     // 檢查必要的環境變數
     if (!this.config.channelAccessToken || !this.config.channelSecret) {
-      console.error('❌ LINE Bot 環境變數未設定，系統無法啟動');
-      throw new Error('LINE Bot 缺少必要環境變數（LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET），系統無法啟動');
+      console.warn('⚠️ LINE Bot 環境變數未設定，啟用示範模式');
+      this.client = null;
+      this.demoMode = true;
+      console.log('📱 LINE Bot 服務已初始化（示範模式）');
+      return;
     }
     
     this.client = new Client(this.config);
