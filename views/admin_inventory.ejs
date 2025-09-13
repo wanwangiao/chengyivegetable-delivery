@@ -301,7 +301,7 @@
                     </div>
                     <div><%= item.min_stock_alert || 10 %></div>
                     <div><%= item.max_stock_capacity || 1000 %></div>
-                    <div>$<%= (item.unit_cost || 0).toFixed(2) %></div>
+                    <div>$<%= Number(item.unit_cost || 0).toFixed(2) %></div>
                     <div><%= item.supplier_name || '未設定' %></div>
                     <div class="action-buttons">
                         <button class="btn btn-primary" onclick="editInventory(<%= item.id %>)">✏️ 編輯</button>
