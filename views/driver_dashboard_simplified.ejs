@@ -1923,133 +1923,32 @@
             <!-- 統一訂單選擇區 -->
             <div class="orders-section">
                 <div class="section-header">
-                    <h2 class="section-title">📦 可接訂單 (<span id="total-available-count">11</span>)</h2>
+                    <h2 class="section-title">📦 可接訂單 (<span id="total-available-count">0</span>)</h2>
                 </div>
                 <div class="orders-list" id="unified-orders">
-                    <!-- 直接顯示的靜態訂單 -->
-                    <div class="area-group">
-                        <div class="area-group-header">
-                            <h4>📍 三峽區</h4>
-                            <span class="area-order-count">6 筆</span>
-                        </div>
-                        <div class="area-orders">
-                            <div class="order-card" onclick="selectOrder(1)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-1">
-                                    <label for="order-1" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1001</span>
-                                        <span class="order-area">三峽區</span>
-                                    </div>
-                                    <div class="order-customer">👤 王小明 📞 0912345678</div>
-                                    <div class="order-address">📍 新北市三峽區中山路123號</div>
-                                    <div class="order-payment">💳 現金付款 - NT$ 130</div>
-                                </div>
-                            </div>
-                            
-                            <div class="order-card" onclick="selectOrder(2)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-2">
-                                    <label for="order-2" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1002</span>
-                                        <span class="order-area">三峽區</span>
-                                    </div>
-                                    <div class="order-customer">👤 李小華 📞 0923456789</div>
-                                    <div class="order-address">📍 新北市三峽區民權街45號</div>
-                                    <div class="order-payment">💳 LINE Pay - NT$ 185</div>
-                                </div>
-                            </div>
-                            
-                            <div class="order-card" onclick="selectOrder(3)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-3">
-                                    <label for="order-3" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1003</span>
-                                        <span class="order-area">三峽區</span>
-                                    </div>
-                                    <div class="order-customer">👤 張小美 📞 0934567890</div>
-                                    <div class="order-address">📍 新北市三峽區復興路67號</div>
-                                    <div class="order-payment">💳 轉帳付款 - NT$ 210</div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- 動態加載的訂單會顯示在這裡 -->
+                    <div id="loading-orders" class="loading-message" style="text-align: center; padding: 40px; color: #666;">
+                        <div class="loading-spinner" style="margin: 0 auto 20px; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p>🔄 正在載入可接訂單...</p>
                     </div>
                     
-                    <div class="area-group">
-                        <div class="area-group-header">
-                            <h4>📍 樹林區</h4>
-                            <span class="area-order-count">3 筆</span>
-                        </div>
-                        <div class="area-orders">
-                            <div class="order-card" onclick="selectOrder(4)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-4">
-                                    <label for="order-4" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1004</span>
-                                        <span class="order-area">樹林區</span>
-                                    </div>
-                                    <div class="order-customer">👤 陳大明 📞 0945678901</div>
-                                    <div class="order-address">📍 新北市樹林區中正路88號</div>
-                                    <div class="order-payment">💳 現金付款 - NT$ 150</div>
-                                </div>
-                            </div>
-                            
-                            <div class="order-card" onclick="selectOrder(5)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-5">
-                                    <label for="order-5" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1005</span>
-                                        <span class="order-area">樹林區</span>
-                                    </div>
-                                    <div class="order-customer">👤 林淑芬 📞 0956789012</div>
-                                    <div class="order-address">📍 新北市樹林區樹新路99號</div>
-                                    <div class="order-payment">💳 LINE Pay - NT$ 175</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="no-orders-message" class="no-orders-message" style="text-align: center; padding: 40px; color: #999; display: none;">
+                        <p>📭 目前沒有可接訂單</p>
+                        <p>請等待管理員將訂單狀態改為 "packed"</p>
+                        <button onclick="refreshOrders()" class="btn btn-primary" style="margin-top: 20px;">
+                            🔄 重新載入
+                        </button>
                     </div>
                     
-                    <div class="area-group">
-                        <div class="area-group-header">
-                            <h4>📍 鶯歌區</h4>
-                            <span class="area-order-count">2 筆</span>
-                        </div>
-                        <div class="area-orders">
-                            <div class="order-card" onclick="selectOrder(6)">
-                                <div class="order-checkbox">
-                                    <input type="checkbox" class="order-select-checkbox" id="order-6">
-                                    <label for="order-6" class="checkbox-label"></label>
-                                </div>
-                                <div class="order-content">
-                                    <div class="order-header">
-                                        <span class="order-number">訂單 #1006</span>
-                                        <span class="order-area">鶯歌區</span>
-                                    </div>
-                                    <div class="order-customer">👤 黃志偉 📞 0967890123</div>
-                                    <div class="order-address">📍 新北市鶯歌區文化路55號</div>
-                                    <div class="order-payment">💳 轉帳付款 - NT$ 195</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- 動態訂單容器 -->
+                    <div id="dynamic-orders-container"></div>
                     
-                    <button onclick="refreshOrders()" class="btn btn-primary" style="margin: 20px auto; display: block;">
-                        🔄 重新載入訂單
-                    </button>
+                    <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    </style>
                 </div>
             </div>
 
