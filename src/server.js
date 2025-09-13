@@ -804,7 +804,7 @@ async function fetchProducts() {
           ORDER BY pog.sort_order, po.sort_order
         `, [product.id]);
       } catch (error) {
-        console.log('⚠️ product_option_groups 表不存在，跳過選項查詢');
+        console.log('⚠️ product_option_groups 表不存在，跳過選項查詢 (修復版本)');
         optionGroupsResult = { rows: [] };
       }
       
