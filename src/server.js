@@ -7486,6 +7486,15 @@ if (process.env.VERCEL) {
 // 🗑️ 管理員專用：資料庫重置端點
 // =====================================
 
+// 測試端點 - 確認API可用
+app.get('/api/admin/reset-test', ensureAdmin, (req, res) => {
+  res.json({
+    success: true,
+    message: '資料庫重置API已就緒',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 管理員專用：完全重置資料庫（危險操作！）
 app.post('/api/admin/reset-database', ensureAdmin, asyncWrapper(async (req, res) => {
   try {
