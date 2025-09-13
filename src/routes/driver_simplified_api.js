@@ -1652,14 +1652,14 @@ router.post('/area-orders-by-name', async (req, res) => {
         } else {
             console.log(`🔍 從資料庫載入 ${area} 訂單...`);
             
-            const result = await db.query(`
+            const result = await pool.query(`
                 SELECT o.id, 
-                       o.customer_name, 
-                       o.customer_phone, 
+                       COALESCE(o.contact_name, o.customer_name, '客戶') as customer_name, 
+                       COALESCE(o.contact_phone, o.customer_phone, '') as customer_phone, 
                        o.address, 
-                       o.delivery_fee, 
+                       COALESCE(o.delivery_fee, 30) as delivery_fee, 
                        COALESCE(o.total_amount, o.total, 0) as total_amount,
-                       o.payment_method, 
+                       COALESCE(o.payment_method, '現金') as payment_method, 
                        o.created_at,
                        COALESCE(
                            json_agg(
@@ -1674,10 +1674,10 @@ router.post('/area-orders-by-name', async (req, res) => {
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN products p ON oi.product_id = p.id
-                WHERE o.delivery_area = $1 AND o.status = 'pending'
-                GROUP BY o.id, o.customer_name, o.customer_phone, o.address, o.delivery_fee, o.total_amount, o.payment_method, o.created_at
+                WHERE o.address LIKE $1 AND o.status = 'packed' AND o.driver_id IS NULL
+                GROUP BY o.id, o.contact_name, o.customer_name, o.contact_phone, o.customer_phone, o.address, o.delivery_fee, o.total_amount, o.total, o.payment_method, o.created_at
                 ORDER BY o.created_at DESC
-            `, [area]);
+            `, [`%${area}%`]);
             
             console.log(`📊 找到 ${result.rows.length} 筆 ${area} 訂單`);
             
