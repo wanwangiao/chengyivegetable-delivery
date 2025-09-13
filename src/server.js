@@ -7482,5 +7482,118 @@ if (process.env.VERCEL) {
   });
 }
 
+// =====================================
+// 🗑️ 管理員專用：資料庫重置端點
+// =====================================
+
+// 管理員專用：完全重置資料庫（危險操作！）
+app.post('/api/admin/reset-database', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const { confirmPassword, resetType } = req.body;
+    
+    // 二次確認密碼
+    if (confirmPassword !== 'CONFIRM_RESET_DATABASE') {
+      return res.status(400).json({
+        success: false,
+        message: '確認密碼錯誤。請輸入: CONFIRM_RESET_DATABASE'
+      });
+    }
+    
+    console.log('🗑️ 開始資料庫重置操作...');
+    console.log('⚠️ 重置類型:', resetType);
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      if (resetType === 'complete') {
+        // 完全重置：清除所有數據
+        console.log('🧹 執行完全重置...');
+        
+        await client.query('DELETE FROM order_items');
+        await client.query('DELETE FROM orders');
+        await client.query('DELETE FROM products');
+        await client.query('DELETE FROM categories');
+        await client.query('DELETE FROM users');
+        
+        // 嘗試清理庫存表（如果存在）
+        try {
+          await client.query('DELETE FROM inventory');
+          console.log('✅ 清理庫存表');
+        } catch (err) {
+          console.log('ℹ️ 庫存表不存在或已清空');
+        }
+        
+        // 嘗試清理通知表（如果存在）
+        try {
+          await client.query("DELETE FROM notifications WHERE message LIKE '%測試%' OR message LIKE '%demo%'");
+          console.log('✅ 清理測試通知');
+        } catch (err) {
+          console.log('ℹ️ 通知表不存在');
+        }
+        
+        // 重置序列
+        await client.query('ALTER SEQUENCE orders_id_seq RESTART WITH 1');
+        await client.query('ALTER SEQUENCE order_items_id_seq RESTART WITH 1');
+        await client.query('ALTER SEQUENCE products_id_seq RESTART WITH 1');
+        await client.query('ALTER SEQUENCE users_id_seq RESTART WITH 1');
+        
+        try {
+          await client.query('ALTER SEQUENCE categories_id_seq RESTART WITH 1');
+        } catch (err) {
+          console.log('ℹ️ categories序列不存在');
+        }
+        
+      } else if (resetType === 'orders_only') {
+        // 只清理訂單：保留商品數據
+        console.log('📦 只清理訂單數據...');
+        
+        await client.query('DELETE FROM order_items');
+        await client.query('DELETE FROM orders');
+        await client.query('DELETE FROM users');
+        
+        await client.query('ALTER SEQUENCE orders_id_seq RESTART WITH 1');
+        await client.query('ALTER SEQUENCE order_items_id_seq RESTART WITH 1');
+        await client.query('ALTER SEQUENCE users_id_seq RESTART WITH 1');
+      }
+      
+      await client.query('COMMIT');
+      
+      // 驗證清理結果
+      const { rows: orderCount } = await client.query('SELECT COUNT(*) as count FROM orders');
+      const { rows: productCount } = await client.query('SELECT COUNT(*) as count FROM products');
+      const { rows: userCount } = await client.query('SELECT COUNT(*) as count FROM users');
+      
+      console.log('✅ 資料庫重置完成');
+      console.log(`📊 剩餘數據 - 訂單: ${orderCount[0].count}, 商品: ${productCount[0].count}, 用戶: ${userCount[0].count}`);
+      
+      res.json({
+        success: true,
+        message: '資料庫重置成功',
+        resetType: resetType,
+        remainingData: {
+          orders: parseInt(orderCount[0].count),
+          products: parseInt(productCount[0].count),
+          users: parseInt(userCount[0].count)
+        }
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('❌ 資料庫重置失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '資料庫重置失敗: ' + error.message
+    });
+  }
+}));
+
 // 導出 app 供 Vercel serverless 使用
 module.exports = app;
