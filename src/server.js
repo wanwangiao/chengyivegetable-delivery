@@ -46,7 +46,7 @@ let priceChangeNotificationService = null;
 let basicSettingsService = null;
 
 // 系統模式設定
-let demoMode = true; // 預設為示範模式，當資料庫連線成功後會切換為線上模式
+let demoMode = false; // 關閉示範模式，使用真實資料庫數據
 
 // 版本資訊 - 用於測試部署
 const DEPLOY_VERSION = 'v2025.09.10.fix - 基本資料管理修復版本';
