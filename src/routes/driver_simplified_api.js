@@ -507,10 +507,10 @@ router.get('/stats', async (req, res) => {
             // 實際資料庫查詢
             const query = `
                 SELECT 
-                    COUNT(CASE WHEN status = 'delivered' AND DATE(completed_at) = CURRENT_DATE THEN 1 END) as today_completed,
-                    COALESCE(SUM(CASE WHEN status = 'delivered' AND DATE(completed_at) = CURRENT_DATE THEN delivery_fee END), 0) as today_earnings,
+                    COUNT(CASE WHEN status = 'delivered' AND DATE(updated_at) = CURRENT_DATE THEN 1 END) as today_completed,
+                    COALESCE(SUM(CASE WHEN status = 'delivered' AND DATE(updated_at) = CURRENT_DATE THEN 50 END), 0) as today_earnings,
                     COUNT(CASE WHEN status = 'delivered' THEN 1 END) as total_orders,
-                    AVG(CASE WHEN status = 'delivered' THEN EXTRACT(EPOCH FROM (completed_at - created_at))/60 END) as avg_delivery_time
+                    AVG(CASE WHEN status = 'delivered' THEN EXTRACT(EPOCH FROM (updated_at - created_at))/60 END) as avg_delivery_time
                 FROM orders 
                 WHERE driver_id = $1
             `;
