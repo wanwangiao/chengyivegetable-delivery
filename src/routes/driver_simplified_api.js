@@ -188,7 +188,7 @@ router.get('/area-orders/*', async (req, res) => {
                            json_build_object(
                                'product_name', COALESCE(p.name, oi.name, '商品'),
                                'quantity', oi.quantity,
-                               'price', oi.price
+                               'price', COALESCE(p.price, 0)
                            )
                        ) as items
                 FROM orders o
@@ -292,7 +292,7 @@ router.get('/my-orders', async (req, res) => {
                            json_build_object(
                                'product_name', COALESCE(p.name, oi.name, '商品'),
                                'quantity', oi.quantity,
-                               'price', oi.price
+                               'price', COALESCE(p.price, 0)
                            )
                        ) as items
                 FROM orders o
