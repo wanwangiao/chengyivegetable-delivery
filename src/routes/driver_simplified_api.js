@@ -1652,7 +1652,7 @@ router.post('/area-orders-by-name', async (req, res) => {
         } else {
             console.log(`🔍 從資料庫載入 ${area} 訂單...`);
             
-            const result = await pool.query(`
+            const result = await db.query(`
                 SELECT o.id, 
                        COALESCE(o.contact_name, o.customer_name, '客戶') as customer_name, 
                        COALESCE(o.contact_phone, o.customer_phone, '') as customer_phone, 
