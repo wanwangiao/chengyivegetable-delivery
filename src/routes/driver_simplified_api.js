@@ -94,8 +94,8 @@ router.get('/order-counts', async (req, res) => {
                 FROM orders 
                 WHERE status = 'packed' 
                     AND driver_id IS NULL
-                    AND area != '其他區域'
-                GROUP BY area
+                    AND address NOT LIKE '%其他%'
+                GROUP BY 1
             `;
             
             const result = await db.query(query);
