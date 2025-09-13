@@ -186,13 +186,14 @@ router.get('/area-orders/*', async (req, res) => {
                        COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
-                               'product_name', COALESCE(COALESCE(p.name, '商品') as product_name, oi.name),
+                               'product_name', COALESCE(p.name, oi.name, '商品'),
                                'quantity', oi.quantity,
                                'price', oi.price
                            )
                        ) as items
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
+                LEFT JOIN products p ON oi.product_id = p.id
                 WHERE o.status = 'packed' 
                     AND o.driver_id IS NULL 
                     AND ${areaCondition}
@@ -289,13 +290,14 @@ router.get('/my-orders', async (req, res) => {
                        COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
-                               'product_name', COALESCE(p.name, '商品') as product_name,
+                               'product_name', COALESCE(p.name, oi.name, '商品'),
                                'quantity', oi.quantity,
                                'price', oi.price
                            )
                        ) as items
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
+                LEFT JOIN products p ON oi.product_id = p.id
                 WHERE o.driver_id = $1 
                     AND o.status = 'assigned'
                 GROUP BY o.id
@@ -1662,7 +1664,7 @@ router.post('/area-orders-by-name', async (req, res) => {
                        COALESCE(
                            json_agg(
                                json_build_object(
-                                   'product_name', COALESCE(p.name, '商品') as product_name,
+                                   'product_name', COALESCE(p.name, oi.name, '商品'),
                                    'quantity', oi.quantity,
                                    'price', oi.price
                                )
@@ -1671,6 +1673,7 @@ router.post('/area-orders-by-name', async (req, res) => {
                        ) as items
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
+                LEFT JOIN products p ON oi.product_id = p.id
                 WHERE o.delivery_area = $1 AND o.status = 'pending'
                 GROUP BY o.id, o.customer_name, o.customer_phone, o.address, o.delivery_fee, o.total_amount, o.payment_method, o.created_at
                 ORDER BY o.created_at DESC
