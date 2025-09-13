@@ -4756,10 +4756,16 @@ app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
     // 為水果玉米建立選項
     console.log('🌽 為水果玉米建立選項...');
     
-    const existingGroups = await pool.query(
-      'SELECT id, name FROM product_option_groups WHERE product_id = $1',
-      [cornId]
-    );
+    let existingGroups = { rows: [] };
+    try {
+      existingGroups = await pool.query(
+        'SELECT id, name FROM product_option_groups WHERE product_id = $1',
+        [cornId]
+      );
+    } catch (error) {
+      console.log('⚠️ product_option_groups 表不存在，跳過玉米選項查詢');
+      existingGroups = { rows: [] };
+    }
 
     if (existingGroups.rows.length === 0) {
       // 建立撥皮選項群組
@@ -4800,23 +4806,43 @@ app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
     }
 
     // 驗證結果
-    const finalResult = await pool.query(`
-      SELECT 
-        p.id,
-        p.name,
-        p.price,
-        p.is_priced_item,
-        p.unit_hint,
-        i.current_stock,
-        i.supplier_name,
-        COUNT(pog.id) as option_groups_count
-      FROM products p
-      LEFT JOIN inventory i ON p.id = i.product_id
-      LEFT JOIN product_option_groups pog ON p.id = pog.product_id
-      WHERE p.name IN ('🥬 空心菜', '🥬 高麗菜', '🌽 水果玉米')
-      GROUP BY p.id, p.name, p.price, p.is_priced_item, p.unit_hint, i.current_stock, i.supplier_name
-      ORDER BY p.id DESC
-    `);
+    let finalResult = { rows: [] };
+    try {
+      finalResult = await pool.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.is_priced_item,
+          p.unit_hint,
+          i.current_stock,
+          i.supplier_name,
+          COUNT(pog.id) as option_groups_count
+        FROM products p
+        LEFT JOIN inventory i ON p.id = i.product_id
+        LEFT JOIN product_option_groups pog ON p.id = pog.product_id
+        WHERE p.name IN ('🥬 空心菜', '🥬 高麗菜', '🌽 水果玉米')
+        GROUP BY p.id, p.name, p.price, p.is_priced_item, p.unit_hint, i.current_stock, i.supplier_name
+        ORDER BY p.id DESC
+      `);
+    } catch (error) {
+      console.log('⚠️ product_option_groups 表不存在，使用簡化查詢');
+      finalResult = await pool.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.price,
+          p.is_priced_item,
+          p.unit_hint,
+          i.current_stock,
+          i.supplier_name,
+          0 as option_groups_count
+        FROM products p
+        LEFT JOIN inventory i ON p.id = i.product_id
+        WHERE p.name IN ('🥬 空心菜', '🥬 高麗菜', '🌽 水果玉米')
+        ORDER BY p.id DESC
+      `);
+    }
 
     console.log('🎉 部署完成！');
     
