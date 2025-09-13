@@ -108,12 +108,12 @@
           <label for="statusFilter">訂單狀態篩選:</label>
           <select id="statusFilter">
             <option value="all">全部狀態</option>
-            <option value="placed">已下單</option>
-            <option value="quoted">已報價</option>
-            <option value="paid">已付款</option>
-            <option value="out_for_delivery">配送中</option>
-            <option value="delivered">已送達</option>
-            <option value="canceled">已取消</option>
+            <option value="pending">待確認</option>
+            <option value="preparing">準備中</option>
+            <option value="packed">包裝完成</option>
+            <option value="delivering">配送中</option>
+            <option value="delivered">已完成</option>
+            <option value="cancelled">已取消</option>
           </select>
         </div>
 
@@ -133,16 +133,16 @@
         <div class="status-legend">
           <h4>狀態圖例:</h4>
           <div class="legend-item">
-            <div class="legend-color" style="background: #888888;"></div>
-            <span>已下單</span>
+            <div class="legend-color" style="background: #faad14;"></div>
+            <span>待確認</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #2f54eb;"></div>
-            <span>已報價</span>
+            <div class="legend-color" style="background: #1890ff;"></div>
+            <span>準備中</span>
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #52c41a;"></div>
-            <span>已付款</span>
+            <span>包裝完成</span>
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #fa8c16;"></div>
@@ -150,7 +150,7 @@
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #237804;"></div>
-            <span>已送達</span>
+            <span>已完成</span>
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #f5222d;"></div>
@@ -174,21 +174,21 @@
       let routeRenderer = null;
       
       const statusColors = {
-        placed: '#888888',
-        quoted: '#2f54eb', 
-        paid: '#52c41a',
-        out_for_delivery: '#fa8c16',
-        delivered: '#237804',
-        canceled: '#f5222d'
+        pending: '#faad14',      // 待確認 - 黃色
+        preparing: '#1890ff',    // 準備中 - 藍色
+        packed: '#52c41a',       // 包裝完成 - 綠色
+        delivering: '#fa8c16',   // 配送中 - 橘色
+        delivered: '#237804',    // 已完成 - 深綠色
+        cancelled: '#f5222d'     // 已取消 - 紅色
       };
       
       const statusNames = {
-        placed: '已下單',
-        quoted: '已報價',
-        paid: '已付款', 
-        out_for_delivery: '配送中',
-        delivered: '已送達',
-        canceled: '已取消'
+        pending: '待確認',
+        preparing: '準備中',
+        packed: '包裝完成',
+        delivering: '配送中',
+        delivered: '已完成',
+        cancelled: '已取消'
       };
       
       function initMap() {
