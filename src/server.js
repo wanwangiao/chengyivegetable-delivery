@@ -10,14 +10,7 @@ const express = require('express'),
 
 require('dotenv').config();
 
-dns.setDefaultResultOrder('ipv4first');
-process.env.FORCE_IPV4 = '1';
-
-const SUPABASE_IPv4_MAP = {
-  'db.cywcuzgbuqmxjxwyrrsp.supabase.co': '18.206.107.106'
-};
-
-process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+// Railway PostgreSQL 配置
 
 const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter'),
       { validateOrderData, validateAdminPassword, sanitizeInput } = require('./middleware/validation'),
@@ -111,7 +104,7 @@ async function createDatabasePool() {
   // 方法2: 直接IP地址連線（專家建議）
   console.log('方法2: 使用直接IP地址連線...');
   try {
-    const directIP = SUPABASE_IPv4_MAPPING['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
+    const directIP = SUPABASE_IPv4_MAP['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
     console.log(`🔗 嘗試直接連線到 IP: ${directIP}`);
     
     pool = new Pool({

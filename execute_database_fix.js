@@ -5,17 +5,12 @@ const path = require('path');
 console.log('🔧 外送員資料庫修復執行器');
 console.log('📅 執行時間:', new Date().toLocaleString('zh-TW'));
 
-// 資料庫連接配置 
+// 資料庫連接配置 - 只使用 Railway PostgreSQL
 const databaseConfigs = [
     {
-        name: 'Railway PostgreSQL (主要)',
+        name: 'Railway PostgreSQL',
         connectionString: process.env.DATABASE_URL,
         enabled: !!process.env.DATABASE_URL
-    },
-    {
-        name: 'Supabase PostgreSQL (備援)',
-        connectionString: 'postgresql://postgres.cywcuzgbuqmxjxwyrrsp:Chengyi2025%21Fresh@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres',
-        enabled: true
     }
 ];
 
@@ -36,7 +31,7 @@ async function executeFixScript() {
         try {
             const pool = new Pool({
                 connectionString: config.connectionString,
-                ssl: config.connectionString.includes('supabase.com') ? { rejectUnauthorized: false } : false,
+                ssl: false, // Railway internal 不需要 SSL
                 connectionTimeoutMillis: 10000,
                 idleTimeoutMillis: 30000,
                 max: 1
