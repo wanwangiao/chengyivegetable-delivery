@@ -111,7 +111,7 @@ async function testDriverFunctionality() {
         
         // 測試地區訂單API
         const areaOrdersResponse = await axios.post(`${BASE_URL}/api/driver/area-orders-by-name`, {
-            areaName: '三峽區'
+            area: '三峽區'
         }, {
             headers: {
                 'Cookie': sessionCookie,
