@@ -22,8 +22,14 @@ class BasicSettingsService {
         return Object.fromEntries(this.cache);
       }
 
-      const query = 'SELECT category, key, value, data_type FROM basic_settings ORDER BY category, key';
-      const result = await this.pool.query(query);
+      let result = { rows: [] };
+      try {
+        const query = 'SELECT category, key, value, data_type FROM basic_settings ORDER BY category, key';
+        result = await this.pool.query(query);
+      } catch (error) {
+        console.log('⚠️ basic_settings 表不存在，使用默認設定');
+        result = { rows: [] };
+      }
       
       // 清空緩存並重新載入
       this.cache.clear();

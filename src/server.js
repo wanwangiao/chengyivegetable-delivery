@@ -788,19 +788,25 @@ async function fetchProducts() {
     
     // 為每個商品載入選項群組和選項
     for (const product of products) {
-      const optionGroupsResult = await pool.query(`
-        SELECT pog.*, 
-               po.id as option_id,
-               po.name as option_name,
-               po.description as option_description,
-               po.price_modifier,
-               po.is_default,
-               po.sort_order as option_sort_order
-        FROM product_option_groups pog
-        LEFT JOIN product_options po ON pog.id = po.group_id
-        WHERE pog.product_id = $1
-        ORDER BY pog.sort_order, po.sort_order
-      `, [product.id]);
+      let optionGroupsResult = { rows: [] };
+      try {
+        optionGroupsResult = await pool.query(`
+          SELECT pog.*, 
+                 po.id as option_id,
+                 po.name as option_name,
+                 po.description as option_description,
+                 po.price_modifier,
+                 po.is_default,
+                 po.sort_order as option_sort_order
+          FROM product_option_groups pog
+          LEFT JOIN product_options po ON pog.id = po.group_id
+          WHERE pog.product_id = $1
+          ORDER BY pog.sort_order, po.sort_order
+        `, [product.id]);
+      } catch (error) {
+        console.log('⚠️ product_option_groups 表不存在，跳過選項查詢');
+        optionGroupsResult = { rows: [] };
+      }
       
       // 組織選項群組結構
       const optionGroupsMap = new Map();
