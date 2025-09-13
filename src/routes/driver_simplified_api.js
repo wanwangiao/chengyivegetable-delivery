@@ -301,7 +301,7 @@ router.get('/my-orders', async (req, res) => {
                 WHERE o.driver_id = $1 
                     AND o.status = 'assigned'
                 GROUP BY o.id
-                ORDER BY o.taken_at ASC
+                ORDER BY o.created_at ASC
             `;
             
             const result = await db.query(query, [driverId]);
@@ -510,7 +510,7 @@ router.get('/stats', async (req, res) => {
                     COUNT(CASE WHEN status = 'delivered' AND DATE(completed_at) = CURRENT_DATE THEN 1 END) as today_completed,
                     COALESCE(SUM(CASE WHEN status = 'delivered' AND DATE(completed_at) = CURRENT_DATE THEN delivery_fee END), 0) as today_earnings,
                     COUNT(CASE WHEN status = 'delivered' THEN 1 END) as total_orders,
-                    AVG(CASE WHEN status = 'delivered' THEN EXTRACT(EPOCH FROM (completed_at - taken_at))/60 END) as avg_delivery_time
+                    AVG(CASE WHEN status = 'delivered' THEN EXTRACT(EPOCH FROM (completed_at - created_at))/60 END) as avg_delivery_time
                 FROM orders 
                 WHERE driver_id = $1
             `;
