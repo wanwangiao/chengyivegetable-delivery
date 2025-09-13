@@ -1666,7 +1666,7 @@ router.post('/area-orders-by-name', async (req, res) => {
                                json_build_object(
                                    'product_name', COALESCE(p.name, oi.name, '商品'),
                                    'quantity', oi.quantity,
-                                   'price', oi.price
+                                   'price', COALESCE(p.price, 0)
                                )
                            ) FILTER (WHERE oi.id IS NOT NULL), 
                            '[]'
