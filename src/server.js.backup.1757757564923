@@ -6958,7 +6958,7 @@ app.put('/api/admin/orders/:id', ensureAdmin, sanitizeInput, asyncWrapper(async 
     }
     
     // 驗證狀態值
-    const validStatuses = ['placed', 'confirmed', 'preparing', 'packed', 'out_for_delivery', 'delivered', 'cancelled'];
+    const validStatuses = ['placed', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
