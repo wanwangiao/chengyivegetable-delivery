@@ -10,9 +10,9 @@ healthcheckTimeout = 300
 restartPolicyType = "always"
 replicas = 1
 
-# 強制重建標記 - 2025-09-10
+# 強制重建標記 - 2025-09-15
 [variables.rebuild]
-FORCE_REBUILD = "2025-09-10-fix"
+FORCE_REBUILD = "2025-09-15-liff-fix"
 
 [variables]
 # Node.js 生產環境設定
