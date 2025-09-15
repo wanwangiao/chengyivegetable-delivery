@@ -6,11 +6,12 @@
 class LineUserService {
   constructor(database = null) {
     this.db = database;
-    this.liffId = process.env.LINE_LIFF_ID || '';
+    // 緊急修復：由於Railway環境變數問題，使用fallback LIFF ID
+    this.liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
     this.channelId = process.env.LINE_CHANNEL_ID || '';
     this.enabled = !!(this.liffId && this.channelId);
     
-    console.log('🔐 LINE 用戶服務初始化:', this.enabled ? '已啟用' : '未啟用（缺少 LIFF 設定）');
+    console.log('🔐 LINE 用戶服務初始化:', this.enabled ? `已啟用 (LIFF: ${this.liffId})` : '未啟用（缺少 LIFF 設定）');
   }
 
   /**

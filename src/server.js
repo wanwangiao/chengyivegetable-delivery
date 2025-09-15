@@ -8,7 +8,9 @@ const express = require('express'),
       cors = require('cors'),
       dns = require('dns');
 
-require('dotenv').config();
+// 載入環境變數，優先從同級目錄，後備到上級目錄
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 // Railway PostgreSQL 配置
 
@@ -67,6 +69,11 @@ async function createDatabasePool() {
   console.log('🔍 環境變數檢查:');
   console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '已設定' : '未設定');
   console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔍 LINE 環境變數檢查:');
+  console.log('  LINE_CHANNEL_ID:', process.env.LINE_CHANNEL_ID ? '已設定 (' + process.env.LINE_CHANNEL_ID + ')' : '未設定');
+  console.log('  LINE_LIFF_ID:', process.env.LINE_LIFF_ID ? '已設定 (' + process.env.LINE_LIFF_ID + ')' : '未設定');
+  console.log('  LINE_CHANNEL_SECRET:', process.env.LINE_CHANNEL_SECRET ? '已設定 (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : '未設定');
+  console.log('  LINE_CHANNEL_ACCESS_TOKEN:', process.env.LINE_CHANNEL_ACCESS_TOKEN ? '已設定 (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : '未設定');
   
   const errors = [];
   
@@ -5317,13 +5324,22 @@ app.get('/api/line/debug', (req, res) => {
       VERCEL: process.env.VERCEL,
       LINE_CHANNEL_ID: process.env.LINE_CHANNEL_ID ? 'SET (' + process.env.LINE_CHANNEL_ID + ')' : 'MISSING',
       LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ? 'SET (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : 'MISSING',
-      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : 'MISSING'
+      LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ? 'SET (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : 'MISSING',
+      LINE_LIFF_ID: process.env.LINE_LIFF_ID ? 'SET (' + process.env.LINE_LIFF_ID + ')' : 'MISSING'
     },
     lineBotService: lineBotService ? {
       initialized: true,
       demoMode: lineBotService.demoMode,
       hasClient: !!lineBotService.client
-    } : 'NOT_INITIALIZED'
+    } : 'NOT_INITIALIZED',
+    liffDebug: {
+      liffId: process.env.LINE_LIFF_ID || 'NOT_SET',
+      liffIdLength: process.env.LINE_LIFF_ID ? process.env.LINE_LIFF_ID.length : 0,
+      allEnvVars: Object.keys(process.env).filter(key => key.includes('LINE')).reduce((obj, key) => {
+        obj[key] = process.env[key] ? 'SET (' + process.env[key].length + ' chars)' : 'NOT_SET';
+        return obj;
+      }, {})
+    }
   });
 });
 
@@ -5577,7 +5593,17 @@ const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 
 // LIFF 入口頁面
 app.get('/liff-entry', (req, res) => {
-  const liffId = process.env.LINE_LIFF_ID || '';
+  // 緊急修復：由於Railway環境變數問題，直接設定LIFF ID
+  const liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
+  console.log('🔍 LIFF 入口頁面請求:', {
+    timestamp: new Date().toISOString(),
+    liffId: liffId || 'NOT_SET',
+    liffIdLength: liffId ? liffId.length : 0,
+    hasLiffId: !!liffId,
+    envLiffId: process.env.LINE_LIFF_ID || 'MISSING',
+    fallbackUsed: !process.env.LINE_LIFF_ID,
+    allLineEnv: Object.keys(process.env).filter(key => key.includes('LINE'))
+  });
   res.render('liff_entry', { liffId });
 });
 
