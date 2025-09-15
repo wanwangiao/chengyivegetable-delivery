@@ -26,7 +26,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       dbSetupRoutes = require('./routes/db_setup'),
       { router: dbSetupApiRoutes, setDatabasePool: setDbSetupDatabasePool, setBasicSettingsService: setDbSetupBasicSettingsService } = require('./routes/db_setup_api'),
       // WebSocketManager = require('./services/WebSocketManager'), // 已移除
-      SmartRouteService = require('./services/SmartRouteService'),
+      // SmartRouteService = require('./services/SmartRouteService'), // 已簡化
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService'),
       LineUserService = require('./services/LineUserService'),
@@ -301,13 +301,13 @@ createDatabasePool().then(async () => {
     console.error('❌ Google Maps API 服務初始化失敗:', error);
   }
   
-  // 初始化智能路線服務
-  try {
-    smartRouteService = new SmartRouteService(pool);
-    console.log('🧠 SmartRouteService 已初始化');
-  } catch (error) {
-    console.error('❌ SmartRouteService 初始化失敗:', error);
-  }
+  // 初始化智能路線服務（已簡化）
+  // try {
+  //   smartRouteService = new SmartRouteService(pool);
+  //   console.log('🧠 SmartRouteService 已初始化');
+  // } catch (error) {
+  //   console.error('❌ SmartRouteService 初始化失敗:', error);
+  // }
   
 }).catch(console.error);
 
