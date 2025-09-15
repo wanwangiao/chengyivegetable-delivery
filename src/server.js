@@ -25,7 +25,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
       dbSetupRoutes = require('./routes/db_setup'),
       { router: dbSetupApiRoutes, setDatabasePool: setDbSetupDatabasePool, setBasicSettingsService: setDbSetupBasicSettingsService } = require('./routes/db_setup_api'),
-      WebSocketManager = require('./services/WebSocketManager'),
+      // WebSocketManager = require('./services/WebSocketManager'), // 已移除
       SmartRouteService = require('./services/SmartRouteService'),
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService'),
@@ -5402,11 +5402,11 @@ const gracefulShutdown = async (signal) => {
   console.log(`\n📴 收到 ${signal} 信號，正在優雅關閉...`);
   
   try {
-    // 關閉 WebSocket 管理器
-    if (webSocketManager) {
-      console.log('🔌 正在關閉 WebSocket 服務...');
-      webSocketManager.close();
-    }
+    // 關閉 WebSocket 管理器（已簡化）
+    // if (webSocketManager) {
+    //   console.log('🔌 正在關閉 WebSocket 服務...');
+    //   webSocketManager.close();
+    // }
     
     // 關閉 Agent 系統
     if (agentSystem) {
@@ -7762,12 +7762,12 @@ if (process.env.VERCEL) {
     console.log(`🤖 Agent 管理: http://localhost:${port}/api/admin/agents/status`);
     console.log(`🌍 環境: ${process.env.NODE_ENV || 'development'}`);
     
-    // 初始化WebSocket服務
+    // 初始化WebSocket服務（已簡化）
     if (!demoMode) {
       try {
-        webSocketManager = new WebSocketManager(server);
-        setWebSocketManager(webSocketManager);
-        console.log(`🔌 WebSocket 服務已啟動: ws://localhost:${port}`);
+        // webSocketManager = new WebSocketManager(server); // 已移除
+        // setWebSocketManager(webSocketManager);
+        console.log(`📡 WebSocket 功能已簡化`);
       } catch (error) {
         console.error('❌ WebSocket 初始化失敗:', error);
       }
