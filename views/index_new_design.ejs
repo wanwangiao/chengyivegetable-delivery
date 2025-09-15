@@ -28,7 +28,8 @@
       min-height: max(884px, 100dvh);
     }
     .product-item {
-      transition: all 0.2s ease-in-out;
+      transition: all 0.3s ease-in-out;
+      opacity: 1;
     }
     .product-item:hover {
       transform: translateY(-2px);
@@ -38,6 +39,128 @@
       aspect-ratio: 1;
       width: 100%;
       object-fit: cover;
+    }
+    
+    /* 搜尋功能相關樣式 */
+    #product-search {
+      transition: all 0.2s ease-in-out;
+    }
+    
+    #product-search:focus {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+    }
+    
+    .nav-btn {
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+    
+    .nav-btn:hover {
+      transform: translateY(-1px);
+    }
+    
+    .nav-btn.active {
+      animation: pulse-green 2s infinite;
+    }
+    
+    @keyframes pulse-green {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+    
+    /* 無結果提示動畫 */
+    #no-results-message {
+      animation: fadeInUp 0.5s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* 搜尋結果資訊動畫 */
+    #search-info {
+      transition: all 0.3s ease-in-out;
+    }
+    
+    /* 清除按鈕動畫 */
+    #clear-search-btn {
+      transition: all 0.2s ease-in-out;
+    }
+    
+    #clear-search-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    /* 商品項目顯示動畫 */
+    .product-item[style*="display: block"] {
+      animation: fadeInScale 0.4s ease-out;
+    }
+    
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* 手機端優化 */
+    @media (max-width: 768px) {
+      #product-search {
+        font-size: 16px; /* 防止iOS縮放 */
+      }
+      
+      .nav-btn {
+        min-width: 80px;
+        white-space: nowrap;
+      }
+    }
+    
+    /* 高對比度模式支援 */
+    @media (prefers-contrast: high) {
+      .product-item {
+        border: 2px solid #333;
+      }
+      
+      #product-search {
+        border: 2px solid #333;
+      }
+    }
+    
+    /* 減少動畫偏好支援 */
+    @media (prefers-reduced-motion: reduce) {
+      .product-item,
+      .nav-btn,
+      #product-search,
+      #clear-search-btn {
+        transition: none;
+      }
+      
+      .nav-btn.active {
+        animation: none;
+      }
+      
+      #no-results-message,
+      .product-item[style*="display: block"] {
+        animation: none;
+      }
     }
   </style>
 </head>
@@ -62,12 +185,43 @@
     <div class="sticky top-0 bg-white z-10 shadow-sm">
       <div class="overflow-x-auto whitespace-nowrap border-b border-gray-200">
         <nav class="flex px-4">
-          <a class="flex flex-col items-center justify-center border-b-2 border-green-500 text-green-600 px-4 py-3 text-sm font-semibold" href="#">全部商品</a>
-          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最新商品</a>
-          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">熱銷商品</a>
-          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">最佳推薦</a>
-          <a class="flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" href="#">限時特惠</a>
+          <button class="nav-btn flex flex-col items-center justify-center border-b-2 border-green-500 text-green-600 px-4 py-3 text-sm font-semibold active" data-category="all" onclick="filterProducts('all')">全部商品</button>
+          <button class="nav-btn flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" data-category="new" onclick="filterProducts('new')">最新商品</button>
+          <button class="nav-btn flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" data-category="hot" onclick="filterProducts('hot')">熱銷商品</button>
+          <button class="nav-btn flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" data-category="recommended" onclick="filterProducts('recommended')">最佳推薦</button>
+          <button class="nav-btn flex flex-col items-center justify-center border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-500 px-4 py-3 text-sm font-medium transition-colors" data-category="sale" onclick="filterProducts('sale')">限時特惠</button>
         </nav>
+      </div>
+      
+      <!-- 搜尋框區域 -->
+      <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-gray-400">search</span>
+          </div>
+          <input 
+            type="text" 
+            id="product-search" 
+            placeholder="搜尋商品名稱..." 
+            class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+            autocomplete="off"
+            oninput="searchProducts(this.value)"
+            onkeypress="handleSearchKeypress(event)"
+          >
+          <button 
+            id="clear-search-btn"
+            onclick="clearSearch()"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center opacity-0 transition-opacity duration-200 pointer-events-none"
+          >
+            <span class="material-symbols-outlined text-gray-400 hover:text-gray-600 cursor-pointer">close</span>
+          </button>
+        </div>
+        
+        <!-- 搜尋結果資訊 -->
+        <div id="search-info" class="mt-2 text-sm text-gray-600 hidden">
+          <span id="search-result-count">找到 0 項商品</span>
+          <button onclick="clearSearch()" class="ml-2 text-green-600 hover:text-green-700 underline">清除搜尋</button>
+        </div>
       </div>
     </div>
   </header>
@@ -106,8 +260,23 @@
       <div class="space-y-4" id="products-container">
         <% if (products && products.length > 0) { %>
           <% products.forEach((product, index) => { %>
+            <% 
+              // 根據商品索引和名稱決定分類
+              let categories = ['all'];
+              if (index === 0) categories.push('hot'); // 第一個商品標記為熱銷
+              if (index <= 2) categories.push('new'); // 前三個商品標記為最新
+              if (index % 3 === 0) categories.push('recommended'); // 每三個商品標記為推薦
+              if (product.name.includes('特價') || product.name.includes('優惠')) categories.push('sale');
+              
+              // 建立可搜尋的文字（移除表情符號）
+              let searchableText = product.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+            %>
             <!-- 商品項目 - 橫向佈局 -->
             <div class="bg-white rounded-lg shadow-sm overflow-hidden product-item cursor-pointer" 
+                 data-category="<%= categories.join(' ') %>"
+                 data-name="<%= product.name %>"
+                 data-searchable="<%= searchableText.toLowerCase() %>"
+                 data-index="<%= index %>"
                  onclick="openProductModal('<%= product.id %>', '<%= product.name %>', '<%= product.price %>', '<%= product.unit_hint || "" %>', '<%= product.is_priced_item %>')">
               <div class="flex">
                 <!-- 左側圖片 (1/3) -->
@@ -165,7 +334,12 @@
           <% }) %>
         <% } else { %>
           <!-- 示範資料 -->
-          <div class="bg-white rounded-lg shadow-sm overflow-hidden product-item cursor-pointer" onclick="openProductModal('demo1', '有機番茄', '60', '斤', false)">
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden product-item cursor-pointer" 
+               data-category="all hot recommended"
+               data-name="有機番茄"
+               data-searchable="有機番茄"
+               data-index="0"
+               onclick="openProductModal('demo1', '有機番茄', '60', '斤', false)">
             <div class="flex">
               <div class="w-1/3 relative">
                 <img alt="有機番茄" class="product-image" src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=400&fit=crop&crop=center">
@@ -191,7 +365,7 @@
   </main>
 
   <!-- 訂單查詢按鈕 -->
-  <button class="fixed bottom-24 right-4 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-green-600 transition-all z-20" onclick="window.location.href='/order-tracking'">
+  <button class="fixed bottom-24 right-4 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-green-600 transition-all z-20" onclick="openOrderTrackingModal()">
     <span class="material-symbols-outlined">receipt_long</span>
     <span class="font-medium">訂單查詢</span>
   </button>
@@ -450,6 +624,99 @@
           <button type="button" onclick="submitCheckoutOrder()" id="checkout-submit-btn"
                   class="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
             送出訂單
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 訂單查詢彈窗 -->
+<div class="fixed inset-0 bg-black/30 z-40 hidden" id="order-tracking-modal">
+  <div class="fixed inset-4 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col">
+      <!-- 標題欄 -->
+      <div class="flex items-center p-4 border-b border-gray-100">
+        <button class="text-gray-500 hover:text-gray-800 mr-3" onclick="closeOrderTrackingModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <h2 class="text-gray-900 text-xl font-bold flex-1 text-center pr-8">訂單查詢</h2>
+      </div>
+      
+      <!-- 彈窗內容 - 可滾動 -->
+      <div class="flex-1 overflow-y-auto" id="order-tracking-content">
+        <!-- 搜尋頁面 -->
+        <div class="p-6" id="order-search-page">
+          <div class="text-center mb-6">
+            <div class="text-5xl mb-4">📋</div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">查詢訂單</h3>
+            <p class="text-gray-600 text-sm">請輸入您的手機號碼查詢訂單</p>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-gray-700 text-sm font-medium mb-2">手機號碼</label>
+              <input type="tel" id="order-search-phone" 
+                     class="w-full rounded-lg border-gray-300 p-3 text-lg focus:ring-green-500 focus:border-green-500"
+                     placeholder="09XXXXXXXX"
+                     maxlength="10">
+            </div>
+            
+            <button onclick="searchOrders()" id="search-orders-btn"
+                    class="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+              查詢訂單
+            </button>
+          </div>
+          
+          <div class="mt-6 text-center">
+            <p class="text-xs text-gray-500">僅顯示最近10筆訂單記錄</p>
+          </div>
+        </div>
+        
+        <!-- 訂單列表頁面 -->
+        <div class="hidden" id="order-list-page">
+          <div class="p-4 border-b border-gray-100">
+            <button onclick="backToSearch()" class="flex items-center text-gray-600 hover:text-gray-800 mb-2">
+              <span class="material-symbols-outlined mr-1">arrow_back</span>
+              <span class="text-sm">重新搜尋</span>
+            </button>
+            <h3 class="text-lg font-bold text-gray-900" id="order-list-title">找到的訂單</h3>
+            <p class="text-sm text-gray-600" id="order-list-subtitle">點擊查看詳細資訊</p>
+          </div>
+          
+          <div class="divide-y divide-gray-100" id="order-list-container">
+            <!-- 動態生成訂單列表 -->
+          </div>
+        </div>
+        
+        <!-- 訂單詳情頁面 -->
+        <div class="hidden" id="order-detail-page">
+          <div class="p-4 border-b border-gray-100">
+            <button onclick="backToList()" class="flex items-center text-gray-600 hover:text-gray-800 mb-2">
+              <span class="material-symbols-outlined mr-1">arrow_back</span>
+              <span class="text-sm">返回列表</span>
+            </button>
+            <h3 class="text-lg font-bold text-gray-900" id="order-detail-title">訂單詳情</h3>
+          </div>
+          
+          <div class="p-4 space-y-6" id="order-detail-container">
+            <!-- 動態生成訂單詳情 -->
+          </div>
+        </div>
+        
+        <!-- 載入中狀態 -->
+        <div class="hidden p-8 text-center" id="order-loading">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <p class="text-gray-600 mt-4">載入中...</p>
+        </div>
+        
+        <!-- 錯誤狀態 -->
+        <div class="hidden p-6 text-center" id="order-error">
+          <div class="text-5xl mb-4">❌</div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">發生錯誤</h3>
+          <p class="text-gray-600 mb-4" id="order-error-message">載入訂單時發生錯誤</p>
+          <button onclick="backToSearch()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            重新開始
           </button>
         </div>
       </div>
@@ -1059,6 +1326,626 @@ document.addEventListener('DOMContentLoaded', function() {
   // 每分鐘更新一次狀態
   setInterval(initOrderTimeSystem, 60000);
 });
+
+// 📋 訂單查詢彈窗功能
+let currentOrderPhone = '';
+let currentOrders = [];
+
+// 開啟訂單查詢彈窗
+function openOrderTrackingModal() {
+  document.getElementById('order-tracking-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  
+  // 重置狀態
+  showPage('order-search-page');
+  document.getElementById('order-search-phone').value = '';
+  document.getElementById('order-search-phone').focus();
+}
+
+// 關閉訂單查詢彈窗
+function closeOrderTrackingModal() {
+  document.getElementById('order-tracking-modal').classList.add('hidden');
+  document.body.style.overflow = 'auto';
+}
+
+// 顯示指定頁面
+function showPage(pageId) {
+  const pages = ['order-search-page', 'order-list-page', 'order-detail-page', 'order-loading', 'order-error'];
+  pages.forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(pageId).classList.remove('hidden');
+}
+
+// 搜尋訂單
+async function searchOrders() {
+  const phone = document.getElementById('order-search-phone').value.trim();
+  
+  // 驗證手機號碼格式
+  const phoneRegex = /^09\d{8}$/;
+  if (!phoneRegex.test(phone)) {
+    alert('請輸入正確的手機號碼格式 (09XXXXXXXX)');
+    return;
+  }
+  
+  currentOrderPhone = phone;
+  
+  // 顯示載入狀態
+  showPage('order-loading');
+  
+  try {
+    const response = await fetch(`/api/orders/search/${phone}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      currentOrders = data.orders;
+      
+      if (data.orders.length === 0) {
+        showNoOrdersMessage();
+      } else if (data.orders.length === 1) {
+        // 只有一筆訂單，直接顯示詳情
+        loadOrderDetails(data.orders[0].id);
+      } else {
+        // 多筆訂單，顯示列表
+        showOrderList(data.orders);
+      }
+    } else {
+      showError(data.message || '查詢訂單時發生錯誤');
+    }
+  } catch (error) {
+    console.error('搜尋訂單錯誤:', error);
+    showError('網路連線錯誤，請稍後再試');
+  }
+}
+
+// 顯示無訂單訊息
+function showNoOrdersMessage() {
+  const container = document.getElementById('order-list-container');
+  container.innerHTML = `
+    <div class="p-8 text-center">
+      <div class="text-5xl mb-4">📭</div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">沒有找到訂單</h3>
+      <p class="text-gray-600 mb-4">此手機號碼沒有相關的訂單記錄</p>
+      <button onclick="backToSearch()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        重新搜尋
+      </button>
+    </div>
+  `;
+  
+  document.getElementById('order-list-title').textContent = '查無訂單';
+  document.getElementById('order-list-subtitle').textContent = '';
+  showPage('order-list-page');
+}
+
+// 顯示訂單列表
+function showOrderList(orders) {
+  const container = document.getElementById('order-list-container');
+  
+  container.innerHTML = orders.map(order => {
+    const date = new Date(order.created_at).toLocaleDateString('zh-TW');
+    const time = new Date(order.created_at).toLocaleTimeString('zh-TW', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `
+      <div class="p-4 hover:bg-gray-50 cursor-pointer transition-colors" 
+           onclick="loadOrderDetails(${order.id})">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <h4 class="font-semibold text-gray-900">#${order.id}</h4>
+            <p class="text-sm text-gray-600">${date} ${time}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold text-green-600">$${order.total_amount}</div>
+            <div class="text-xs ${getStatusColor(order.status)}">${getStatusText(order.status)}</div>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-2">${order.address}</p>
+        ${order.notes ? `<p class="text-xs text-gray-500">備註：${order.notes}</p>` : ''}
+        <div class="flex justify-end mt-2">
+          <span class="material-symbols-outlined text-gray-400 text-sm">chevron_right</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('order-list-title').textContent = `找到 ${orders.length} 筆訂單`;
+  document.getElementById('order-list-subtitle').textContent = '點擊查看詳細資訊';
+  showPage('order-list-page');
+}
+
+// 載入訂單詳情
+async function loadOrderDetails(orderId) {
+  showPage('order-loading');
+  
+  try {
+    const response = await fetch(`/api/orders/${orderId}/details/${currentOrderPhone}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      showOrderDetails(data.order);
+    } else {
+      showError(data.message || '載入訂單詳情時發生錯誤');
+    }
+  } catch (error) {
+    console.error('載入訂單詳情錯誤:', error);
+    showError('網路連線錯誤，請稍後再試');
+  }
+}
+
+// 顯示訂單詳情
+function showOrderDetails(order) {
+  const container = document.getElementById('order-detail-container');
+  const createDate = new Date(order.created_at).toLocaleString('zh-TW');
+  
+  container.innerHTML = `
+    <!-- 訂單狀態 -->
+    <div class="bg-gray-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-gray-900">訂單 #${order.id}</h4>
+        <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusBgColor(order.status)} ${getStatusTextColor(order.status)}">
+          ${getStatusText(order.status)}
+        </span>
+      </div>
+      
+      <!-- 狀態進度條 -->
+      <div class="mt-4">
+        ${renderStatusProgress(order.status)}
+      </div>
+    </div>
+    
+    <!-- 基本資訊 -->
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-3">基本資訊</h4>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600">下單時間</span>
+          <span class="text-gray-900">${createDate}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">聯絡人</span>
+          <span class="text-gray-900">${order.contact_name}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">聯絡電話</span>
+          <span class="text-gray-900">${order.contact_phone}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">配送地址</span>
+          <span class="text-gray-900 text-right max-w-48">${order.address}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">付款方式</span>
+          <span class="text-gray-900">${getPaymentMethodText(order.payment_method)}</span>
+        </div>
+        ${order.notes ? `
+        <div class="flex justify-between">
+          <span class="text-gray-600">備註</span>
+          <span class="text-gray-900 text-right max-w-48">${order.notes}</span>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+    
+    <!-- 訂購項目 -->
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-3">訂購項目</h4>
+      <div class="space-y-3">
+        ${order.items ? order.items.map(item => `
+          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div class="flex-1">
+              <h5 class="font-medium text-gray-900">${item.product_name}</h5>
+              <p class="text-sm text-gray-600">單價: $${item.unit_price}</p>
+            </div>
+            <div class="text-right">
+              <div class="font-medium text-gray-900">x ${item.quantity}</div>
+              <div class="text-sm font-bold text-green-600">$${item.total_price}</div>
+            </div>
+          </div>
+        `).join('') : '<p class="text-gray-500 text-sm">暫無商品資訊</p>'}
+      </div>
+    </div>
+    
+    <!-- 費用明細 -->
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-3">費用明細</h4>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600">商品小計</span>
+          <span class="text-gray-900">$${order.subtotal || (order.total_amount - (order.delivery_fee || 0))}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">運費</span>
+          <span class="text-gray-900">$${order.delivery_fee || 0}</span>
+        </div>
+        <div class="border-t border-gray-200 pt-2 mt-2">
+          <div class="flex justify-between font-bold text-lg">
+            <span class="text-gray-900">總計</span>
+            <span class="text-green-600">$${order.total_amount}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    ${order.driver ? `
+    <!-- 外送員資訊 -->
+    <div>
+      <h4 class="font-semibold text-gray-900 mb-3">外送員資訊</h4>
+      <div class="bg-blue-50 rounded-lg p-3">
+        <div class="flex items-center">
+          <span class="material-symbols-outlined text-blue-600 mr-2">delivery_truck</span>
+          <div>
+            <p class="font-medium text-gray-900">${order.driver.name}</p>
+            <p class="text-sm text-gray-600">${order.driver.phone}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
+  `;
+  
+  document.getElementById('order-detail-title').textContent = `訂單 #${order.id}`;
+  showPage('order-detail-page');
+}
+
+// 返回搜尋頁面
+function backToSearch() {
+  showPage('order-search-page');
+  currentOrderPhone = '';
+  currentOrders = [];
+}
+
+// 返回訂單列表
+function backToList() {
+  if (currentOrders.length > 1) {
+    showOrderList(currentOrders);
+  } else {
+    backToSearch();
+  }
+}
+
+// 顯示錯誤訊息
+function showError(message) {
+  document.getElementById('order-error-message').textContent = message;
+  showPage('order-error');
+}
+
+// 獲取狀態文字
+function getStatusText(status) {
+  const statusMap = {
+    'pending': '待確認',
+    'preparing': '準備中',
+    'packed': '包裝完成',
+    'delivering': '配送中',
+    'delivered': '已完成',
+    'cancelled': '已取消'
+  };
+  return statusMap[status] || status;
+}
+
+// 獲取狀態顏色類
+function getStatusColor(status) {
+  const colorMap = {
+    'pending': 'text-yellow-600',
+    'preparing': 'text-blue-600',
+    'packed': 'text-green-600',
+    'delivering': 'text-orange-600',
+    'delivered': 'text-green-700',
+    'cancelled': 'text-red-600'
+  };
+  return colorMap[status] || 'text-gray-600';
+}
+
+// 獲取狀態背景顏色
+function getStatusBgColor(status) {
+  const bgMap = {
+    'pending': 'bg-yellow-100',
+    'preparing': 'bg-blue-100',
+    'packed': 'bg-green-100',
+    'delivering': 'bg-orange-100',
+    'delivered': 'bg-green-200',
+    'cancelled': 'bg-red-100'
+  };
+  return bgMap[status] || 'bg-gray-100';
+}
+
+// 獲取狀態文字顏色
+function getStatusTextColor(status) {
+  const textColorMap = {
+    'pending': 'text-yellow-800',
+    'preparing': 'text-blue-800',
+    'packed': 'text-green-800',
+    'delivering': 'text-orange-800',
+    'delivered': 'text-green-900',
+    'cancelled': 'text-red-800'
+  };
+  return textColorMap[status] || 'text-gray-800';
+}
+
+// 獲取付款方式文字
+function getPaymentMethodText(method) {
+  const methodMap = {
+    'cash': '現金付款',
+    'bank_transfer': '銀行轉帳',
+    'line_pay': 'LINE Pay',
+    'credit_card': '信用卡'
+  };
+  return methodMap[method] || method;
+}
+
+// 渲染狀態進度條
+function renderStatusProgress(currentStatus) {
+  const statusFlow = [
+    { key: 'pending', label: '待確認', icon: 'pending' },
+    { key: 'preparing', label: '準備中', icon: 'cooking' },
+    { key: 'packed', label: '包裝完成', icon: 'inventory' },
+    { key: 'delivering', label: '配送中', icon: 'local_shipping' },
+    { key: 'delivered', label: '已完成', icon: 'check_circle' }
+  ];
+  
+  // 找到當前狀態的索引
+  let currentIndex = statusFlow.findIndex(s => s.key === currentStatus);
+  
+  // 取消狀態處理
+  if (currentStatus === 'cancelled') {
+    return `
+      <div class="flex items-center justify-center p-4 bg-red-50 rounded-lg">
+        <span class="material-symbols-outlined text-red-600 mr-2">cancel</span>
+        <span class="text-red-800 font-medium">訂單已取消</span>
+      </div>
+    `;
+  }
+  
+  return `
+    <div class="flex items-center justify-between">
+      ${statusFlow.map((step, index) => {
+        const isCompleted = index <= currentIndex;
+        const isCurrent = index === currentIndex;
+        
+        return `
+          <div class="flex flex-col items-center flex-1 ${index < statusFlow.length - 1 ? 'relative' : ''}">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center ${
+              isCompleted 
+                ? (isCurrent ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white')
+                : 'bg-gray-200 text-gray-400'
+            }">
+              <span class="material-symbols-outlined text-sm">${step.icon}</span>
+            </div>
+            <span class="text-xs mt-1 text-center ${isCompleted ? 'text-green-600 font-medium' : 'text-gray-400'}">${step.label}</span>
+            ${index < statusFlow.length - 1 ? `
+              <div class="absolute top-4 left-1/2 w-full h-0.5 ${
+                index < currentIndex ? 'bg-green-500' : 'bg-gray-200'
+              }" style="transform: translateX(50%); z-index: -1;"></div>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// 訂單查詢彈窗背景點擊關閉
+document.getElementById('order-tracking-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeOrderTrackingModal();
+  }
+});
+
+// 手機號碼輸入框按 Enter 鍵搜尋
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('order-search-phone').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      searchOrders();
+    }
+  });
+});
+
+// 📦 商品搜尋和篩選功能
+let currentSearchTerm = '';
+let currentCategory = 'all';
+let allProducts = [];
+
+// 初始化商品搜尋功能
+function initProductSearch() {
+  // 獲取所有商品元素
+  allProducts = Array.from(document.querySelectorAll('.product-item'));
+  
+  // 初始化搜尋框狀態
+  updateSearchUI();
+}
+
+// 搜尋商品
+function searchProducts(searchTerm) {
+  currentSearchTerm = searchTerm.toLowerCase().trim();
+  
+  // 更新清除按鈕顯示狀態
+  const clearBtn = document.getElementById('clear-search-btn');
+  if (currentSearchTerm) {
+    clearBtn.classList.remove('opacity-0', 'pointer-events-none');
+    clearBtn.classList.add('opacity-100', 'pointer-events-auto');
+  } else {
+    clearBtn.classList.add('opacity-0', 'pointer-events-none');
+    clearBtn.classList.remove('opacity-100', 'pointer-events-auto');
+  }
+  
+  // 執行篩選
+  filterAndDisplayProducts();
+}
+
+// 分類篩選
+function filterProducts(category) {
+  currentCategory = category;
+  
+  // 更新導航按鈕狀態
+  updateNavButtons(category);
+  
+  // 執行篩選
+  filterAndDisplayProducts();
+}
+
+// 篩選並顯示商品
+function filterAndDisplayProducts() {
+  let visibleCount = 0;
+  
+  allProducts.forEach(product => {
+    let isVisible = true;
+    
+    // 檢查分類篩選
+    if (currentCategory !== 'all') {
+      const productCategories = product.dataset.category || '';
+      if (!productCategories.includes(currentCategory)) {
+        isVisible = false;
+      }
+    }
+    
+    // 檢查搜尋篩選
+    if (currentSearchTerm && isVisible) {
+      const searchableText = product.dataset.searchable || '';
+      const productName = product.dataset.name || '';
+      
+      if (!searchableText.includes(currentSearchTerm) && 
+          !productName.toLowerCase().includes(currentSearchTerm)) {
+        isVisible = false;
+      }
+    }
+    
+    // 顯示或隱藏商品
+    if (isVisible) {
+      product.style.display = 'block';
+      // 添加淡入動畫
+      product.style.opacity = '0';
+      setTimeout(() => {
+        product.style.opacity = '1';
+      }, visibleCount * 50); // 錯開動畫時間
+      visibleCount++;
+    } else {
+      product.style.display = 'none';
+    }
+  });
+  
+  // 更新搜尋結果資訊
+  updateSearchInfo(visibleCount);
+  
+  // 顯示無結果提示
+  showNoResultsMessage(visibleCount === 0);
+}
+
+// 更新搜尋結果資訊
+function updateSearchInfo(count) {
+  const searchInfo = document.getElementById('search-info');
+  const resultCount = document.getElementById('search-result-count');
+  
+  if (currentSearchTerm || currentCategory !== 'all') {
+    searchInfo.classList.remove('hidden');
+    
+    let message = `找到 ${count} 項商品`;
+    if (currentSearchTerm) {
+      message += ` (搜尋: "${currentSearchTerm}")`;
+    }
+    if (currentCategory !== 'all') {
+      const categoryNames = {
+        'new': '最新商品',
+        'hot': '熱銷商品',
+        'recommended': '最佳推薦',
+        'sale': '限時特惠'
+      };
+      message += ` (分類: ${categoryNames[currentCategory] || currentCategory})`;
+    }
+    
+    resultCount.textContent = message;
+  } else {
+    searchInfo.classList.add('hidden');
+  }
+}
+
+// 顯示無結果提示
+function showNoResultsMessage(show) {
+  let noResultsDiv = document.getElementById('no-results-message');
+  
+  if (show && (currentSearchTerm || currentCategory !== 'all')) {
+    if (!noResultsDiv) {
+      // 創建無結果提示
+      noResultsDiv = document.createElement('div');
+      noResultsDiv.id = 'no-results-message';
+      noResultsDiv.className = 'text-center py-12 px-4';
+      noResultsDiv.innerHTML = `
+        <div class="text-6xl mb-4">🔍</div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">找不到相關商品</h3>
+        <p class="text-gray-600 mb-4">試試調整搜尋關鍵字或選擇其他分類</p>
+        <button onclick="clearSearch()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+          清除篩選條件
+        </button>
+      `;
+      
+      document.getElementById('products-container').appendChild(noResultsDiv);
+    }
+    noResultsDiv.style.display = 'block';
+  } else if (noResultsDiv) {
+    noResultsDiv.style.display = 'none';
+  }
+}
+
+// 更新導航按鈕狀態
+function updateNavButtons(activeCategory) {
+  const navButtons = document.querySelectorAll('.nav-btn');
+  
+  navButtons.forEach(btn => {
+    const btnCategory = btn.dataset.category;
+    
+    if (btnCategory === activeCategory) {
+      // 激活狀態
+      btn.classList.remove('border-transparent', 'text-gray-500');
+      btn.classList.add('border-green-500', 'text-green-600', 'font-semibold', 'active');
+      btn.classList.remove('font-medium');
+    } else {
+      // 非激活狀態
+      btn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+      btn.classList.remove('border-green-500', 'text-green-600', 'font-semibold', 'active');
+    }
+  });
+}
+
+// 清除搜尋
+function clearSearch() {
+  currentSearchTerm = '';
+  currentCategory = 'all';
+  
+  // 重置搜尋框
+  document.getElementById('product-search').value = '';
+  
+  // 重置UI狀態
+  updateNavButtons('all');
+  updateSearchUI();
+  
+  // 顯示所有商品
+  filterAndDisplayProducts();
+}
+
+// 更新搜尋UI狀態
+function updateSearchUI() {
+  const clearBtn = document.getElementById('clear-search-btn');
+  clearBtn.classList.add('opacity-0', 'pointer-events-none');
+  clearBtn.classList.remove('opacity-100', 'pointer-events-auto');
+}
+
+// 處理搜尋框按鍵事件
+function handleSearchKeypress(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    // Enter鍵時失去焦點，觸發手機鍵盤收起
+    event.target.blur();
+  }
+}
+
+// 頁面載入完成後初始化搜尋功能
+document.addEventListener('DOMContentLoaded', function() {
+  // 延遲初始化，確保所有商品都已載入
+  setTimeout(() => {
+    initProductSearch();
+  }, 100);
+});
+
 </script>
 
 </body>

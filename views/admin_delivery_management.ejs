@@ -34,7 +34,7 @@
 
         .delivery-grid {
             display: grid;
-            grid-template-columns: 30% 40% 30%;
+            grid-template-columns: 50% 50%;
             gap: 0;
             min-height: calc(100vh - 180px);
         }
@@ -173,32 +173,6 @@
         .status-delivering { background: #fff3cd; color: #856404; }
         .status-delivered { background: #d1ecf1; color: #0c5460; }
 
-        /* ===== 路線優化面板樣式 ===== */
-        .route-panel {
-            background: #f1f8ff;
-        }
-
-        .route-controls {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .optimization-result {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            display: none;
-        }
-
-        .route-item {
-            background: #e3f2fd;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 8px 0;
-            border-left: 3px solid var(--secondary-color);
-        }
 
         /* ===== 地圖面板樣式 ===== */
         .map-panel {
@@ -350,43 +324,6 @@
                 </div>
             </div>
 
-            <!-- 中間：路線優化面板 -->
-            <div class="panel route-panel">
-                <div class="panel-header">
-                    <h5><i class="fas fa-route"></i> 智能路線優化</h5>
-                    <button class="btn btn-sm btn-light" id="optimize-btn">
-                        <i class="fas fa-magic"></i> 一鍵優化
-                    </button>
-                </div>
-
-                <div class="route-controls">
-                    <div class="row">
-                        <div class="col-6">
-                            <label class="form-label">優化算法</label>
-                            <select class="form-select" id="optimization-method">
-                                <option value="hybrid">智能混合</option>
-                                <option value="nearest">最近鄰算法</option>
-                                <option value="genetic">遺傳算法</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">最大路線數</label>
-                            <input type="number" class="form-control" id="max-routes" value="3" min="1" max="10">
-                        </div>
-                    </div>
-                </div>
-
-                <div id="optimization-result" class="optimization-result">
-                    <h6><i class="fas fa-chart-line"></i> 優化結果</h6>
-                    <div id="route-summary"></div>
-                    <div id="routes-list"></div>
-                </div>
-
-                <div id="route-loading" class="loading" style="display: none;">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-
             <!-- 右側：地圖面板 -->
             <div class="panel map-panel">
                 <div class="panel-header">
@@ -527,7 +464,6 @@
         // ===== 事件監聽器 =====
         function initializeEventListeners() {
             document.getElementById('order-filter').addEventListener('change', loadOrders);
-            document.getElementById('optimize-btn').addEventListener('click', optimizeRoutes);
             document.getElementById('refresh-map').addEventListener('click', refreshMap);
             document.getElementById('show-all').addEventListener('click', showAllOnMap);
             document.getElementById('clear-map').addEventListener('click', clearMap);
@@ -618,84 +554,6 @@
             highlightOrderOnMap(orderId, !isSelected);
         }
 
-        // ===== 路線優化 =====
-        async function optimizeRoutes() {
-            if (selectedOrders.length < 2) {
-                alert('請至少選擇2個訂單進行路線優化');
-                return;
-            }
-
-            const method = document.getElementById('optimization-method').value;
-            const maxRoutes = parseInt(document.getElementById('max-routes').value);
-
-            document.getElementById('route-loading').style.display = 'block';
-            document.getElementById('optimization-result').style.display = 'none';
-
-            try {
-                const response = await fetch('/api/admin/route-optimization/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderIds: selectedOrders,
-                        optimizationMethod: method,
-                        maxClusters: maxRoutes
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    optimizedRoutes = result.routes;
-                    displayOptimizationResult(result);
-                    showRoutesOnMap(result.routes);
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch (error) {
-                console.error('路線優化失敗:', error);
-                alert('路線優化失敗: ' + error.message);
-            } finally {
-                document.getElementById('route-loading').style.display = 'none';
-            }
-        }
-
-        function displayOptimizationResult(result) {
-            const summary = document.getElementById('route-summary');
-            const routesList = document.getElementById('routes-list');
-            
-            summary.innerHTML = `
-                <div class="row">
-                    <div class="col-6">
-                        <div class="stat-card">
-                            <div class="fw-bold text-primary">${result.overallStats.totalRoutes}</div>
-                            <small>優化路線</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="stat-card">
-                            <div class="fw-bold text-success">${result.overallStats.totalDistance} km</div>
-                            <small>總距離</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            const routesHTML = result.routes.map((route, index) => `
-                <div class="route-item">
-                    <div class="d-flex justify-content-between">
-                        <strong>路線 ${index + 1}</strong>
-                        <span class="badge bg-primary">${route.orders.length} 個訂單</span>
-                    </div>
-                    <div class="small text-muted mt-1">
-                        距離: ${route.totalDistance.toFixed(1)} km | 
-                        時間: ${route.estimatedTime.totalMinutes} 分鐘
-                    </div>
-                </div>
-            `).join('');
-
-            routesList.innerHTML = routesHTML;
-            document.getElementById('optimization-result').style.display = 'block';
-        }
 
         // ===== 地圖相關功能 =====
         function initMap() {
@@ -784,11 +642,6 @@
             }
         }
 
-        function showRoutesOnMap(routes) {
-            // 清除現有路線
-            // 這裡會添加路線顯示邏輯
-            console.log('顯示路線:', routes);
-        }
 
         function getStatusColor(status) {
             const colors = {

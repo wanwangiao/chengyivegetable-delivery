@@ -27,7 +27,6 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { router: dbSetupApiRoutes, setDatabasePool: setDbSetupDatabasePool, setBasicSettingsService: setDbSetupBasicSettingsService } = require('./routes/db_setup_api'),
       WebSocketManager = require('./services/WebSocketManager'),
       SmartRouteService = require('./services/SmartRouteService'),
-      RouteOptimizationService = require('./services/RouteOptimizationService'),
       LineNotificationService = require('./services/LineNotificationService'),
       LineBotService = require('./services/LineBotService'),
       LineUserService = require('./services/LineUserService'),
@@ -37,7 +36,6 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
 
 let agentSystem = null;
 let smartRouteService = null;
-let routeOptimizationService = null;
 let webSocketManager = null;
 let lineNotificationService = null;
 let lineBotService = null;
@@ -311,13 +309,6 @@ createDatabasePool().then(async () => {
     console.error('❌ SmartRouteService 初始化失敗:', error);
   }
   
-  // 初始化路線優化服務
-  try {
-    routeOptimizationService = new RouteOptimizationService(pool);
-    console.log('🚀 RouteOptimizationService 已初始化');
-  } catch (error) {
-    console.error('❌ RouteOptimizationService 初始化失敗:', error);
-  }
 }).catch(console.error);
 
 // 設定 view engine 與靜態檔案
@@ -752,17 +743,17 @@ async function upsertUser(phone, name, lineUserId, lineDisplayName) {
 
 // 示範產品資料（包含公克單位商品）
 const demoProducts = [
-  { id: 1, name: '🥬 有機高麗菜', price: 80, is_priced_item: false, unit_hint: '每顆', unit: '顆' },
-  { id: 2, name: '🍅 新鮮番茄', price: 45, is_priced_item: true, unit_hint: '每公斤', unit: '公斤' },
-  { id: 3, name: '🥬 青江菜', price: 40, is_priced_item: false, unit_hint: '每把', unit: '把' },
-  { id: 4, name: '🥕 胡蘿蔔', price: 30, is_priced_item: true, unit_hint: '每斤', unit: '斤' },
-  { id: 5, name: '🥒 小黃瓜', price: 60, is_priced_item: false, unit_hint: '每包', unit: '包' },
-  { id: 6, name: '🧅 洋蔥', price: 25, is_priced_item: true, unit_hint: '每台斤', unit: '台斤' },
+  { id: 1, name: '🥬 有機高麗菜', price: 80, is_priced_item: false, unit_hint: '每顆', unit: '顆', is_available: true },
+  { id: 2, name: '🍅 新鮮番茄', price: 45, is_priced_item: true, unit_hint: '每公斤', unit: '公斤', is_available: true },
+  { id: 3, name: '🥬 青江菜', price: 40, is_priced_item: false, unit_hint: '每把', unit: '把', is_available: true },
+  { id: 4, name: '🥕 胡蘿蔔', price: 30, is_priced_item: true, unit_hint: '每斤', unit: '斤', is_available: false },
+  { id: 5, name: '🥒 小黃瓜', price: 60, is_priced_item: false, unit_hint: '每包', unit: '包', is_available: true },
+  { id: 6, name: '🧅 洋蔥', price: 25, is_priced_item: true, unit_hint: '每台斤', unit: '台斤', is_available: true },
   // 新增公克單位商品
-  { id: 7, name: '🌶️ 辣椒', price: 0.5, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
-  { id: 8, name: '🧄 蒜頭', price: 0.3, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
-  { id: 9, name: '🍄 香菇', price: 1.2, is_priced_item: true, unit_hint: '每公克', unit: '公克' },
-  { id: 10, name: '🫚 薑', price: 0.4, is_priced_item: true, unit_hint: '每公克', unit: '公克' }
+  { id: 7, name: '🌶️ 辣椒', price: 0.5, is_priced_item: true, unit_hint: '每公克', unit: '公克', is_available: true },
+  { id: 8, name: '🧄 蒜頭', price: 0.3, is_priced_item: true, unit_hint: '每公克', unit: '公克', is_available: false },
+  { id: 9, name: '🍄 香菇', price: 1.2, is_priced_item: true, unit_hint: '每公克', unit: '公克', is_available: true },
+  { id: 10, name: '🫚 薑', price: 0.4, is_priced_item: true, unit_hint: '每公克', unit: '公克', is_available: true }
 ];
 
 // 取得產品資料
@@ -1488,7 +1479,7 @@ app.get('/api/driver/today-stats', apiCacheMiddleware(45000), async (req, res) =
         SELECT COUNT(*) as completed_count, COALESCE(SUM(total_amount), 0) as total_earnings
         FROM orders 
         WHERE driver_id = $1 
-          AND status = 'completed' 
+          AND status = 'delivered' 
           AND DATE(updated_at) = CURRENT_DATE
       `;
       const completedResult = await pool.query(completedQuery, [driverId]);
@@ -1688,7 +1679,7 @@ app.post('/api/driver/complete-delivery/:id', async (req, res) => {
     if (!demoMode && pool) {
       await pool.query(`
         UPDATE orders 
-        SET status = 'completed', 
+        SET status = 'delivered', 
             delivered_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND driver_id = $2
@@ -1801,6 +1792,97 @@ app.get('/admin/dashboard', ensureAdmin, async (req, res, next) => {
     next(error);
   }
 });
+
+// API: 獲取儀表板數據
+app.get('/api/admin/dashboard', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const dashboardData = {
+      stats: {
+        todayRevenue: 12450,
+        todayOrders: 47,
+        todayCustomers: 38,
+        avgOrderValue: 265
+      },
+      recentOrders: [],
+      inventoryAlerts: [],
+      deliveryStatus: {},
+      tasks: {
+        pending: 3,
+        completed: 12,
+        total: 15
+      }
+    };
+    
+    if (!demoMode) {
+      // 從資料庫獲取真實數據
+      try {
+        // 今日統計
+        const revenueQuery = await pool.query(`
+          SELECT COALESCE(SUM(total), 0) as today_revenue,
+                 COUNT(*) as today_orders,
+                 COUNT(DISTINCT contact_phone) as today_customers
+          FROM orders 
+          WHERE DATE(created_at) = CURRENT_DATE
+        `);
+        
+        if (revenueQuery.rows.length > 0) {
+          const revenue = revenueQuery.rows[0];
+          dashboardData.stats = {
+            todayRevenue: parseFloat(revenue.today_revenue) || 0,
+            todayOrders: parseInt(revenue.today_orders) || 0,
+            todayCustomers: parseInt(revenue.today_customers) || 0,
+            avgOrderValue: revenue.today_orders > 0 ? 
+              Math.round((parseFloat(revenue.today_revenue) || 0) / (parseInt(revenue.today_orders) || 1)) : 0
+          };
+        }
+        
+        // 最近訂單
+        const recentOrdersQuery = await pool.query(`
+          SELECT id, contact_name, total, status, created_at
+          FROM orders 
+          ORDER BY created_at DESC 
+          LIMIT 5
+        `);
+        dashboardData.recentOrders = recentOrdersQuery.rows;
+        
+        // 庫存警示 (模擬數據，需要庫存系統)
+        dashboardData.inventoryAlerts = [
+          { product: '有機小白菜', current: 5, minimum: 10, status: 'warning' },
+          { product: '紅蘿蔔', current: 2, minimum: 15, status: 'critical' }
+        ];
+        
+        // 待處理任務統計
+        const pendingOrdersQuery = await pool.query(`
+          SELECT COUNT(*) as pending_count
+          FROM orders 
+          WHERE status IN ('pending', 'preparing')
+        `);
+        
+        dashboardData.tasks = {
+          pending: parseInt(pendingOrdersQuery.rows[0]?.pending_count) || 0,
+          completed: dashboardData.stats.todayOrders,
+          total: dashboardData.stats.todayOrders + (parseInt(pendingOrdersQuery.rows[0]?.pending_count) || 0)
+        };
+        
+      } catch (dbError) {
+        console.error('資料庫查詢錯誤:', dbError);
+        // 使用預設數據
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: dashboardData
+    });
+    
+  } catch (error) {
+    console.error('取得儀表板數據失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '取得儀表板數據失敗'
+    });
+  }
+}));
 
 // 前台：結帳頁
 app.get('/checkout', (req, res) => {
@@ -2677,14 +2759,6 @@ app.get('/admin/orders', ensureAdmin, async (req, res, next) => {
   }
 });
 
-// 🚀 後台：路線優化管理頁面
-app.get('/admin/route-optimization', ensureAdmin, async (req, res, next) => {
-  try {
-    res.render('admin_route_optimization');
-  } catch (err) {
-    next(err);
-  }
-});
 
 // 後台：單一訂單編輯
 app.get('/admin/orders/:id', ensureAdmin, async (req, res, next) => {
@@ -3081,50 +3155,6 @@ app.post('/api/admin/inventory/restock', ensureAdmin, async (req, res) => {
   }
 });
 
-// 🚀 API: 路線優化服務
-app.post('/api/admin/route-optimization/generate', ensureAdmin, async (req, res) => {
-  try {
-    if (!routeOptimizationService) {
-      return res.status(503).json({ 
-        success: false, 
-        message: '路線優化服務未初始化' 
-      });
-    }
-
-    const options = req.body || {};
-    const result = await routeOptimizationService.generateOptimizedRoutes(options);
-    
-    res.json(result);
-  } catch (error) {
-    console.error('路線優化失敗:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '路線優化失敗', 
-      error: error.message 
-    });
-  }
-});
-
-// 🚀 API: 路線優化服務狀態
-app.get('/api/admin/route-optimization/status', ensureAdmin, async (req, res) => {
-  try {
-    if (!routeOptimizationService) {
-      return res.json({ 
-        initialized: false, 
-        message: '路線優化服務未初始化' 
-      });
-    }
-
-    const status = routeOptimizationService.getServiceStatus();
-    res.json(status);
-  } catch (error) {
-    console.error('獲取路線優化狀態失敗:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '獲取服務狀態失敗' 
-    });
-  }
-});
 
 // 📈 後台：統計報表頁面
 app.get('/admin/reports', ensureAdmin, async (req, res, next) => {
@@ -4355,6 +4385,19 @@ app.post('/api/admin/basic-settings/reset', ensureAdmin, async (req, res) => {
   }
 });
 
+// 配送管理主頁面
+app.get('/admin/delivery', ensureAdmin, async (req, res, next) => {
+  try {
+    res.render('admin_delivery_management', {
+      title: '配送管理中心',
+      currentPage: 'delivery'
+    });
+  } catch (error) {
+    console.error('載入配送管理頁面失敗:', error);
+    next(error);
+  }
+});
+
 // 配送區域管理路由
 app.get('/admin/delivery-areas', ensureAdmin, (req, res) => {
   res.render('admin_delivery_areas');
@@ -5022,6 +5065,209 @@ app.get('/api/orders/:id/status', async (req, res) => {
     res.status(500).json({ error: '服務器錯誤' });
   }
 });
+
+// 通過手機號碼查詢訂單API (供前台訂單查詢彈窗使用)
+app.get('/api/orders/search/:phone', async (req, res) => {
+  try {
+    const phone = req.params.phone;
+    
+    // 驗證手機號碼格式
+    const phoneRegex = /^09\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '請輸入正確的手機號碼格式 (09XXXXXXXX)' 
+      });
+    }
+    
+    if (demoMode) {
+      // 示範模式：返回模擬訂單資料
+      const mockOrders = [
+        {
+          id: 1001,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivering',
+          total_amount: 350,
+          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
+          notes: '請小心包裝'
+        },
+        {
+          id: 1002,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivered',
+          total_amount: 280,
+          created_at: new Date(Date.now() - 86400000).toISOString(), // 1天前
+          notes: ''
+        }
+      ];
+      
+      console.log(`📝 示範模式：返回手機號碼 ${phone} 的模擬訂單`);
+      return res.json({
+        success: true,
+        orders: mockOrders,
+        total: mockOrders.length
+      });
+    }
+    
+    // 生產模式：查詢真實資料
+    const result = await pool.query(`
+      SELECT 
+        id, contact_name, contact_phone, address, 
+        status, total_amount, created_at, notes,
+        subtotal, delivery_fee, payment_method
+      FROM orders 
+      WHERE contact_phone = $1 
+      ORDER BY created_at DESC 
+      LIMIT 10
+    `, [phone]);
+    
+    res.json({
+      success: true,
+      orders: result.rows,
+      total: result.rows.length
+    });
+    
+  } catch (error) {
+    console.error('查詢訂單失敗:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '查詢訂單時發生錯誤，請稍後再試' 
+    });
+  }
+});
+
+// 獲取特定訂單詳情API (供前台訂單查詢彈窗使用)
+app.get('/api/orders/:id/details/:phone', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const phone = req.params.phone;
+    
+    if (isNaN(orderId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '無效的訂單ID' 
+      });
+    }
+    
+    // 驗證手機號碼格式
+    const phoneRegex = /^09\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '請輸入正確的手機號碼格式' 
+      });
+    }
+    
+    if (demoMode) {
+      // 示範模式：返回模擬訂單詳情
+      const mockOrder = {
+        id: orderId,
+        contact_name: '示範客戶',
+        contact_phone: phone,
+        address: '台北市大安區示範路123號',
+        status: 'delivering',
+        total_amount: 350,
+        subtotal: 320,
+        delivery_fee: 30,
+        payment_method: 'cash',
+        created_at: new Date(Date.now() - 3600000).toISOString(),
+        updated_at: new Date(Date.now() - 1800000).toISOString(),
+        notes: '請小心包裝',
+        items: [
+          {
+            id: 1,
+            product_id: 101,
+            product_name: '有機高麗菜',
+            quantity: 2,
+            unit_price: 60,
+            total_price: 120
+          },
+          {
+            id: 2,
+            product_id: 102,
+            product_name: '新鮮紅蘿蔔',
+            quantity: 1,
+            unit_price: 40,
+            total_price: 40
+          },
+          {
+            id: 3,
+            product_id: 103,
+            product_name: '青江菜',
+            quantity: 3,
+            unit_price: 25,
+            total_price: 75
+          }
+        ]
+      };
+      
+      console.log(`📝 示範模式：返回訂單 ${orderId} 的詳細資料`);
+      return res.json({
+        success: true,
+        order: mockOrder
+      });
+    }
+    
+    // 生產模式：查詢真實資料（需要驗證手機號碼權限）
+    const orderResult = await pool.query(`
+      SELECT 
+        o.*, 
+        d.name as driver_name, 
+        d.phone as driver_phone
+      FROM orders o
+      LEFT JOIN drivers d ON o.driver_id = d.id
+      WHERE o.id = $1 AND o.contact_phone = $2
+    `, [orderId, phone]);
+    
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: '訂單不存在或無權限查看' 
+      });
+    }
+    
+    const order = orderResult.rows[0];
+    
+    // 查詢訂單項目
+    const itemsResult = await pool.query(`
+      SELECT 
+        oi.id,
+        oi.product_id,
+        oi.quantity,
+        oi.unit_price,
+        oi.total_price,
+        COALESCE(p.name, oi.product_name) as product_name
+      FROM order_items oi
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE oi.order_id = $1
+      ORDER BY oi.id
+    `, [orderId]);
+    
+    res.json({
+      success: true,
+      order: {
+        ...order,
+        items: itemsResult.rows,
+        driver: order.driver_name ? {
+          name: order.driver_name,
+          phone: order.driver_phone
+        } : null
+      }
+    });
+    
+  } catch (error) {
+    console.error('獲取訂單詳情失敗:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '獲取訂單詳情時發生錯誤，請稍後再試' 
+    });
+  }
+});
+
   try {
     console.log('🔄 管理員請求重新連接資料庫...');
     
@@ -5234,7 +5480,7 @@ app.get('/api/test/stats', async (req, res) => {
     // 進行中訂單
     const activeResult = await pool.query(`
       SELECT COUNT(*) as count FROM orders 
-      WHERE status IN ('confirmed', 'preparing', 'ready', 'delivering')
+      WHERE status IN ('preparing', 'packed', 'delivering')
     `);
     const activeOrders = parseInt(activeResult.rows[0].count);
     
@@ -6752,6 +6998,85 @@ app.delete('/api/admin/products/:id', ensureAdmin, asyncWrapper(async (req, res)
   }
 }));
 
+// API: 切換商品上下架狀態
+app.patch('/api/admin/products/:id/toggle-availability', ensureAdmin, asyncWrapper(async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    
+    if (demoMode) {
+      // 示範模式：直接在記憶體中切換狀態
+      const existingProduct = demoProducts.find(p => p.id === productId);
+      if (!existingProduct) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      // 切換狀態
+      existingProduct.is_available = !existingProduct.is_available;
+      
+      return res.json({
+        success: true,
+        message: `商品已${existingProduct.is_available ? '上架' : '下架'}`,
+        product: existingProduct,
+        mode: 'demo'
+      });
+    }
+    
+    // 真實資料庫模式
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // 檢查商品是否存在並獲取當前狀態
+      const { rows: products } = await client.query(
+        'SELECT id, name, is_available FROM products WHERE id = $1', 
+        [productId]
+      );
+      
+      if (products.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到指定商品'
+        });
+      }
+      
+      const currentProduct = products[0];
+      const newAvailability = !currentProduct.is_available;
+      
+      // 更新商品狀態
+      const { rows: updatedProducts } = await client.query(
+        'UPDATE products SET is_available = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+        [newAvailability, productId]
+      );
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: `商品「${currentProduct.name}」已${newAvailability ? '上架' : '下架'}`,
+        product: updatedProducts[0],
+        mode: 'database'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('切換商品狀態失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '切換商品狀態失敗: ' + error.message
+    });
+  }
+}));
+
 // =====================================
 // 📦 後台訂單管理 API  
 // =====================================
@@ -6958,7 +7283,7 @@ app.put('/api/admin/orders/:id', ensureAdmin, sanitizeInput, asyncWrapper(async 
     }
     
     // 驗證狀態值
-    const validStatuses = ['placed', 'confirmed', 'preparing', 'packed', 'out_for_delivery', 'delivered', 'cancelled'];
+    const validStatuses = ['pending', 'preparing', 'packed', 'delivering', 'delivered', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,

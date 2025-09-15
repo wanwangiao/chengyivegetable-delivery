@@ -102,22 +102,40 @@ function initRevenueChart() {
 // 載入儀表板數據
 async function loadDashboardData() {
     try {
-        // 模擬API調用
-        const data = await simulateApiCall();
+        // 調用真實API
+        const response = await fetch('/api/admin/dashboard');
+        const result = await response.json();
         
-        // 更新統計卡片
-        updateStatsCards(data.stats);
-        
-        // 更新庫存警示
-        updateInventoryAlerts(data.inventory);
-        
-        // 更新待處理事項
-        updatePendingTasks(data.tasks);
-        
-        console.log('📊 儀表板數據更新完成');
+        if (result.success) {
+            const data = result.data;
+            
+            // 更新統計卡片
+            updateStatsCards(data.stats);
+            
+            // 更新庫存警示
+            updateInventoryAlerts(data.inventoryAlerts);
+            
+            // 更新待處理事項
+            updatePendingTasks(data.tasks);
+            
+            // 更新最近訂單
+            if (data.recentOrders) {
+                updateRecentOrders(data.recentOrders);
+            }
+            
+            console.log('📊 儀表板數據更新完成');
+        } else {
+            throw new Error(result.message || '取得數據失敗');
+        }
     } catch (error) {
         console.error('❌ 載入儀表板數據失敗:', error);
         showNotification('數據載入失敗，請重新整理頁面', 'error');
+        
+        // 如果API失敗，回退到模擬數據
+        const fallbackData = await simulateApiCall();
+        updateStatsCards(fallbackData.stats);
+        updateInventoryAlerts(fallbackData.inventory);
+        updatePendingTasks(fallbackData.tasks);
     }
 }
 
@@ -749,6 +767,58 @@ function deleteOrder(orderId) {
         showNotification(`已刪除訂單 #${orderId}`, 'success');
         loadOrders(); // 重新載入訂單列表
     }
+}
+
+// 更新最近訂單
+function updateRecentOrders(orders) {
+    const container = document.querySelector('#recent-orders-list');
+    if (!container) return;
+    
+    if (orders.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暫無最近訂單</p>';
+        return;
+    }
+    
+    const getStatusText = (status) => {
+        const statusMap = {
+            'pending': '待確認',
+            'preparing': '準備中',
+            'packed': '包裝完成',
+            'delivering': '配送中',
+            'delivered': '已完成',
+            'cancelled': '已取消'
+        };
+        return statusMap[status] || status;
+    };
+    
+    const getStatusClass = (status) => {
+        const statusClasses = {
+            'pending': 'warning',
+            'preparing': 'info',
+            'packed': 'primary',
+            'delivering': 'warning',
+            'delivered': 'success',
+            'cancelled': 'danger'
+        };
+        return statusClasses[status] || 'secondary';
+    };
+    
+    const ordersHtml = orders.map(order => `
+        <div class="recent-order-item border rounded p-3 mb-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">#${order.id} - ${order.contact_name}</h6>
+                    <small class="text-muted">${new Date(order.created_at).toLocaleString()}</small>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold">NT$ ${order.total}</div>
+                    <span class="badge bg-${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = ordersHtml;
 }
 
 // 導航功能

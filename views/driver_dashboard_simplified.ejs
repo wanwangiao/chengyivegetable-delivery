@@ -3907,7 +3907,7 @@
             }
             
             // 更新摘要
-            const completed = myDeliveryOrders.filter(order => order.status === 'completed').length;
+            const completed = myDeliveryOrders.filter(order => order.status === 'delivered').length;
             const remaining = myDeliveryOrders.length - completed;
             navOrdersSummary.textContent = `已完成 ${completed} 筆 • 剩餘 ${remaining} 筆`;
             
@@ -3932,7 +3932,7 @@
             }
             
             // 待配送訂單
-            const pendingOrders = myDeliveryOrders.filter(order => order.status === 'accepted');
+            const pendingOrders = myDeliveryOrders.filter(order => order.status === 'packed');
             if (pendingOrders.length > 0) {
                 ordersHtml += '<div class="pending-orders"><h3>📦 即將配送</h3>';
                 pendingOrders.forEach(order => {
@@ -4079,7 +4079,7 @@
             
             if (confirm(`確認完成配送給 ${currentOrder.customer_name}？`)) {
                 // 更新訂單狀態
-                currentOrder.status = 'completed';
+                currentOrder.status = 'delivered';
                 currentOrder.completed_time = new Date().toISOString();
                 
                 showNotification('✅ 配送完成！', 'success');
@@ -4090,7 +4090,7 @@
                     updateStartDeliveryButton();
                     
                     // 如果還有待配送訂單，自動切換到下一個
-                    const nextOrder = myDeliveryOrders.find(order => order.status === 'accepted');
+                    const nextOrder = myDeliveryOrders.find(order => order.status === 'packed');
                     if (nextOrder) {
                         nextOrder.status = 'delivering';
                         showNotification(`開始配送給 ${nextOrder.customer_name}`, 'info');

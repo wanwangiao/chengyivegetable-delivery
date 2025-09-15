@@ -39,10 +39,12 @@
             text-align: center;
         }
         
-        .stat-card.placed { border-left-color: #f39c12; }
-        .stat-card.packaging { border-left-color: #3498db; }
-        .stat-card.delivering { border-left-color: #9b59b6; }
-        .stat-card.delivered { border-left-color: #27ae60; }
+        .stat-card.pending { border-left-color: #faad14; }
+        .stat-card.preparing { border-left-color: #1890ff; }
+        .stat-card.packed { border-left-color: #52c41a; }
+        .stat-card.delivering { border-left-color: #fa8c16; }
+        .stat-card.delivered { border-left-color: #237804; }
+        .stat-card.cancelled { border-left-color: #f5222d; }
         
         .stat-number {
             font-size: 2em;
@@ -98,11 +100,12 @@
             color: white;
         }
         
-        .status-placed { background: #f39c12; }
-        .status-packaging { background: #3498db; }
-        .status-delivering { background: #9b59b6; }
-        .status-delivered { background: #27ae60; }
-        .status-cancelled { background: #e74c3c; }
+        .status-pending { background: #faad14; }
+        .status-preparing { background: #1890ff; }
+        .status-packed { background: #52c41a; }
+        .status-delivering { background: #fa8c16; }
+        .status-delivered { background: #237804; }
+        .status-cancelled { background: #f5222d; }
         
         .action-btn {
             background: #3498db;
@@ -181,13 +184,17 @@
         <% if (orders && orders.length > 0) { %>
             <!-- 統計卡片 -->
             <div class="orders-stats">
-                <div class="stat-card placed">
-                    <div class="stat-number"><%= orders.filter(o => o.status === 'placed').length %></div>
-                    <div class="stat-label">已下單</div>
+                <div class="stat-card pending">
+                    <div class="stat-number"><%= orders.filter(o => o.status === 'pending').length %></div>
+                    <div class="stat-label">待確認</div>
                 </div>
-                <div class="stat-card packaging">
-                    <div class="stat-number"><%= orders.filter(o => o.status === 'packaging').length %></div>
-                    <div class="stat-label">打包中</div>
+                <div class="stat-card preparing">
+                    <div class="stat-number"><%= orders.filter(o => o.status === 'preparing').length %></div>
+                    <div class="stat-label">準備中</div>
+                </div>
+                <div class="stat-card packed">
+                    <div class="stat-number"><%= orders.filter(o => o.status === 'packed').length %></div>
+                    <div class="stat-label">包裝完成</div>
                 </div>
                 <div class="stat-card delivering">
                     <div class="stat-number"><%= orders.filter(o => o.status === 'delivering').length %></div>
@@ -196,6 +203,10 @@
                 <div class="stat-card delivered">
                     <div class="stat-number"><%= orders.filter(o => o.status === 'delivered').length %></div>
                     <div class="stat-label">已完成</div>
+                </div>
+                <div class="stat-card cancelled">
+                    <div class="stat-number"><%= orders.filter(o => o.status === 'cancelled').length %></div>
+                    <div class="stat-label">已取消</div>
                 </div>
             </div>
             
@@ -235,11 +246,13 @@
                                         let statusClass = '';
                                         let statusText = '';
                                         switch(order.status) {
-                                            case 'placed': statusClass = 'status-placed'; statusText = '已下單'; break;
-                                            case 'packaging': statusClass = 'status-packaging'; statusText = '打包中'; break;
+                                            case 'pending': statusClass = 'status-pending'; statusText = '待確認'; break;
+                                            case 'preparing': statusClass = 'status-preparing'; statusText = '準備中'; break;
+                                            case 'packed': statusClass = 'status-packed'; statusText = '包裝完成'; break;
                                             case 'delivering': statusClass = 'status-delivering'; statusText = '配送中'; break;
                                             case 'delivered': statusClass = 'status-delivered'; statusText = '已完成'; break;
-                                            default: statusClass = 'status-cancelled'; statusText = order.status;
+                                            case 'cancelled': statusClass = 'status-cancelled'; statusText = '已取消'; break;
+                                            default: statusClass = 'status-pending'; statusText = order.status;
                                         }
                                     %>
                                     <span class="status-badge <%= statusClass %>"><%= statusText %></span>
@@ -266,5 +279,259 @@
             </div>
         <% } %>
     </div>
+
+    <!-- 手機導航控制和API功能 -->
+    <script>
+        // 全局變數
+        let allOrders = [];
+        let filteredOrders = [];
+        
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            initMobileNavigation();
+            initFilters();
+        });
+        
+        // 載入訂單數據
+        async function loadOrders() {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/admin/orders');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allOrders = data.orders || [];
+                    filteredOrders = allOrders;
+                    updateOrdersDisplay();
+                    updateStatistics();
+                } else {
+                    showError('載入訂單失敗: ' + data.message);
+                }
+            } catch (error) {
+                console.error('載入訂單錯誤:', error);
+                showError('網路連線錯誤，請稍後再試');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // 更新訂單顯示
+        function updateOrdersDisplay() {
+            const tableBody = document.querySelector('.orders-table tbody');
+            if (!tableBody) return;
+            
+            if (filteredOrders.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">沒有找到訂單</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = filteredOrders.map(order => {
+                const statusInfo = getStatusInfo(order.status);
+                const orderDate = new Date(order.created_at).toLocaleDateString('zh-TW');
+                
+                return `
+                    <tr onclick="viewOrderDetails(${order.id})">
+                        <td>#${order.id}</td>
+                        <td>
+                            <div><strong>${order.contact_name}</strong></div>
+                            <div style="color: #7f8c8d; font-size: 0.9em;">${order.contact_phone}</div>
+                        </td>
+                        <td style="max-width: 200px;">
+                            <div style="overflow: hidden; text-overflow: ellipsis;">
+                                ${order.address}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
+                        </td>
+                        <td><strong style="color: #27ae60;">$${order.total}</strong></td>
+                        <td style="color: #7f8c8d; font-size: 0.9em;">${orderDate}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // 獲取狀態資訊
+        function getStatusInfo(status) {
+            const statusMap = {
+                'pending': { class: 'status-pending', text: '待確認' },
+                'preparing': { class: 'status-preparing', text: '準備中' },
+                'packed': { class: 'status-packed', text: '包裝完成' },
+                'delivering': { class: 'status-delivering', text: '配送中' },
+                'delivered': { class: 'status-delivered', text: '已完成' },
+                'cancelled': { class: 'status-cancelled', text: '已取消' }
+            };
+            return statusMap[status] || { class: 'status-pending', text: status };
+        }
+        
+        // 更新統計數據
+        function updateStatistics() {
+            const stats = {
+                pending: allOrders.filter(o => o.status === 'pending').length,
+                preparing: allOrders.filter(o => o.status === 'preparing').length,
+                packed: allOrders.filter(o => o.status === 'packed').length,
+                delivering: allOrders.filter(o => o.status === 'delivering').length,
+                delivered: allOrders.filter(o => o.status === 'delivered').length,
+                cancelled: allOrders.filter(o => o.status === 'cancelled').length
+            };
+            
+            // 更新統計卡片
+            Object.keys(stats).forEach(status => {
+                const element = document.querySelector(`.stat-card.${status} .stat-number`);
+                if (element) {
+                    element.textContent = stats[status];
+                }
+            });
+            
+            // 更新總數
+            const totalElement = document.querySelector('.orders-header div');
+            if (totalElement) {
+                totalElement.innerHTML = `${allOrders.length} 筆訂單`;
+            }
+        }
+        
+        // 初始化手機導航
+        function initMobileNavigation() {
+            // 添加手機導航按鈕
+            if (window.innerWidth <= 768) {
+                addMobileMenuButton();
+            }
+            
+            // 監聽視窗大小變化
+            window.addEventListener('resize', function() {
+                if (window.innerWidth <= 768) {
+                    addMobileMenuButton();
+                } else {
+                    removeMobileMenuButton();
+                }
+            });
+        }
+        
+        // 添加手機菜單按鈕
+        function addMobileMenuButton() {
+            if (document.querySelector('.mobile-menu-btn')) return; // 避免重複添加
+            
+            const button = document.createElement('button');
+            button.className = 'mobile-menu-btn';
+            button.innerHTML = '☰ 菜單';
+            button.style.cssText = `
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 1001;
+                background: #2c3e50;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                font-size: 14px;
+                cursor: pointer;
+            `;
+            
+            button.onclick = function() {
+                // 簡單的導航功能，可以導航到其他頁面
+                const nav = confirm('選擇功能:\\n確定: 儀表板\\n取消: 地圖管理');
+                if (nav) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/admin/map';
+                }
+            };
+            
+            document.body.appendChild(button);
+        }
+        
+        // 移除手機菜單按鈕
+        function removeMobileMenuButton() {
+            const button = document.querySelector('.mobile-menu-btn');
+            if (button) {
+                button.remove();
+            }
+        }
+        
+        // 初始化篩選功能
+        function initFilters() {
+            // 這裡可以添加狀態篩選功能
+            // 由於原頁面沒有篩選UI，暫時不實現
+        }
+        
+        // 查看訂單詳情
+        function viewOrderDetails(orderId) {
+            window.location.href = `/admin/orders/${orderId}/edit`;
+        }
+        
+        // 顯示載入狀態
+        function showLoading(show) {
+            let loadingEl = document.querySelector('.loading-overlay');
+            if (show && !loadingEl) {
+                loadingEl = document.createElement('div');
+                loadingEl.className = 'loading-overlay';
+                loadingEl.innerHTML = '<div class="loading-spinner">載入中...</div>';
+                loadingEl.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                    color: white;
+                    font-size: 18px;
+                `;
+                document.body.appendChild(loadingEl);
+            } else if (!show && loadingEl) {
+                loadingEl.remove();
+            }
+        }
+        
+        // 顯示錯誤訊息
+        function showError(message) {
+            alert('錯誤: ' + message);
+        }
+        
+        // 手機響應式CSS
+        const mobileStyles = document.createElement('style');
+        mobileStyles.textContent = `
+            @media (max-width: 768px) {
+                .orders-container {
+                    padding: 10px;
+                    padding-top: 60px; /* 為手機菜單按鈕留空間 */
+                }
+                
+                .orders-stats {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                }
+                
+                .stat-card {
+                    padding: 15px;
+                }
+                
+                .orders-table {
+                    overflow-x: auto;
+                }
+                
+                .orders-table table {
+                    min-width: 600px;
+                }
+                
+                .orders-table td {
+                    padding: 8px 4px;
+                    font-size: 14px;
+                }
+                
+                .orders-header {
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 15px;
+                }
+            }
+        `;
+        document.head.appendChild(mobileStyles);
+    </script>
 </body>
 </html>
