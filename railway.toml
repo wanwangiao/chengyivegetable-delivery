@@ -24,12 +24,14 @@ ADMIN_EMAIL = "shnfred555283@gmail.com"
 ADMIN_PASSWORD = "admin123"
 SYSTEM_NAME = "誠憶鮮蔬外送系統"
 
-# LINE Bot 設定 (需要在Railway中設置)
-# LINE_CHANNEL_ACCESS_TOKEN = "your_token"
-# LINE_CHANNEL_SECRET = "your_secret"
+# LINE Bot 設定
+LINE_CHANNEL_ID = "2007891772"
+LINE_CHANNEL_SECRET = "35bc80bb75f95d22a49aaaf8772eef38"
+LINE_CHANNEL_ACCESS_TOKEN = "Rb4HdoTx3gV7skydMOJy4/0xw09IpOc9djST7z5eSEs+CccUAfsdtrPlI3SEEQya+Npz6+OW6B8un+Tfr6sJ6dw3Aab1Y+kLng21ZAXjO0sYYS7ILLzH4ccNVRDh8Xnv3ch0DTDNGT8pc+7bGZjruAdB04t89/1O/w1cDnyilFU="
+LINE_LIFF_ID = "2007966099-qXjNxbXN"
 
-# Google Maps API (需要在Railway中設置)  
-# GOOGLE_MAPS_API_KEY = "your_api_key"
+# Google Maps API
+GOOGLE_MAPS_API_KEY = "AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE"
 
 # 資料庫設定（Railway將自動提供）
 # DATABASE_URL - Railway PostgreSQL自動設置
