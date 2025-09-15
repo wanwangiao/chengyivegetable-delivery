@@ -5607,6 +5607,15 @@ app.get('/liff-entry', (req, res) => {
   res.render('liff_entry', { liffId });
 });
 
+// LIFF 替代路由（以防LINE Console設定問題）
+app.get('/liff', (req, res) => {
+  res.redirect('/liff-entry');
+});
+
+app.get('/line-entry', (req, res) => {
+  res.redirect('/liff-entry');
+});
+
 // LINE Bot 測試頁面
 app.get('/line-bot-test', (req, res) => {
   res.render('line_bot_test');
