@@ -6,8 +6,8 @@
 class LineUserService {
   constructor(database = null) {
     this.db = database;
-    // 緊急修復：由於Railway環境變數問題，使用fallback LIFF ID
-    this.liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
+    // 緊急修復：使用正確的LIFF ID
+    this.liffId = process.env.LINE_LIFF_ID || '2007966099';
     this.channelId = process.env.LINE_CHANNEL_ID || '';
     this.enabled = !!(this.liffId && this.channelId);
     
