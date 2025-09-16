@@ -5607,6 +5607,28 @@ app.get('/liff-entry', (req, res) => {
   res.render('liff_entry', { liffId });
 });
 
+// LIFF 診斷頁面
+app.get('/liff-debug', (req, res) => {
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    liffId: '2007966099-qXjNxbXN',
+    channelId: process.env.LINE_CHANNEL_ID || '2007891772',
+    deploymentUrl: 'https://chengyivegetable-production-7b4a.up.railway.app',
+    possibleCallbackUrls: [
+      'https://chengyivegetable-production-7b4a.up.railway.app/liff-entry',
+      'https://chengyivegetable-production-7b4a.up.railway.app/liff',
+      'https://chengyivegetable-production-7b4a.up.railway.app/line-entry'
+    ],
+    requiredSettings: {
+      type: 'full',
+      scope: 'profile',
+      botLinkFeature: 'aggressive'
+    }
+  };
+  
+  res.json(debugInfo);
+});
+
 // LIFF 替代路由（以防LINE Console設定問題）
 app.get('/liff', (req, res) => {
   res.redirect('/liff-entry');
