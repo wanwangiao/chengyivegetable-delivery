@@ -6,8 +6,8 @@
 class LineUserService {
   constructor(database = null) {
     this.db = database;
-    // 緊急修復：使用正確的LIFF ID
-    this.liffId = process.env.LINE_LIFF_ID || '2007966099';
+    // 緊急修復：恢復原本的LIFF ID（完整版本）
+    this.liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
     this.channelId = process.env.LINE_CHANNEL_ID || '';
     this.enabled = !!(this.liffId && this.channelId);
     

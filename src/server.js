@@ -5593,8 +5593,8 @@ const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 
 // LIFF 入口頁面
 app.get('/liff-entry', (req, res) => {
-  // 緊急修復：使用正確的LIFF ID
-  const liffId = process.env.LINE_LIFF_ID || '2007966099';
+  // 緊急修復：恢復原本的LIFF ID（完整版本）
+  const liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
   console.log('🔍 LIFF 入口頁面請求:', {
     timestamp: new Date().toISOString(),
     liffId: liffId || 'NOT_SET',
