@@ -5604,6 +5604,11 @@ app.get('/liff-entry', (req, res) => {
     fallbackUsed: !process.env.LINE_LIFF_ID,
     allLineEnv: Object.keys(process.env).filter(key => key.includes('LINE'))
   });
+  
+  // 🔧 關鍵修復：移除 X-Frame-Options 以允許 LIFF 在 iframe 中載入
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
+  
   res.render('liff_entry', { liffId });
 });
 
