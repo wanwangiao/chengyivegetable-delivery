@@ -5594,7 +5594,7 @@ const orderNotificationHook = new OrderNotificationHook(lineBotService, pool);
 // LIFF 入口頁面
 app.get('/liff-entry', (req, res) => {
   // 緊急修復：恢復原本的LIFF ID（完整版本）
-  const liffId = process.env.LINE_LIFF_ID || '2007966099-qXjNxbXN';
+  const liffId = process.env.LINE_LIFF_ID || '2008130399-z1QXZgma';
   console.log('🔍 LIFF 入口頁面請求:', {
     timestamp: new Date().toISOString(),
     liffId: liffId || 'NOT_SET',
@@ -5616,7 +5616,7 @@ app.get('/liff-entry', (req, res) => {
 app.get('/liff-debug', (req, res) => {
   const debugInfo = {
     timestamp: new Date().toISOString(),
-    liffId: '2007966099-qXjNxbXN',
+    liffId: '2008130399-z1QXZgma',
     channelId: process.env.LINE_CHANNEL_ID || '2007891772',
     deploymentUrl: 'https://chengyivegetable-production-7b4a.up.railway.app',
     possibleCallbackUrls: [
