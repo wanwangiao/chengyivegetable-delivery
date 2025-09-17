@@ -135,13 +135,14 @@ class LineUserService {
         });
         return existingUser;
       } else {
-        // 創建新用戶
+        // 創建新用戶（使用臨時電話號碼）
+        const tempPhone = `LINE_${userId.slice(-8)}`; // 使用 LINE ID 後8位作為臨時電話
         const result = await this.db.query(`
           INSERT INTO users (
-            line_user_id, line_display_name, name, created_at
-          ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            phone, name, line_user_id, line_display_name, created_at
+          ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
           RETURNING *
-        `, [userId, displayName, displayName]);
+        `, [tempPhone, displayName, userId, displayName]);
         
         return result.rows[0];
       }

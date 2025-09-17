@@ -5753,11 +5753,12 @@ app.post('/api/line/bind-user', async (req, res) => {
         WHERE line_user_id = $3
       `, [displayName, displayName, lineUserId]);
     } else {
-      // 插入新用戶（phone 現在可以為 NULL）
+      // 插入新用戶（使用臨時電話號碼，稍後可以更新）
+      const tempPhone = `LINE_${lineUserId.slice(-8)}`; // 使用 LINE ID 後8位作為臨時電話
       await pool.query(`
-        INSERT INTO users (line_user_id, line_display_name, name, created_at)
-        VALUES ($1, $2, $3, NOW())
-      `, [lineUserId, displayName, displayName]);
+        INSERT INTO users (phone, name, line_user_id, line_display_name, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+      `, [tempPhone, displayName, lineUserId, displayName]);
     }
     
     console.log(`📱 LINE用戶綁定成功: ${displayName} (${lineUserId})`);
