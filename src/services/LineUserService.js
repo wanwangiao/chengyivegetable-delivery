@@ -86,7 +86,7 @@ class LineUserService {
       }
 
       const result = await this.db.query(`
-        SELECT * FROM line_users WHERE line_user_id = $1
+        SELECT * FROM users WHERE line_user_id = $1
       `, [userId]);
 
       return result.rows[0] || null;
@@ -123,17 +123,14 @@ class LineUserService {
       }
 
       const result = await this.db.query(`
-        INSERT INTO line_users (
-          line_user_id, display_name, picture_url, status_message,
-          is_verified, created_at, last_visit
-        ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO users (
+          line_user_id, line_display_name, phone, name, created_at
+        ) VALUES ($1, $2, NULL, $3, CURRENT_TIMESTAMP)
         ON CONFLICT (line_user_id) DO UPDATE SET
-          display_name = EXCLUDED.display_name,
-          picture_url = EXCLUDED.picture_url,
-          status_message = EXCLUDED.status_message,
-          last_visit = CURRENT_TIMESTAMP
+          line_display_name = EXCLUDED.line_display_name,
+          name = EXCLUDED.name
         RETURNING *
-      `, [userId, displayName, pictureUrl, statusMessage, false]);
+      `, [userId, displayName, displayName]);
 
       return result.rows[0];
 
@@ -159,13 +156,11 @@ class LineUserService {
       }
 
       await this.db.query(`
-        UPDATE line_users 
-        SET display_name = $1, 
-            picture_url = $2, 
-            status_message = $3,
-            last_visit = $4
-        WHERE line_user_id = $5
-      `, [displayName, pictureUrl, statusMessage, lastVisit || new Date(), userId]);
+        UPDATE users 
+        SET line_display_name = $1, 
+            name = $2
+        WHERE line_user_id = $3
+      `, [displayName, displayName, userId]);
 
       return true;
 
@@ -193,8 +188,8 @@ class LineUserService {
       }
 
       await this.db.query(`
-        UPDATE line_users 
-        SET phone = $1, is_verified = true, verified_at = CURRENT_TIMESTAMP
+        UPDATE users 
+        SET phone = $1
         WHERE line_user_id = $2
       `, [phone, userId]);
 
@@ -219,8 +214,8 @@ class LineUserService {
       }
 
       const result = await this.db.query(`
-        SELECT line_user_id FROM line_users 
-        WHERE phone = $1 AND is_verified = true
+        SELECT line_user_id FROM users 
+        WHERE phone = $1 AND line_user_id IS NOT NULL
       `, [phone]);
 
       return result.rows[0]?.line_user_id || null;
