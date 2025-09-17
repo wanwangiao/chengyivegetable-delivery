@@ -127,6 +127,11 @@ class LineUserService {
           line_user_id, display_name, picture_url, status_message,
           is_verified, created_at, last_visit
         ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (line_user_id) DO UPDATE SET
+          display_name = EXCLUDED.display_name,
+          picture_url = EXCLUDED.picture_url,
+          status_message = EXCLUDED.status_message,
+          last_visit = CURRENT_TIMESTAMP
         RETURNING *
       `, [userId, displayName, pictureUrl, statusMessage, false]);
 
