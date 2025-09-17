@@ -5648,6 +5648,71 @@ app.get('/line-bot-test', (req, res) => {
   res.render('line_bot_test');
 });
 
+// 一次性數據庫遷移端點 (僅管理員)
+app.post('/admin/execute-line-users-migration', ensureAdmin, async (req, res) => {
+  try {
+    console.log('🚀 開始執行 LINE Users 數據庫遷移...');
+    
+    // 讀取 SQL 文件
+    const fs = require('fs');
+    const path = require('path');
+    const sqlPath = path.join(__dirname, '..', 'create_line_users_table.sql');
+    
+    if (!fs.existsSync(sqlPath)) {
+      return res.json({
+        success: false,
+        message: `SQL 文件不存在: ${sqlPath}`
+      });
+    }
+    
+    const sqlScript = fs.readFileSync(sqlPath, 'utf8');
+    
+    // 執行 SQL
+    await pool.query(sqlScript);
+    
+    // 檢查結果
+    const checkResult = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'line_users'
+      )
+    `);
+    
+    const tableExists = checkResult.rows[0].exists;
+    
+    if (tableExists) {
+      // 檢查表結構
+      const columnInfo = await pool.query(`
+        SELECT column_name, data_type, is_nullable, column_default
+        FROM information_schema.columns 
+        WHERE table_name = 'line_users' 
+        ORDER BY ordinal_position
+      `);
+      
+      res.json({
+        success: true,
+        message: 'line_users 表創建成功!',
+        table_exists: true,
+        columns: columnInfo.rows
+      });
+    } else {
+      res.json({
+        success: false,
+        message: '表格創建失敗，line_users 表不存在'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ 數據庫遷移失敗:', error);
+    res.json({
+      success: false,
+      message: '數據庫遷移失敗: ' + error.message,
+      error: error.code
+    });
+  }
+});
+
 // LINE 用戶綁定 API
 app.post('/api/line/bind-user', async (req, res) => {
   try {
