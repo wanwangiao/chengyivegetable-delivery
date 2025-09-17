@@ -135,11 +135,14 @@ class LineUserService {
         });
         return existingUser;
       } else {
-        // 創建新用戶
+        // 創建新用戶 - 使用 UPSERT 以避免重複插入
         const result = await this.db.query(`
           INSERT INTO users (
-            line_user_id, line_display_name, phone, name, created_at
-          ) VALUES ($1, $2, NULL, $3, CURRENT_TIMESTAMP)
+            line_user_id, line_display_name, name, created_at
+          ) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+          ON CONFLICT (line_user_id) DO UPDATE SET
+            line_display_name = EXCLUDED.line_display_name,
+            name = EXCLUDED.name
           RETURNING *
         `, [userId, displayName, displayName]);
         

@@ -5740,14 +5740,25 @@ app.post('/api/line/bind-user', async (req, res) => {
       });
     }
     
-    // 將用戶資訊儲存到資料庫
-    // 注意：這裡我們先儲存到 users 表，之後訂單建立時會關聯
-    await pool.query(`
-      INSERT INTO users (line_user_id, line_display_name, created_at)
-      VALUES ($1, $2, NOW())
-      ON CONFLICT (line_user_id) DO UPDATE SET
-        line_display_name = EXCLUDED.line_display_name
-    `, [lineUserId, displayName]);
+    // 將用戶資訊儲存到資料庫 - 使用安全的先查詢再插入方式
+    const existingUser = await pool.query(`
+      SELECT id FROM users WHERE line_user_id = $1
+    `, [lineUserId]);
+    
+    if (existingUser.rows.length > 0) {
+      // 更新現有用戶
+      await pool.query(`
+        UPDATE users 
+        SET line_display_name = $1, name = $2
+        WHERE line_user_id = $3
+      `, [displayName, displayName, lineUserId]);
+    } else {
+      // 插入新用戶（phone 現在可以為 NULL）
+      await pool.query(`
+        INSERT INTO users (line_user_id, line_display_name, name, created_at)
+        VALUES ($1, $2, $3, NOW())
+      `, [lineUserId, displayName, displayName]);
+    }
     
     console.log(`📱 LINE用戶綁定成功: ${displayName} (${lineUserId})`);
     
