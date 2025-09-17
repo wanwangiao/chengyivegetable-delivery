@@ -122,17 +122,29 @@ class LineUserService {
         };
       }
 
-      const result = await this.db.query(`
-        INSERT INTO users (
-          line_user_id, line_display_name, phone, name, created_at
-        ) VALUES ($1, $2, NULL, $3, CURRENT_TIMESTAMP)
-        ON CONFLICT (line_user_id) DO UPDATE SET
-          line_display_name = EXCLUDED.line_display_name,
-          name = EXCLUDED.name
-        RETURNING *
-      `, [userId, displayName, displayName]);
-
-      return result.rows[0];
+      // 先檢查用戶是否已存在
+      let existingUser = await this.getLineUser(userId);
+      
+      if (existingUser) {
+        // 更新現有用戶
+        await this.updateLineUser(userId, {
+          displayName,
+          pictureUrl,
+          statusMessage,
+          lastVisit: new Date()
+        });
+        return existingUser;
+      } else {
+        // 創建新用戶
+        const result = await this.db.query(`
+          INSERT INTO users (
+            line_user_id, line_display_name, phone, name, created_at
+          ) VALUES ($1, $2, NULL, $3, CURRENT_TIMESTAMP)
+          RETURNING *
+        `, [userId, displayName, displayName]);
+        
+        return result.rows[0];
+      }
 
     } catch (error) {
       console.error('註冊 LINE 用戶失敗:', error);
