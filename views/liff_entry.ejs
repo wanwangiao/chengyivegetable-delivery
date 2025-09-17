@@ -180,8 +180,25 @@
         document.getElementById('userId').textContent = profile.userId;
         document.getElementById('userInfo').style.display = 'block';
         
-        // 自動綁定用戶
-        await bindUserAccount(profile);
+        // 儲存用戶資料到 localStorage，稍後結帳時使用
+        localStorage.setItem('lineProfile', JSON.stringify(profile));
+        
+        console.log('✅ LINE 用戶資料已儲存，稍後結帳時自動使用');
+        
+        // 顯示成功訊息
+        document.getElementById('status').className = 'status success';
+        document.getElementById('status').innerHTML = `
+          ✅ 歡迎，${profile.displayName}！<br>
+          您可以開始購物了
+        `;
+        
+        // 顯示操作按鈕
+        document.getElementById('actions').style.display = 'block';
+        
+        // 2秒後自動跳轉到購物頁面
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
         
       } catch (error) {
         console.error('❌ LIFF 初始化失敗:', error);
@@ -192,69 +209,6 @@
           <small>錯誤：${error.message}</small><br>
           <small>請重新開啟或聯繫客服</small>
         `;
-      }
-    }
-    
-    async function bindUserAccount(profile) {
-      try {
-        console.log('🔗 開始綁定用戶帳號...');
-        
-        // 發送用戶資訊到後端進行綁定
-        const response = await fetch('/api/line/bind-user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            lineUserId: profile.userId,
-            displayName: profile.displayName,
-            pictureUrl: profile.pictureUrl
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('✅ 用戶綁定成功');
-          
-          document.getElementById('status').className = 'status success';
-          document.getElementById('status').innerHTML = `
-            ✅ 歡迎回來，${profile.displayName}！<br>
-            您的帳號已成功連結
-          `;
-          
-          // 顯示操作按鈕
-          document.getElementById('actions').style.display = 'block';
-          
-          // 3秒後自動跳轉到購物頁面
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 3000);
-          
-        } else {
-          console.warn('⚠️ 用戶綁定失敗:', result.message);
-          
-          document.getElementById('status').className = 'status error';
-          document.getElementById('status').innerHTML = `
-            ⚠️ 帳號連結失敗<br>
-            <small>${result.message}</small>
-          `;
-          
-          // 仍然顯示操作按鈕，讓用戶可以繼續使用
-          document.getElementById('actions').style.display = 'block';
-        }
-        
-      } catch (error) {
-        console.error('❌ 綁定用戶失敗:', error);
-        
-        document.getElementById('status').className = 'status error';
-        document.getElementById('status').innerHTML = `
-          ❌ 連結失敗<br>
-          <small>網路錯誤，請稍後再試</small>
-        `;
-        
-        // 即使綁定失敗，也讓用戶可以繼續購物
-        document.getElementById('actions').style.display = 'block';
       }
     }
     

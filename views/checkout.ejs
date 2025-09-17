@@ -71,8 +71,22 @@
       </section>
     </div>
     <script>
-      // 從 localStorage 取得購物車
+      // 從 localStorage 取得購物車和 LINE 用戶資料
       const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const lineProfile = JSON.parse(localStorage.getItem('lineProfile') || 'null');
+      
+      // 如果有 LINE 用戶資料，自動填入姓名
+      if (lineProfile) {
+        console.log('✅ 檢測到 LINE 用戶資料，自動填入姓名:', lineProfile.displayName);
+        // 等待頁面載入完成後填入資料
+        document.addEventListener('DOMContentLoaded', function() {
+          const nameInput = document.getElementById('name');
+          if (nameInput && !nameInput.value) {
+            nameInput.value = lineProfile.displayName;
+            nameInput.style.backgroundColor = '#e8f5e8'; // 淺綠色背景表示自動填入
+          }
+        });
+      }
       function renderOrder() {
         const orderSection = document.getElementById('order-section');
         if (!cart || cart.length === 0) {
@@ -205,10 +219,27 @@
           selectedUnit: it.selectedUnit
         }));
         
+        // 準備訂單資料，包含 LINE 用戶資訊
+        const orderData = { 
+          name, 
+          phone, 
+          address, 
+          notes, 
+          paymentMethod, 
+          items 
+        };
+        
+        // 如果有 LINE 用戶資料，加入到訂單中
+        if (lineProfile) {
+          orderData.lineUserId = lineProfile.userId;
+          orderData.lineDisplayName = lineProfile.displayName;
+          console.log('✅ 訂單將包含 LINE 用戶資料:', lineProfile.userId);
+        }
+        
         fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, address, notes, paymentMethod, items })
+          body: JSON.stringify(orderData)
         })
         .then(resp => resp.json())
         .then(data => {

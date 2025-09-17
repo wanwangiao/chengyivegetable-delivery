@@ -1898,7 +1898,7 @@ app.get('/checkout', (req, res) => {
 
 // API：提交訂單
 app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWrapper(async (req, res) => {
-  const { name, phone, address, notes, paymentMethod, items } = req.body;
+  const { name, phone, address, notes, paymentMethod, items, lineUserId, lineDisplayName } = req.body;
   try {
     if (!name || !phone || !address || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: '參數不完整' });
@@ -1963,13 +1963,42 @@ app.post('/api/orders', orderLimiter, sanitizeInput, validateOrderData, asyncWra
     const deliveryFee = subtotal >= 200 ? 0 : 50;
     const total = subtotal + deliveryFee;
     // 簡化訂單創建，先不做地理編碼
-    console.log('Creating order with data:', { name, phone, address, notes, paymentMethod, subtotal, deliveryFee, total });
-    // 簡化插入，只使用存在的欄位
+    console.log('Creating order with data:', { name, phone, address, notes, paymentMethod, subtotal, deliveryFee, total, lineUserId });
+    // 簡化插入，包含 LINE 用戶 ID（如果有的話）
     const insertOrder = await pool.query(
-      'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total, payment_method, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
-      [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'placed']
+      'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total, payment_method, status, line_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
+      [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'placed', lineUserId || null]
     );
     const orderId = insertOrder.rows[0].id;
+    
+    // 如果有 LINE 用戶資料，同時處理用戶資料綁定
+    if (lineUserId && lineDisplayName) {
+      try {
+        // 使用我們修復過的安全方式處理用戶資料
+        const existingUser = await pool.query(`
+          SELECT id FROM users WHERE line_user_id = $1
+        `, [lineUserId]);
+        
+        if (existingUser.rows.length > 0) {
+          // 更新現有用戶的聯繫資料
+          await pool.query(`
+            UPDATE users 
+            SET phone = $1, name = $2, line_display_name = $3
+            WHERE line_user_id = $4
+          `, [phone, name, lineDisplayName, lineUserId]);
+          console.log(`📱 更新現有 LINE 用戶資料: ${lineDisplayName} (${lineUserId})`);
+        } else {
+          // 創建新用戶記錄
+          await pool.query(`
+            INSERT INTO users (phone, name, line_user_id, line_display_name, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+          `, [phone, name, lineUserId, lineDisplayName]);
+          console.log(`📱 創建新 LINE 用戶: ${lineDisplayName} (${lineUserId})`);
+        }
+      } catch (userError) {
+        console.warn('⚠️ LINE 用戶資料處理失敗，但訂單已成功創建:', userError.message);
+      }
+    }
     
     // 🔄 自動扣庫存機制 - 直接資料庫操作
     try {
