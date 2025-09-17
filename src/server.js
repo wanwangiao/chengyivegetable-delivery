@@ -5681,8 +5681,7 @@ app.post('/api/line/bind-user', async (req, res) => {
       INSERT INTO users (line_user_id, line_display_name, created_at)
       VALUES ($1, $2, NOW())
       ON CONFLICT (line_user_id) DO UPDATE SET
-        line_display_name = EXCLUDED.line_display_name,
-        updated_at = NOW()
+        line_display_name = EXCLUDED.line_display_name
     `, [lineUserId, displayName]);
     
     console.log(`📱 LINE用戶綁定成功: ${displayName} (${lineUserId})`);
