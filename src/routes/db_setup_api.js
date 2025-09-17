@@ -342,6 +342,55 @@ router.post('/reset-all', ensureAdmin, async (req, res) => {
   }
 });
 
+// 執行 LINE Users 表創建
+router.post('/create-line-users-table', ensureAdmin, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.json({
+        success: false,
+        message: '資料庫連接池未初始化'
+      });
+    }
+
+    // 讀取 SQL 腳本
+    const sqlPath = path.join(__dirname, '../../create_line_users_table.sql');
+    
+    if (!fs.existsSync(sqlPath)) {
+      return res.json({
+        success: false,
+        message: 'SQL 腳本檔案不存在: ' + sqlPath
+      });
+    }
+
+    const sqlScript = fs.readFileSync(sqlPath, 'utf8');
+    
+    // 執行 SQL 腳本
+    await pool.query(sqlScript);
+    
+    // 檢查結果
+    const checkResult = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'line_users'
+      )
+    `);
+    
+    res.json({
+      success: true,
+      message: 'line_users 表創建完成',
+      table_exists: checkResult.rows[0].exists
+    });
+    
+  } catch (error) {
+    res.json({
+      success: false,
+      message: '創建 line_users 表失敗: ' + error.message,
+      error: error.code
+    });
+  }
+});
+
 module.exports = {
   router,
   setDatabasePool,
