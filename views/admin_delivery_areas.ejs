@@ -515,7 +515,15 @@
                 }
             } catch (error) {
                 console.error('儲存配送區域失敗:', error);
-                alert('儲存失敗，請稍後再試');
+                
+                // 提供更詳細的錯誤訊息
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    alert('❌ 網路連線失敗，請檢查網路狀態後重試');
+                } else if (response && response.status === 503) {
+                    alert('❌ 資料庫連線失敗\n\n系統可能在維護中，請稍後再試或聯繫管理員');
+                } else {
+                    alert('❌ 儲存失敗，請稍後再試或聯繫系統管理員');
+                }
             }
         });
 

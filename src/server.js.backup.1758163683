@@ -46,7 +46,7 @@ let priceChangeNotificationService = null;
 let basicSettingsService = null;
 
 // 系統模式設定
-let demoMode = true; // 啟用示範模式 // 關閉示範模式，使用真實資料庫數據
+let demoMode = false; // 關閉示範模式，使用真實資料庫數據
 
 // 版本資訊 - 用於測試部署
 const DEPLOY_VERSION = 'v2025.09.10.fix - 基本資料管理修復版本';
@@ -94,7 +94,7 @@ async function createDatabasePool() {
       
       const testResult = await pool.query('SELECT NOW() as current_time');
       console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
-      demoMode = true; // 啟用示範模式
+      demoMode = false;
       return pool;
       
     } catch (error1) {
@@ -131,7 +131,7 @@ async function createDatabasePool() {
     
     const testResult = await pool.query('SELECT NOW() as current_time');
     console.log('✅ 資料庫連線成功 (直接IP)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
+    demoMode = false;
     return pool;
     
   } catch (error2) {
@@ -153,7 +153,7 @@ async function createDatabasePool() {
     
     const testResult = await pool.query('SELECT NOW() as current_time');
     console.log('✅ 資料庫連線成功 (Supabase連線池)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
+    demoMode = false;
     return pool;
     
   } catch (error3) {
@@ -202,7 +202,7 @@ let deliveryEstimationService = null;
     
     const testResult = await pool.query('SELECT NOW() as current_time');
     console.log('✅ 資料庫連線成功 (IP直連)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
+    demoMode = false;
     return pool;
     
   } catch (error3) {
@@ -224,7 +224,7 @@ let deliveryEstimationService = null;
   console.warn('2. 資料庫服務狀態');
   console.warn('3. 網路連線狀況');
   
-  demoMode = true; // 啟用示範模式
+  demoMode = false;
   pool = null; // 設為 null，讓服務知道沒有資料庫連線
   
   console.log('🚀 臨時模式啟動 - 服務將嘗試在背景重新連接資料庫');
@@ -3680,7 +3680,7 @@ app.post('/api/system/refresh-db-status', async (req, res) => {
     
     // 更新demoMode狀態
     const oldDemoMode = demoMode;
-    demoMode = true; // 啟用示範模式 // 強制切換到資料庫模式
+    demoMode = false; // 強制切換到資料庫模式
     
     console.log(`✅ 資料庫連接正常，商品數量: ${productCount}`);
     console.log(`🔄 Demo模式: ${oldDemoMode} → ${demoMode}`);

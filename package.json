@@ -4,7 +4,7 @@
   "description": "蔬果外送資料庫版本系統",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node start.js",
     "test:connection": "node test_render_connection.js",
     "test:local": "DATABASE_URL='postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require' node test_render_connection.js",
     "deploy": "node smart-deploy.js",
@@ -16,7 +16,8 @@
     "auto-deploy": "node safe-deploy.js",
     "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'",
     "universal-deploy": "node universal-deploy.js",
-    "migrate": "node run_migration_via_railway.js"
+    "migrate": "node run_migration_via_railway.js",
+    "dev": "node start.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",

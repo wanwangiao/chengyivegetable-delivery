@@ -155,54 +155,146 @@
     // LIFF ID (需要從環境變數取得)
     const LIFF_ID = '<%= liffId %>';
     
+    async function checkExistingUser() {
+      try {
+        // 檢查 localStorage 是否可用
+        if (typeof(Storage) === "undefined") {
+          console.log('⚠️ 瀏覽器不支援 localStorage，跳過快速登入');
+          return false;
+        }
+
+        // 檢查是否已有用戶資料
+        const existingProfile = localStorage.getItem('lineProfile');
+        if (existingProfile && existingProfile.trim() !== '') {
+          try {
+            const profile = JSON.parse(existingProfile);
+
+            // 驗證資料完整性
+            if (profile && profile.userId && profile.displayName) {
+              console.log('⚡ 發現有效的用戶資料，快速跳轉');
+              console.log('👤 用戶:', profile.displayName, '(ID:', profile.userId, ')');
+
+              // 安全跳轉
+              window.location.href = '/';
+              return true;
+            } else {
+              console.log('⚠️ 用戶資料不完整，清除並重新初始化');
+              localStorage.removeItem('lineProfile');
+            }
+          } catch (parseError) {
+            console.log('🔄 用戶資料格式錯誤，清除並重新初始化:', parseError.message);
+            localStorage.removeItem('lineProfile');
+          }
+        }
+      } catch (error) {
+        console.error('❌ 檢查現有用戶時發生錯誤:', error);
+        // 發生錯誤時安全地清除可能損壞的資料
+        try {
+          localStorage.removeItem('lineProfile');
+        } catch (removeError) {
+          console.error('❌ 清除 localStorage 失敗:', removeError);
+        }
+      }
+
+      return false;
+    }
+
     async function initializeLIFF() {
       try {
         console.log('🔄 初始化 LIFF...');
-        
+
         // 初始化 LIFF
         await liff.init({ liffId: LIFF_ID });
         console.log('✅ LIFF 初始化成功');
-        
+
         if (!liff.isLoggedIn()) {
           console.log('🔐 用戶未登入，開始登入流程');
           liff.login();
           return;
         }
-        
+
         console.log('👤 用戶已登入，取得用戶資訊');
-        
+
         // 取得用戶資訊
         const profile = await liff.getProfile();
         console.log('📱 用戶資訊:', profile);
-        
-        // 顯示用戶資訊
-        document.getElementById('displayName').textContent = profile.displayName;
-        document.getElementById('userId').textContent = profile.userId;
-        document.getElementById('userInfo').style.display = 'block';
-        
-        // 儲存用戶資料到 localStorage，稍後結帳時使用
-        localStorage.setItem('lineProfile', JSON.stringify(profile));
-        
-        console.log('✅ LINE 用戶資料已儲存，稍後結帳時自動使用');
-        
-        // 顯示成功訊息
-        document.getElementById('status').className = 'status success';
-        document.getElementById('status').innerHTML = `
-          ✅ 歡迎，${profile.displayName}！<br>
-          您可以開始購物了
-        `;
-        
-        // 顯示操作按鈕
-        document.getElementById('actions').style.display = 'block';
-        
-        // 2秒後自動跳轉到購物頁面
+
+        // 檢查是否為回訪用戶（加強安全檢查）
+        let isReturningUser = false;
+        try {
+          const existingProfile = localStorage.getItem('lineProfile');
+          if (existingProfile && existingProfile.trim() !== '') {
+            const existingData = JSON.parse(existingProfile);
+            isReturningUser = existingData && existingData.userId === profile.userId;
+          }
+        } catch (error) {
+          console.log('⚠️ 檢查回訪用戶時發生錯誤，當作新用戶處理:', error.message);
+          // 清除可能損壞的資料
+          try {
+            localStorage.removeItem('lineProfile');
+          } catch (removeError) {
+            console.error('❌ 清除損壞資料失敗:', removeError);
+          }
+        }
+
+        if (isReturningUser) {
+          console.log('🎯 回訪用戶，更新資料並立即跳轉');
+          try {
+            // 更新用戶資料
+            localStorage.setItem('lineProfile', JSON.stringify(profile));
+            // 安全跳轉
+            window.location.href = '/';
+            return;
+          } catch (error) {
+            console.error('❌ 儲存回訪用戶資料失敗:', error);
+            // 即使儲存失敗也跳轉，不影響用戶體驗
+            window.location.href = '/';
+            return;
+          }
+        }
+
+        // 新用戶流程 - 安全版本
+        console.log('✨ 新用戶，儲存資料並導向');
+
+        try {
+          // 儲存用戶資料到 localStorage，稍後結帳時使用
+          localStorage.setItem('lineProfile', JSON.stringify(profile));
+          console.log('✅ LINE 用戶資料已儲存');
+        } catch (storageError) {
+          console.error('⚠️ 儲存用戶資料失敗，但不影響購物:', storageError);
+          // 即使儲存失敗也繼續，只是下次無法快速登入
+        }
+
+        // 顯示簡短歡迎訊息（防止用戶困惑）
+        try {
+          document.getElementById('status').className = 'status success';
+          document.getElementById('status').innerHTML = `✅ 歡迎 ${profile.displayName}！`;
+        } catch (uiError) {
+          console.error('⚠️ 更新UI失敗:', uiError);
+        }
+
+        // 安全跳轉（有備援機制）
         setTimeout(() => {
-          window.location.href = '/';
-        }, 2000);
-        
+          try {
+            window.location.href = '/';
+          } catch (redirectError) {
+            console.error('❌ 自動跳轉失敗，顯示手動連結:', redirectError);
+            // 跳轉失敗時顯示手動按鈕
+            try {
+              document.getElementById('status').innerHTML = `
+                跳轉失敗，請點擊下方按鈕：<br>
+                <a href="/" class="btn">🛒 進入購物頁面</a>
+              `;
+              document.getElementById('actions').style.display = 'block';
+            } catch (fallbackError) {
+              console.error('❌ 顯示備援按鈕也失敗:', fallbackError);
+            }
+          }
+        }, 500); // 給用戶 0.5 秒看歡迎訊息
+
       } catch (error) {
         console.error('❌ LIFF 初始化失敗:', error);
-        
+
         document.getElementById('status').className = 'status error';
         document.getElementById('status').innerHTML = `
           ❌ 初始化失敗<br>
@@ -212,34 +304,130 @@
       }
     }
     
-    // 頁面載入時初始化
-    window.addEventListener('DOMContentLoaded', function() {
-      console.log('📱 LIFF 入口頁面已載入');
-      
-      // 檢查是否有 LIFF ID
-      if (!LIFF_ID || LIFF_ID === '') {
-        document.getElementById('status').className = 'status error';
-        document.getElementById('status').innerHTML = `
-          ❌ 設定錯誤<br>
-          <small>LIFF ID 未設定</small><br>
-          <small>請聯繫系統管理員</small>
-        `;
-        return;
+    // 安全初始化函數
+    async function safeInitialize() {
+      try {
+        console.log('📱 LIFF 入口頁面已載入');
+
+        // 檢查是否有 LIFF ID
+        if (!LIFF_ID || LIFF_ID === '' || LIFF_ID === 'undefined') {
+          console.error('❌ LIFF ID 配置錯誤');
+          document.getElementById('status').className = 'status error';
+          document.getElementById('status').innerHTML = `
+            ❌ 設定錯誤<br>
+            <small>LIFF ID 未設定</small><br>
+            <small>請聯繫系統管理員</small><br>
+            <a href="/" class="btn secondary">🏠 回到首頁</a>
+          `;
+          document.getElementById('actions').style.display = 'block';
+          return;
+        }
+
+        // 檢查是否支援 LIFF
+        if (typeof liff === 'undefined') {
+          console.error('❌ LIFF SDK 未載入');
+          document.getElementById('status').className = 'status error';
+          document.getElementById('status').innerHTML = `
+            ❌ 載入錯誤<br>
+            <small>LIFF SDK 未正確載入</small><br>
+            <a href="/" class="btn secondary">🏠 直接進入購物</a>
+          `;
+          document.getElementById('actions').style.display = 'block';
+          return;
+        }
+
+        console.log('🔍 檢查回訪用戶...');
+
+        // 先檢查是否為回訪用戶（優先跳轉）
+        const isExistingUser = await checkExistingUser();
+
+        if (!isExistingUser) {
+          console.log('🔄 進行 LIFF 初始化...');
+          // 如果不是回訪用戶，才進行完整的 LIFF 初始化
+          await initializeLIFF();
+        }
+
+      } catch (error) {
+        console.error('❌ 初始化過程發生嚴重錯誤:', error);
+
+        // 顯示錯誤訊息和備援選項
+        try {
+          document.getElementById('status').className = 'status error';
+          document.getElementById('status').innerHTML = `
+            ❌ 載入失敗<br>
+            <small>${error.message || '未知錯誤'}</small><br>
+            <small>您仍可以直接進入購物</small>
+          `;
+
+          // 提供備援按鈕
+          document.getElementById('actions').innerHTML = `
+            <a href="/" class="btn">🛒 直接進入購物</a>
+            <button class="btn secondary" onclick="location.reload()">🔄 重新載入</button>
+          `;
+          document.getElementById('actions').style.display = 'block';
+
+        } catch (uiError) {
+          console.error('❌ 連錯誤UI都無法顯示:', uiError);
+          // 最後手段：直接跳轉
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        }
       }
-      
-      // 初始化 LIFF
-      initializeLIFF();
-    });
+    }
+
+    // 頁面載入時初始化
+    window.addEventListener('DOMContentLoaded', safeInitialize);
     
-    // 錯誤處理
+    // 全域錯誤處理
     window.addEventListener('error', function(event) {
       console.error('📱 頁面錯誤:', event.error);
-      
-      document.getElementById('status').className = 'status error';
-      document.getElementById('status').innerHTML = `
-        ❌ 載入錯誤<br>
-        <small>請重新整理頁面或聯繫客服</small>
-      `;
+
+      try {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').innerHTML = `
+          ❌ 載入錯誤<br>
+          <small>發生未預期的錯誤</small><br>
+          <a href="/" class="btn secondary">🏠 直接進入購物</a>
+        `;
+        document.getElementById('actions').style.display = 'block';
+      } catch (fallbackError) {
+        console.error('❌ 錯誤處理也失敗，執行緊急跳轉');
+        // 緊急情況：3秒後強制跳轉
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      }
+    });
+
+    // 處理未捕獲的 Promise 錯誤
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('📱 未處理的 Promise 錯誤:', event.reason);
+
+      try {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').innerHTML = `
+          ❌ 服務錯誤<br>
+          <small>LINE 服務暫時不可用</small><br>
+          <a href="/" class="btn secondary">🛒 直接購物</a>
+        `;
+        document.getElementById('actions').style.display = 'block';
+      } catch (fallbackError) {
+        console.error('❌ 無法顯示錯誤訊息，直接跳轉');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      }
+    });
+
+    // 頁面離開前的清理（防止記憶體洩漏）
+    window.addEventListener('beforeunload', function() {
+      try {
+        // 清理可能的計時器或監聽器
+        console.log('🧹 清理頁面資源');
+      } catch (error) {
+        console.error('清理錯誤:', error);
+      }
     });
   </script>
 </body>
