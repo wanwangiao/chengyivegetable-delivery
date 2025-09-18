@@ -169,6 +169,26 @@ async function smartAutoMigration(pool) {
           );
         `);
         migrationResults.push('✅ drivers 表建立成功');
+      } else {
+        // 檢查現有 drivers 表是否有 driver_code 欄位
+        console.log('🔍 檢查 drivers 表 driver_code 欄位...');
+        const driverCodeCheck = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'drivers' AND column_name = 'driver_code'
+        `);
+
+        if (driverCodeCheck.rows.length === 0) {
+          console.log('➕ 新增 driver_code 欄位到現有 drivers 表...');
+          await pool.query(`
+            ALTER TABLE drivers
+            ADD COLUMN IF NOT EXISTS driver_code VARCHAR(50) UNIQUE;
+          `);
+          migrationResults.push('✅ drivers 表 driver_code 欄位新增成功');
+        } else {
+          console.log('✅ drivers 表 driver_code 欄位已存在');
+          migrationResults.push('✅ drivers 表 driver_code 欄位已存在');
+        }
       }
 
       // 插入測試外送員（如果不存在）
