@@ -20,7 +20,7 @@ NODE_ENV = "production"
 PORT = "3000"
 
 # 系統設定
-ADMIN_EMAIL = "shnfred555283@gmail.com" 
+ADMIN_EMAIL = "shnfred555283@gmail.com"
 ADMIN_PASSWORD = "admin123"
 SYSTEM_NAME = "誠憶鮮蔬外送系統"
 
