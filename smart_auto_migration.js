@@ -64,6 +64,35 @@ async function smartAutoMigration(pool) {
         console.log('✅ orders 表鎖定欄位已存在');
         migrationResults.push('✅ orders 表鎖定欄位已存在');
       }
+
+      // 檢查 orders 表是否缺少 order_number 欄位
+      console.log('🔍 檢查 orders 表 order_number 欄位...');
+      const orderNumberCheck = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'order_number'
+      `);
+
+      if (orderNumberCheck.rows.length === 0) {
+        console.log('➕ 新增 order_number 欄位到現有 orders 表...');
+        await pool.query(`
+          ALTER TABLE orders
+          ADD COLUMN IF NOT EXISTS order_number VARCHAR(50) UNIQUE;
+        `);
+
+        // 為現有訂單產生訂單編號
+        console.log('🔄 為現有訂單產生訂單編號...');
+        await pool.query(`
+          UPDATE orders
+          SET order_number = 'ORD' || LPAD(id::text, 6, '0')
+          WHERE order_number IS NULL OR order_number = '';
+        `);
+
+        migrationResults.push('✅ orders 表 order_number 欄位新增成功');
+      } else {
+        console.log('✅ orders 表 order_number 欄位已存在');
+        migrationResults.push('✅ orders 表 order_number 欄位已存在');
+      }
     } catch (error) {
       console.warn('⚠️ orders 鎖定欄位遷移失敗:', error.message);
       migrationResults.push('⚠️ orders 鎖定欄位遷移失敗');
@@ -188,6 +217,26 @@ async function smartAutoMigration(pool) {
         } else {
           console.log('✅ drivers 表 driver_code 欄位已存在');
           migrationResults.push('✅ drivers 表 driver_code 欄位已存在');
+        }
+
+        // 檢查 password_hash 欄位
+        console.log('🔍 檢查 drivers 表 password_hash 欄位...');
+        const passwordHashCheck = await pool.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'drivers' AND column_name = 'password_hash'
+        `);
+
+        if (passwordHashCheck.rows.length === 0) {
+          console.log('➕ 新增 password_hash 欄位到現有 drivers 表...');
+          await pool.query(`
+            ALTER TABLE drivers
+            ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+          `);
+          migrationResults.push('✅ drivers 表 password_hash 欄位新增成功');
+        } else {
+          console.log('✅ drivers 表 password_hash 欄位已存在');
+          migrationResults.push('✅ drivers 表 password_hash 欄位已存在');
         }
       }
 
