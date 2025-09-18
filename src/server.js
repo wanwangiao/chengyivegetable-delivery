@@ -49,8 +49,8 @@ let basicSettingsService = null;
 let demoMode = true; // 啟用示範模式 // 關閉示範模式，使用真實資料庫數據
 
 // 版本資訊 - 用於測試部署
-const DEPLOY_VERSION = 'v2025.09.10.fix - 基本資料管理修復版本';
-const DEPLOY_COMMIT = 'ab1ff89';
+const DEPLOY_VERSION = 'v2025.09.18.optimized - 訂單流程優化與狀態統一版本';
+const DEPLOY_COMMIT = '29089aa';
 
 const app = express(),
       port = process.env.PORT || 3000;
