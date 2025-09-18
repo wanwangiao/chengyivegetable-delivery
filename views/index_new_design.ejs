@@ -1201,14 +1201,9 @@ async function submitCheckoutOrder() {
       
       // 關閉彈窗
       closeCheckoutModal();
-      
-      // 顯示成功訊息並跳轉到訂單確認頁面
-      alert(`✅ 訂單建立成功！\n訂單編號：#${result.orderId}\n即將跳轉到訂單確認頁面...`);
-      
-      // 跳轉到訂單確認頁面
-      setTimeout(() => {
-        window.location.href = `/order-success?id=${result.orderId}`;
-      }, 1500);
+
+      // 直接跳轉到訂單確認頁面
+      window.location.href = `/order-success?id=${result.orderId}`;
     } else {
       // 顯示詳細錯誤資訊
       let errorMessage = `下單失敗: ${result.message}`;
