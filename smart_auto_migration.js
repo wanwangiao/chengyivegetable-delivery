@@ -94,45 +94,15 @@ async function smartAutoMigration(pool) {
         migrationResults.push('✅ orders 表 order_number 欄位已存在');
       }
 
-      // 檢查 orders 表是否缺少 customer_name 欄位
-      console.log('🔍 檢查 orders 表 customer_name 欄位...');
-      const customerNameCheck = await pool.query(`
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = 'orders' AND column_name = 'customer_name'
-      `);
+      // 修復說明：已移除 customer_name 欄位檢查，統一使用 contact_name
+      // 根據資料庫結構分析，標準結構使用 contact_name，不需要 customer_name
+      console.log('✅ 已統一使用 contact_name 欄位 (移除了 customer_name 欄位邏輯)');
+      migrationResults.push('✅ 欄位名稱已統一為 contact_name');
 
-      if (customerNameCheck.rows.length === 0) {
-        console.log('➕ 新增 customer_name 欄位到現有 orders 表...');
-        await pool.query(`
-          ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS customer_name VARCHAR(100);
-        `);
-        migrationResults.push('✅ orders 表 customer_name 欄位新增成功');
-      } else {
-        console.log('✅ orders 表 customer_name 欄位已存在');
-        migrationResults.push('✅ orders 表 customer_name 欄位已存在');
-      }
-
-      // 檢查 orders 表是否缺少 customer_phone 欄位
-      console.log('🔍 檢查 orders 表 customer_phone 欄位...');
-      const customerPhoneCheck = await pool.query(`
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = 'orders' AND column_name = 'customer_phone'
-      `);
-
-      if (customerPhoneCheck.rows.length === 0) {
-        console.log('➕ 新增 customer_phone 欄位到現有 orders 表...');
-        await pool.query(`
-          ALTER TABLE orders
-          ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20);
-        `);
-        migrationResults.push('✅ orders 表 customer_phone 欄位新增成功');
-      } else {
-        console.log('✅ orders 表 customer_phone 欄位已存在');
-        migrationResults.push('✅ orders 表 customer_phone 欄位已存在');
-      }
+      // 修復說明：已移除 customer_phone 欄位檢查，統一使用 contact_phone
+      // 根據資料庫結構分析，標準結構使用 contact_phone，不需要 customer_phone
+      console.log('✅ 已統一使用 contact_phone 欄位 (移除了 customer_phone 欄位邏輯)');
+      migrationResults.push('✅ 電話欄位名稱已統一為 contact_phone');
     } catch (error) {
       console.warn('⚠️ orders 鎖定欄位遷移失敗:', error.message);
       migrationResults.push('⚠️ orders 鎖定欄位遷移失敗');
@@ -315,14 +285,14 @@ async function smartAutoMigration(pool) {
         console.log('➕ 新增測試訂單...');
         await pool.query(`
           INSERT INTO orders (
-              order_number, 
-              customer_name, 
-              customer_phone, 
-              address, 
-              status, 
-              subtotal, 
-              delivery_fee, 
-              total, 
+              order_number,
+              contact_name,
+              contact_phone,
+              address,
+              status,
+              subtotal,
+              delivery_fee,
+              total,
               created_at
           ) VALUES 
           (
