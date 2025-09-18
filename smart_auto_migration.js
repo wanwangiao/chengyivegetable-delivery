@@ -93,6 +93,46 @@ async function smartAutoMigration(pool) {
         console.log('✅ orders 表 order_number 欄位已存在');
         migrationResults.push('✅ orders 表 order_number 欄位已存在');
       }
+
+      // 檢查 orders 表是否缺少 customer_name 欄位
+      console.log('🔍 檢查 orders 表 customer_name 欄位...');
+      const customerNameCheck = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'customer_name'
+      `);
+
+      if (customerNameCheck.rows.length === 0) {
+        console.log('➕ 新增 customer_name 欄位到現有 orders 表...');
+        await pool.query(`
+          ALTER TABLE orders
+          ADD COLUMN IF NOT EXISTS customer_name VARCHAR(100);
+        `);
+        migrationResults.push('✅ orders 表 customer_name 欄位新增成功');
+      } else {
+        console.log('✅ orders 表 customer_name 欄位已存在');
+        migrationResults.push('✅ orders 表 customer_name 欄位已存在');
+      }
+
+      // 檢查 orders 表是否缺少 customer_phone 欄位
+      console.log('🔍 檢查 orders 表 customer_phone 欄位...');
+      const customerPhoneCheck = await pool.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'orders' AND column_name = 'customer_phone'
+      `);
+
+      if (customerPhoneCheck.rows.length === 0) {
+        console.log('➕ 新增 customer_phone 欄位到現有 orders 表...');
+        await pool.query(`
+          ALTER TABLE orders
+          ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20);
+        `);
+        migrationResults.push('✅ orders 表 customer_phone 欄位新增成功');
+      } else {
+        console.log('✅ orders 表 customer_phone 欄位已存在');
+        migrationResults.push('✅ orders 表 customer_phone 欄位已存在');
+      }
     } catch (error) {
       console.warn('⚠️ orders 鎖定欄位遷移失敗:', error.message);
       migrationResults.push('⚠️ orders 鎖定欄位遷移失敗');
