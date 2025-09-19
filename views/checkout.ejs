@@ -71,21 +71,72 @@
       </section>
     </div>
     <script>
-      // 從 localStorage 取得購物車和 LINE 用戶資料
+      // 從 localStorage 取得購物車和用戶資料
       const cart = JSON.parse(localStorage.getItem('cart') || '[]');
       const lineProfile = JSON.parse(localStorage.getItem('lineProfile') || 'null');
-      
-      // 如果有 LINE 用戶資料，自動填入姓名
-      if (lineProfile) {
-        console.log('✅ 檢測到 LINE 用戶資料，自動填入姓名:', lineProfile.displayName);
-        // 等待頁面載入完成後填入資料
-        document.addEventListener('DOMContentLoaded', function() {
+      const savedUserInfo = JSON.parse(localStorage.getItem('userContactInfo') || '{}');
+
+      // 頁面載入完成後自動填入已保存的資料
+      document.addEventListener('DOMContentLoaded', function() {
+        // 自動填入 LINE 用戶姓名
+        if (lineProfile) {
+          console.log('✅ 檢測到 LINE 用戶資料，自動填入姓名:', lineProfile.displayName);
           const nameInput = document.getElementById('name');
           if (nameInput && !nameInput.value) {
             nameInput.value = lineProfile.displayName;
             nameInput.style.backgroundColor = '#e8f5e8'; // 淺綠色背景表示自動填入
           }
-        });
+        }
+
+        // 自動填入已保存的電話和地址
+        if (savedUserInfo.phone) {
+          console.log('✅ 自動填入已保存的電話號碼');
+          const phoneInput = document.getElementById('phone');
+          if (phoneInput && !phoneInput.value) {
+            phoneInput.value = savedUserInfo.phone;
+            phoneInput.style.backgroundColor = '#e8f5e8';
+          }
+        }
+
+        if (savedUserInfo.address) {
+          console.log('✅ 自動填入已保存的地址');
+          const addressInput = document.getElementById('address');
+          if (addressInput && !addressInput.value) {
+            addressInput.value = savedUserInfo.address;
+            addressInput.style.backgroundColor = '#e8f5e8';
+          }
+        }
+
+        // 為表單欄位添加自動保存功能
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+
+        if (phoneInput) {
+          phoneInput.addEventListener('blur', saveUserInfo);
+        }
+        if (addressInput) {
+          addressInput.addEventListener('blur', saveUserInfo);
+        }
+      });
+
+      // 保存用戶聯絡資訊到 localStorage
+      function saveUserInfo() {
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+
+        if (phoneInput && addressInput) {
+          const userInfo = {
+            phone: phoneInput.value.trim(),
+            address: addressInput.value.trim(),
+            lastUpdated: new Date().toISOString()
+          };
+
+          // 只有當資料有效時才保存
+          if (userInfo.phone.match(/^09\d{8}$/) && userInfo.address.length >= 5) {
+            localStorage.setItem('userContactInfo', JSON.stringify(userInfo));
+            console.log('💾 已保存用戶聯絡資訊');
+          }
+        }
       }
       function renderOrder() {
         const orderSection = document.getElementById('order-section');
@@ -244,6 +295,9 @@
         .then(resp => resp.json())
         .then(data => {
           if (data.success) {
+            // 訂單成功，保存用戶聯絡資訊供下次使用
+            saveUserInfo();
+
             localStorage.removeItem('cart');
             document.getElementById('checkout-form').style.display = 'none';
             showMessage(`
