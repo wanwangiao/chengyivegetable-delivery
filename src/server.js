@@ -76,11 +76,11 @@ async function createDatabasePool() {
   console.log('  LINE_CHANNEL_ACCESS_TOKEN:', process.env.LINE_CHANNEL_ACCESS_TOKEN ? '已設定 (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : '未設定');
 
   // Railway 資料庫連線設定
-  const railwayDatabaseUrl = 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@postgres.railway.internal:5432/railway';
-  const localDatabaseUrl = process.env.DATABASE_URL;
+  const railwayInternalUrl = 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@postgres.railway.internal:5432/railway';
+  const railwayExternalUrl = process.env.DATABASE_URL || 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@interchange.proxy.rlwy.net:12902/railway';
 
-  // 優先使用 Railway 生產環境，本地開發則使用環境變數
-  const databaseUrl = process.env.NODE_ENV === 'production' ? railwayDatabaseUrl : localDatabaseUrl;
+  // 生產環境使用內部網路，本地開發使用外部網路
+  const databaseUrl = process.env.NODE_ENV === 'production' ? railwayInternalUrl : railwayExternalUrl;
 
   console.log(`🚂 使用 ${process.env.NODE_ENV === 'production' ? 'Railway 生產環境' : '本地開發'} 資料庫連線`);
 
@@ -4942,9 +4942,9 @@ app.get('/track-order/:id', async (req, res, next) => {
       };
     } else if (pool) {
       const result = await pool.query(`
-        SELECT o.*, c.name as customer_name, c.phone as customer_phone
-        FROM orders o 
-        LEFT JOIN customers c ON o.customer_id = c.id 
+        SELECT o.*, u.name as customer_name, u.phone as customer_phone
+        FROM orders o
+        LEFT JOIN users u ON o.contact_phone = u.phone
         WHERE o.id = $1 AND ($2 IS NULL OR o.contact_phone = $2)
       `, [orderId, phone]);
       
