@@ -5347,8 +5347,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API錯誤處理 (先處理API錯誤)
-app.use('/api/*', apiErrorHandler);
+// API錯誤處理將在所有API路由之後設置
 
 // 頁面錯誤處理
 app.use(pageErrorHandler);
