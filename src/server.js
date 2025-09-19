@@ -4975,6 +4975,80 @@ app.get('/track-order/:id', async (req, res, next) => {
   }
 });
 
+// 通過手機號碼查詢訂單API (供前台訂單查詢彈窗使用)
+app.get('/api/orders/search/:phone', async (req, res) => {
+  try {
+    const phone = req.params.phone;
+
+    // 驗證手機號碼格式
+    const phoneRegex = /^09\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: '請輸入正確的手機號碼格式 (09XXXXXXXX)'
+      });
+    }
+
+    if (demoMode) {
+      // 示範模式：返回模擬訂單資料
+      const mockOrders = [
+        {
+          id: 1001,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivering',
+          total_amount: 350,
+          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
+          notes: '請小心包裝'
+        },
+        {
+          id: 1002,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivered',
+          total_amount: 280,
+          created_at: new Date(Date.now() - 86400000).toISOString(), // 1天前
+          notes: ''
+        }
+      ];
+
+      console.log(`📝 示範模式：返回手機號碼 ${phone} 的模擬訂單`);
+      return res.json({
+        success: true,
+        orders: mockOrders,
+        total: mockOrders.length
+      });
+    }
+
+    // 生產模式：查詢真實資料
+    const result = await pool.query(`
+      SELECT
+        id, contact_name, contact_phone, address,
+        status, total_amount, created_at, notes,
+        subtotal, delivery_fee, payment_method
+      FROM orders
+      WHERE contact_phone = $1
+      ORDER BY created_at DESC
+      LIMIT 10
+    `, [phone]);
+
+    res.json({
+      success: true,
+      orders: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('查詢訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '查詢訂單時發生錯誤，請稍後再試'
+    });
+  }
+});
+
 // 獲取訂單狀態API (供前端使用)
 app.get('/api/orders/:id/status', async (req, res) => {
   try {
@@ -5015,79 +5089,6 @@ app.get('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-// 通過手機號碼查詢訂單API (供前台訂單查詢彈窗使用)
-app.get('/api/orders/search/:phone', async (req, res) => {
-  try {
-    const phone = req.params.phone;
-    
-    // 驗證手機號碼格式
-    const phoneRegex = /^09\d{8}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: '請輸入正確的手機號碼格式 (09XXXXXXXX)' 
-      });
-    }
-    
-    if (demoMode) {
-      // 示範模式：返回模擬訂單資料
-      const mockOrders = [
-        {
-          id: 1001,
-          contact_name: '示範客戶',
-          contact_phone: phone,
-          address: '台北市大安區示範路123號',
-          status: 'delivering',
-          total_amount: 350,
-          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
-          notes: '請小心包裝'
-        },
-        {
-          id: 1002,
-          contact_name: '示範客戶',
-          contact_phone: phone,
-          address: '台北市大安區示範路123號',
-          status: 'delivered',
-          total_amount: 280,
-          created_at: new Date(Date.now() - 86400000).toISOString(), // 1天前
-          notes: ''
-        }
-      ];
-      
-      console.log(`📝 示範模式：返回手機號碼 ${phone} 的模擬訂單`);
-      return res.json({
-        success: true,
-        orders: mockOrders,
-        total: mockOrders.length
-      });
-    }
-    
-    // 生產模式：查詢真實資料
-    const result = await pool.query(`
-      SELECT 
-        id, contact_name, contact_phone, address, 
-        status, total_amount, created_at, notes,
-        subtotal, delivery_fee, payment_method
-      FROM orders 
-      WHERE contact_phone = $1 
-      ORDER BY created_at DESC 
-      LIMIT 10
-    `, [phone]);
-    
-    res.json({
-      success: true,
-      orders: result.rows,
-      total: result.rows.length
-    });
-    
-  } catch (error) {
-    console.error('查詢訂單失敗:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '查詢訂單時發生錯誤，請稍後再試' 
-    });
-  }
-});
 
 // 獲取特定訂單詳情API (供前台訂單查詢彈窗使用)
 app.get('/api/orders/:id/details/:phone', async (req, res) => {
