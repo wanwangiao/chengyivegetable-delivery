@@ -10,9 +10,9 @@ healthcheckTimeout = 300
 restartPolicyType = "always"
 replicas = 1
 
-# 強制重建標記 - 2025-09-19 訂單追蹤修復
+# 強制重建標記 - 2025-09-19 API路由修復
 [variables.rebuild]
-FORCE_REBUILD = "2025-09-19-order-tracking-fix"
+FORCE_REBUILD = "2025-09-19-api-route-fix-v2"
 
 [variables]
 # Node.js 生產環境設定
