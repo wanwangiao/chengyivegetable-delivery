@@ -2,8 +2,8 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// 直接使用Railway DATABASE_URL
-const DATABASE_URL = 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@postgres.railway.internal:5432/railway';
+// 使用Railway提供的公開URL進行本地連接
+const DATABASE_URL = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL || 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@postgres.railway.internal:5432/railway';
 
 console.log('🔧 Railway 資料庫初始化開始...');
 console.log('📡 連接到 Railway PostgreSQL...');
@@ -11,7 +11,7 @@ console.log('📡 連接到 Railway PostgreSQL...');
 // 建立資料庫連接
 const pool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: false, // Railway internal不需要SSL
+    ssl: DATABASE_URL.includes('railway.internal') ? false : { rejectUnauthorized: false }, // 公開連接需要SSL
     connectionTimeoutMillis: 60000,
     idleTimeoutMillis: 30000
 });

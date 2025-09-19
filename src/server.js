@@ -64,7 +64,7 @@ async function createDatabasePool() {
   // 設置 Node.js 環境使用 UTF-8 編碼
   process.env.LC_ALL = 'zh_TW.UTF-8';
   process.env.LANG = 'zh_TW.UTF-8';
-  
+
   console.log('🔧 開始嘗試資料庫連線...');
   console.log('🔍 環境變數檢查:');
   console.log('  DATABASE_URL:', process.env.DATABASE_URL ? '已設定' : '未設定');
@@ -74,162 +74,75 @@ async function createDatabasePool() {
   console.log('  LINE_LIFF_ID:', process.env.LINE_LIFF_ID ? '已設定 (' + process.env.LINE_LIFF_ID + ')' : '未設定');
   console.log('  LINE_CHANNEL_SECRET:', process.env.LINE_CHANNEL_SECRET ? '已設定 (length: ' + process.env.LINE_CHANNEL_SECRET.length + ')' : '未設定');
   console.log('  LINE_CHANNEL_ACCESS_TOKEN:', process.env.LINE_CHANNEL_ACCESS_TOKEN ? '已設定 (length: ' + process.env.LINE_CHANNEL_ACCESS_TOKEN.length + ')' : '未設定');
-  
-  const errors = [];
-  
-  // 方法1: 優先使用環境變數（正確方式）
-  if (process.env.DATABASE_URL) {
-    console.log('方法1: 使用環境變數 DATABASE_URL...');
-    try {
-      pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 60000,
-        idleTimeoutMillis: 30000,
-        max: 5,
-        family: 4,  // 強制使用IPv4，解決家庭網路不支援IPv6問題
-        // 確保資料庫連線使用 UTF-8 編碼
-        options: '--client_encoding=UTF8'
-      });
-      
-      const testResult = await pool.query('SELECT NOW() as current_time');
-      console.log('✅ 資料庫連線成功 (環境變數)', testResult.rows[0]);
-      demoMode = true; // 啟用示範模式
-      return pool;
-      
-    } catch (error1) {
-      console.log('❌ 環境變數連線失敗:', error1.code, error1.message);
-      errors.push({ method: '環境變數', error: error1.message });
-    }
-  } else {
-    console.log('⚠️ DATABASE_URL 環境變數未設定');
-    errors.push({ method: '環境變數', error: 'DATABASE_URL 未設定' });
-  }
-  
-  // 方法2: 直接IP地址連線（專家建議）
-  console.log('方法2: 使用直接IP地址連線...');
-  try {
-    const directIP = SUPABASE_IPv4_MAP['db.cywcuzgbuqmxjxwyrrsp.supabase.co'];
-    console.log(`🔗 嘗試直接連線到 IP: ${directIP}`);
-    
-    pool = new Pool({
-      host: directIP,
-      port: 5432,
-      database: 'postgres',
-      user: 'postgres',
-      password: 'Chengyivegetable2025!',
-      ssl: { 
-        rejectUnauthorized: false,
-        // 因為使用IP而非域名，需要指定servername
-        servername: 'db.cywcuzgbuqmxjxwyrrsp.supabase.co'
-      },
-      connectionTimeoutMillis: 30000,
-      idleTimeoutMillis: 30000,
-      max: 5,
-      family: 4  // 強制IPv4
-    });
-    
-    const testResult = await pool.query('SELECT NOW() as current_time');
-    console.log('✅ 資料庫連線成功 (直接IP)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
-    return pool;
-    
-  } catch (error2) {
-    console.log('❌ 直接IP連線失敗:', error2.code, error2.message);
-    errors.push({ method: '直接IP', error: error2.message });
-  }
-  
-  // 方法3: 使用Supabase標準IPv4池
-  console.log('方法3: 使用Supabase IPv4連線池...');
-  try {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL?.replace('db.cywcuzgbuqmxjxwyrrsp.supabase.co', 'aws-0-us-east-1.pooler.supabase.com'),
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 30000,
-      idleTimeoutMillis: 30000,
-      max: 5,
-      family: 4  // 強制IPv4
-    });
-    
-    const testResult = await pool.query('SELECT NOW() as current_time');
-    console.log('✅ 資料庫連線成功 (Supabase連線池)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
-    return pool;
-    
-  } catch (error3) {
-    console.log('❌ Supabase連線池失敗:', error3.code, error3.message);
-    errors.push({ method: 'Supabase連線池', error: error3.message });
-  }
-  
-  
-  // 方法3: 使用解析的IP地址直接連線
-  console.log('方法3: 使用IP地址直接連線...');
-  try {
-    // 手動解析為IPv4地址
-    const { promisify } = require('util');
 
-// 暫時註解即時通知系統服務導入，避免啟動錯誤
-// const SSENotificationService = require('./services/SSENotificationService');
-// const OrderNotificationService = require('./services/OrderNotificationService');
-// const DriverLocationService = require('./services/DriverLocationService');
-// const DeliveryEstimationService = require('./services/DeliveryEstimationService');
-// const initializeRealtimeRoutes = require('./routes/realtime_api');
+  // Railway 資料庫連線設定
+  const railwayDatabaseUrl = 'postgresql://postgres:bpBeqwyPkeXWwopKSzBYtcAuhesQRqix@postgres.railway.internal:5432/railway';
+  const localDatabaseUrl = process.env.DATABASE_URL;
 
-// 即時通知服務實例
-let sseNotificationService = null;
-let orderNotificationService = null;
-let driverLocationService = null;
-let deliveryEstimationService = null;
-    const resolve4 = promisify(dns.resolve4);
-    const ipAddresses = await resolve4('db.cywcuzgbuqmxjxwyrrsp.supabase.co');
-    const ipAddress = ipAddresses[0]; // 使用第一個IPv4地址
-    
-    console.log(`🔍 解析到IPv4地址: ${ipAddress}`);
-    
+  // 優先使用 Railway 生產環境，本地開發則使用環境變數
+  const databaseUrl = process.env.NODE_ENV === 'production' ? railwayDatabaseUrl : localDatabaseUrl;
+
+  console.log(`🚂 使用 ${process.env.NODE_ENV === 'production' ? 'Railway 生產環境' : '本地開發'} 資料庫連線`);
+
+  try {
+    // SSL 設定：生產環境(Railway internal)不需要SSL，本地開發需要
+    const sslConfig = process.env.NODE_ENV === 'production' ? false : { rejectUnauthorized: false };
+
     pool = new Pool({
-      host: ipAddress,
-      port: 5432,
-      database: 'postgres',
-      user: 'postgres',
-      password: 'Chengyivegetable2025!',
-      ssl: { rejectUnauthorized: false },
+      connectionString: databaseUrl,
+      ssl: sslConfig,
       connectionTimeoutMillis: 60000,
       idleTimeoutMillis: 30000,
       max: 5,
-      // 確保使用IPv4
-      family: 4
+      family: 4,  // 強制使用IPv4
+      // 確保資料庫連線使用 UTF-8 編碼
+      options: '--client_encoding=UTF8'
     });
-    
-    const testResult = await pool.query('SELECT NOW() as current_time');
-    console.log('✅ 資料庫連線成功 (IP直連)', testResult.rows[0]);
-    demoMode = true; // 啟用示範模式
+
+    const testResult = await pool.query('SELECT NOW() as current_time, version() as db_version');
+    console.log('✅ 資料庫連線成功', testResult.rows[0]);
+
+    // 檢查資料庫是否有基本表結構
+    const tableCheck = await pool.query(`
+      SELECT COUNT(*) as table_count
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name IN ('products', 'orders', 'users')
+    `);
+
+    if (parseInt(tableCheck.rows[0].table_count) >= 3) {
+      console.log('✅ 資料庫表結構檢查通過');
+      demoMode = false; // 關閉示範模式，使用真實資料庫
+    } else {
+      console.log('⚠️ 資料庫表結構不完整，啟用示範模式');
+      demoMode = true;
+    }
+
     return pool;
-    
-  } catch (error3) {
-    console.log('❌ IP直連失敗:', error3.code, error3.message);
-    errors.push({ method: 'IP直連', error: error3.message });
+
+  } catch (error) {
+    console.error('❌ 資料庫連線失敗:', error.message);
+    console.error('🔧 錯誤詳情:', {
+      code: error.code,
+      message: error.message,
+      stack: error.stack?.split('\n')[0]
+    });
+
+    // 啟動臨時模式
+    console.warn('⚠️ 資料庫連線失敗，啟動臨時示範模式');
+    console.warn('📋 請檢查：');
+    console.warn('1. Railway 資料庫服務狀態');
+    console.warn('2. 網路連線狀況');
+    console.warn('3. DATABASE_URL 環境變數設定');
+
+    demoMode = true;
+    pool = null;
+
+    console.log('🚀 臨時模式啟動 - 服務將在示範模式下運行');
+    console.log('📌 注意：本地開發無資料庫連線，所有功能將使用示範資料');
+
+    // 返回 null 以表示沒有資料庫連線，但系統可以繼續運行
+    return null;
   }
-  
-  // 記錄所有錯誤
-  console.log('❌ 所有連線方法都失敗了');
-  errors.forEach((err, index) => {
-    console.log(`❌ 錯誤${index + 1} (${err.method}):`, err.error);
-  });
-  
-  // 最後選擇 - 臨時啟動模式（允許服務先啟動，稍後重試資料庫）
-  console.warn('⚠️ 所有資料庫連線方式都失敗');
-  console.warn('🔄 啟動臨時模式 - 服務將正常啟動，但部分功能受限');
-  console.warn('📋 請稍後檢查：');
-  console.warn('1. Railway DATABASE_URL 環境變數設定');
-  console.warn('2. 資料庫服務狀態');
-  console.warn('3. 網路連線狀況');
-  
-  demoMode = true; // 啟用示範模式
-  pool = null; // 設為 null，讓服務知道沒有資料庫連線
-  
-  console.log('🚀 臨時模式啟動 - 服務將嘗試在背景重新連接資料庫');
-  
-  // 不終止程式，讓服務繼續啟動
 }
 
 // 初始化資料庫連線並啟動服務
