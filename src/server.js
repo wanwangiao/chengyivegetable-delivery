@@ -4995,6 +4995,7 @@ console.log('🔧 註冊路由: /api/orders/search/:phone');
 app.get('/api/orders/search/:phone', asyncWrapper(async (req, res) => {
   try {
     const phone = req.params.phone;
+    console.log('🔍 進入搜尋路由處理器，demoMode:', demoMode, 'phone:', phone);
 
     // 驗證手機號碼格式
     const phoneRegex = /^09\d{8}$/;
@@ -5005,6 +5006,7 @@ app.get('/api/orders/search/:phone', asyncWrapper(async (req, res) => {
       });
     }
 
+    console.log('✅ 電話格式驗證通過，檢查模式...');
     if (demoMode) {
       // 示範模式：返回模擬訂單資料
       const mockOrders = [

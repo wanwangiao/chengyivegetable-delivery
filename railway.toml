@@ -10,9 +10,9 @@ healthcheckTimeout = 300
 restartPolicyType = "always"
 replicas = 1
 
-# 強制重建標記 - 2025-09-19 API路由修復
+# 強制重建標記 - 2025-09-20 API路由修復完整版
 [variables.rebuild]
-FORCE_REBUILD = "2025-09-19-api-route-fix-v2"
+FORCE_REBUILD = "2025-09-20-complete-api-fix-v3"
 
 [variables]
 # Node.js 生產環境設定
