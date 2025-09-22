@@ -17,7 +17,7 @@ class CustomerController extends BaseController {
   homePage = async (req, res) => {
     // TODO: 從 server.js 遷移首頁邏輯
     try {
-      res.render('index', { title: '誠憶鮮蔬' });
+      res.render('index_new_design', { title: '誠憶鮮蔬' });
     } catch (error) {
       this.handleError(error, res, '載入首頁');
     }
