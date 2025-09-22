@@ -42,7 +42,7 @@ class LineController extends BaseController {
    */
   connectedPage = (req, res) => {
     try {
-      res.render('line-connected', { title: 'LINE連接成功' });
+      res.render('line_connected', { title: 'LINE連接成功' });
     } catch (error) {
       this.handleError(error, res, '載入LINE連接成功頁面');
     }
@@ -67,7 +67,7 @@ class LineController extends BaseController {
   liffEntryPage = (req, res) => {
     // TODO: 從 server.js 遷移LIFF入口頁面邏輯
     try {
-      res.render('liff-entry', { title: 'LIFF入口' });
+      res.render('liff_entry', { title: 'LIFF入口' });
     } catch (error) {
       this.handleError(error, res, '載入LIFF入口頁面');
     }
