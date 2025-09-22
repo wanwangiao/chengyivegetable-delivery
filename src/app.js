@@ -326,6 +326,7 @@ class VegetableDeliveryApp {
 
     // 訂單API路由
     this.app.post('/api/orders', controllers.order.createOrder);
+    this.app.get('/api/orders/search/:phone', controllers.order.searchOrdersByPhone);
     this.app.get('/api/orders/:id/status', controllers.order.getOrderStatus);
     this.app.put('/api/orders/:orderId/status', this.ensureAdmin, controllers.order.updateOrderStatus);
     this.app.post('/api/orders/:id/cancel', controllers.order.cancelOrder);

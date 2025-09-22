@@ -347,6 +347,33 @@ class OrderController extends BaseController {
       this.handleError(error, res, '獲取訂單列表');
     }
   };
+
+  /**
+   * 根據電話號碼搜尋訂單
+   * GET /api/orders/search/:phone
+   */
+  searchOrdersByPhone = async (req, res) => {
+    try {
+      this.checkDatabaseConnection();
+
+      const phone = req.params.phone;
+
+      const query = `
+        SELECT o.*, d.name as driver_name, d.phone as driver_phone
+        FROM orders o
+        LEFT JOIN drivers d ON o.driver_id = d.id
+        WHERE o.customer_phone = $1
+        ORDER BY o.created_at DESC
+      `;
+
+      const result = await this.pool.query(query, [phone]);
+
+      this.sendSuccess(res, result.rows, '訂單搜尋成功');
+
+    } catch (error) {
+      this.handleError(error, res, '搜尋訂單');
+    }
+  };
 }
 
 module.exports = OrderController;
