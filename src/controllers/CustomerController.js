@@ -15,9 +15,14 @@ class CustomerController extends BaseController {
    * GET /
    */
   homePage = async (req, res) => {
-    // TODO: 從 server.js 遷移首頁邏輯
     try {
-      res.render('index_new_design', { title: '誠憶鮮蔬' });
+      // 獲取商品資料（暫時使用空陣列，避免視圖錯誤）
+      const products = [];
+
+      res.render('index_new_design', {
+        title: '誠憶鮮蔬',
+        products: products
+      });
     } catch (error) {
       this.handleError(error, res, '載入首頁');
     }
