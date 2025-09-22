@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "test:connection": "node test_render_connection.js",
-    "test:local": "DATABASE_URL='postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require' node test_render_connection.js",
+    "test:local": "node test_render_connection.js",
     "deploy": "node smart-deploy.js",
     "deploy-with-message": "node smart-deploy.js",
     "push-and-deploy": "git push && vercel --prod",

@@ -4641,7 +4641,7 @@ app.post('/api/admin/deploy-updates', ensureAdmin, async (req, res) => {
           success: false, 
           message: '資料庫連線失敗，無法執行更新。請檢查網路連線和資料庫設定。',
           demo: true,
-          suggestion: '請稍後再試，或聯繫管理員檢查 Supabase 資料庫狀態。'
+          suggestion: '請稍後再試，或聯繫管理員檢查資料庫狀態。'
         });
       }
     } catch (error) {
