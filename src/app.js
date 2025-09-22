@@ -147,7 +147,7 @@ class VegetableDeliveryApp {
     this.app.set('views', path.join(__dirname, '..', 'views'));
 
     // 效能監控
-    this.app.use('/api', performanceMonitor);
+    // this.app.use('/api', performanceMonitor); // 暫時停用，避免中間件錯誤
 
     // 安全性中間件
     this.app.use(helmet({
