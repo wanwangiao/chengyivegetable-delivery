@@ -65,9 +65,11 @@ class LineController extends BaseController {
    * GET /liff-entry
    */
   liffEntryPage = (req, res) => {
-    // TODO: 從 server.js 遷移LIFF入口頁面邏輯
     try {
-      res.render('liff_entry', { title: 'LIFF入口' });
+      res.render('liff_entry', {
+        title: 'LIFF入口',
+        liffId: process.env.LINE_LIFF_ID || ''
+      });
     } catch (error) {
       this.handleError(error, res, '載入LIFF入口頁面');
     }
