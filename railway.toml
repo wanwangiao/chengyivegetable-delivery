@@ -10,9 +10,9 @@ healthcheckTimeout = 300
 restartPolicyType = "always"
 replicas = 1
 
-# 強制重建標記 - 2025-09-22 架構重構完成
+# 強制重建標記 - 2025-09-22 客戶資料記憶功能部署
 [variables.rebuild]
-FORCE_REBUILD = "2025-09-22-architecture-refactor-complete"
+FORCE_REBUILD = "2025-09-22-customer-data-persistence-deploy"
 
 [variables]
 # Node.js 生產環境設定
