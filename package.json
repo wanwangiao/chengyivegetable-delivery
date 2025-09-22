@@ -1,10 +1,10 @@
 {
   "name": "chengyivegetable-delivery-db",
-  "version": "1.0.1",
-  "description": "蔬果外送資料庫版本系統",
-  "main": "src/server.js",
+  "version": "2.0.0",
+  "description": "蔬果外送系統 - 重構版本",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node start.js",
+    "start": "node src/app.js",
     "test:connection": "node test_render_connection.js",
     "test:local": "DATABASE_URL='postgresql://postgres:Chengyivegetable2025!@db.cywcuzgbuqmxjxwyrrsp.supabase.co:5432/postgres?sslmode=require' node test_render_connection.js",
     "deploy": "node smart-deploy.js",
@@ -17,7 +17,7 @@
     "unsafe-deploy": "node claude-hook-deploy.js '請更新進度記錄並推送部署'",
     "universal-deploy": "node universal-deploy.js",
     "migrate": "node run_migration_via_railway.js",
-    "dev": "node start.js"
+    "dev": "node src/app.js"
   },
   "dependencies": {
     "@line/bot-sdk": "^10.1.2",

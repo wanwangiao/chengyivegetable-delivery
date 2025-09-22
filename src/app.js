@@ -311,6 +311,21 @@ class VegetableDeliveryApp {
     this.app.get('/order-tracking/:id', controllers.order.orderTrackingPage);
     this.app.get('/track-order/:id', controllers.order.trackOrderPage);
 
+
+    // 外送員API路由
+    this.app.get('/api/driver/available-orders', this.ensureDriver, controllers.driver.getAvailableOrders);
+    this.app.get('/api/driver/my-orders', this.ensureDriver, controllers.driver.getMyOrders);
+    this.app.get('/api/driver/stats', this.ensureDriver, controllers.driver.getDriverStats);
+    this.app.post('/api/driver/take-order/:id', this.ensureDriver, controllers.driver.takeOrder);
+    this.app.post('/api/driver/complete-order/:id', this.ensureDriver, controllers.driver.completeOrder);
+
+    // 訂單API路由
+    this.app.post('/api/orders', controllers.order.createOrder);
+    this.app.get('/api/orders/:id/status', controllers.order.getOrderStatus);
+    this.app.put('/api/orders/:orderId/status', this.ensureAdmin, controllers.order.updateOrderStatus);
+    this.app.post('/api/orders/:id/cancel', controllers.order.cancelOrder);
+    this.app.get('/api/orders', this.ensureAdmin, controllers.order.getOrders);
+
     // 載入現有的路由模組 (暫時保留)
     this.app.use('/api/driver', require('./routes/driver_simplified_api').router);
     this.app.use('/api/customer', require('./routes/customer_api'));
@@ -342,6 +357,16 @@ class VegetableDeliveryApp {
       next();
     } else {
       res.redirect('/driver/login');
+    }
+  };
+  /**
+   * 外送員API權限檢查中間件
+   */
+  ensureDriver = (req, res, next) => {
+    if (req.session && req.session.driverId) {
+      next();
+    } else {
+      res.status(401).json({ error: '需要外送員登入' });
     }
   };
 
