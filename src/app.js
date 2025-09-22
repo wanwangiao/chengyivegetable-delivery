@@ -101,13 +101,22 @@ class VegetableDeliveryApp {
       console.log('✅ 資料庫連線成功');
     } catch (error) {
       console.error('❌ 資料庫連線失敗:', error.message);
-      throw error;
+
+      // 在生產環境中，如果初始連線失敗，繼續啟動但標記為降級模式
+      if (process.env.NODE_ENV === 'production') {
+        console.log('⚠️  以降級模式繼續啟動（無資料庫功能）');
+        this.pool = null;
+      } else {
+        throw error;
+      }
     }
 
-    // 設置錯誤處理
-    this.pool.on('error', (err, client) => {
-      console.error('❌ 資料庫連線池發生錯誤:', err);
-    });
+    // 設置錯誤處理（僅當連線池存在時）
+    if (this.pool) {
+      this.pool.on('error', (err, client) => {
+        console.error('❌ 資料庫連線池發生錯誤:', err);
+      });
+    }
   }
 
   /**
