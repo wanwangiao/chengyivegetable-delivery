@@ -1,7 +1,7 @@
 // Google Maps configuration
 const GOOGLE_MAPS_CONFIG = {
     // Google Maps API Key
-    ACCESS_TOKEN: process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE',
+    ACCESS_TOKEN: process.env.GOOGLE_MAPS_API_KEY,
     
     // API 端點
     GEOCODING_URL: 'https://maps.googleapis.com/maps/api/geocode/json',

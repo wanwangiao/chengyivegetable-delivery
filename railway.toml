@@ -20,18 +20,18 @@ NODE_ENV = "production"
 PORT = "3000"
 
 # 系統設定
-ADMIN_EMAIL = "shnfred555283@gmail.com"
-ADMIN_PASSWORD = "admin123"
 SYSTEM_NAME = "誠憶鮮蔬外送系統"
 
-# LINE Bot 設定
-LINE_CHANNEL_ID = "2007891772"
-LINE_CHANNEL_SECRET = "35bc80bb75f95d22a49aaaf8772eef38"
-LINE_CHANNEL_ACCESS_TOKEN = "Rb4HdoTx3gV7skydMOJy4/0xw09IpOc9djST7z5eSEs+CccUAfsdtrPlI3SEEQya+Npz6+OW6B8un+Tfr6sJ6dw3Aab1Y+kLng21ZAXjO0sYYS7ILLzH4ccNVRDh8Xnv3ch0DTDNGT8pc+7bGZjruAdB04t89/1O/w1cDnyilFU="
-LINE_LIFF_ID = "2008130399-z1QXZgma"
-
-# Google Maps API
-GOOGLE_MAPS_API_KEY = "AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE"
+# 注意：敏感資訊請透過 Railway Dashboard 環境變數設置
+# 請在 Railway Dashboard 中設置以下環境變數：
+# ADMIN_EMAIL - 管理員信箱
+# ADMIN_PASSWORD - 管理員密碼
+# SESSION_SECRET - Session 密鑰
+# LINE_CHANNEL_ID - LINE 頻道 ID
+# LINE_CHANNEL_SECRET - LINE 頻道密鑰
+# LINE_CHANNEL_ACCESS_TOKEN - LINE 存取權杖
+# LINE_LIFF_ID - LINE LIFF ID
+# GOOGLE_MAPS_API_KEY - Google Maps API 密鑰
 
 # 資料庫設定（Railway將自動提供）
 # DATABASE_URL - Railway PostgreSQL自動設置

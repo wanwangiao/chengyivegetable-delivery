@@ -12,6 +12,36 @@ const express = require('express'),
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
+// 環境變數安全驗證
+function validateEnvironmentVariables() {
+  const requiredVars = [
+    'DATABASE_URL',
+    'ADMIN_PASSWORD',
+    'SESSION_SECRET'
+  ];
+
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    console.error('❌ 缺少必要的環境變數:');
+    missingVars.forEach(varName => {
+      console.error(`   - ${varName}`);
+    });
+    console.error('請檢查 .env 檔案或環境變數設定');
+    process.exit(1);
+  }
+
+  // Session secret 長度檢查
+  if (process.env.SESSION_SECRET.length < 32) {
+    console.warn('⚠️  SESSION_SECRET 長度不足，建議至少32字元');
+  }
+
+  console.log('✅ 環境變數驗證通過');
+}
+
+// 執行環境變數驗證
+validateEnvironmentVariables();
+
 // Railway PostgreSQL 配置
 
 const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLimiter'),
@@ -345,24 +375,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session配置 - 優化版本
+// Session配置 - 安全強化版本
+const crypto = require('crypto');
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'chengyi-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET, // 移除不安全的預設值
   resave: false,
   saveUninitialized: false,
   rolling: true, // Rolling session - 每次請求重新設定過期時間
   cookie: {
-    secure: false, // 暫時停用 secure 以解決 Vercel 相容性問題
+    secure: process.env.NODE_ENV === 'production', // 生產環境啟用 HTTPS
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7天有效期
-    sameSite: 'lax' // 使用 lax 以提升相容性
+    maxAge: 4 * 60 * 60 * 1000, // 縮短為4小時提升安全性
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' // 生產環境使用更嚴格設定
   },
   // Session存儲配置
   name: 'chengyi.sid', // 自定義session name，增強安全性
-  // 錯誤處理
+  // 安全的 session ID 生成
   genid: () => {
-    const crypto = require('crypto');
-    return crypto.randomBytes(16).toString('hex'); // 更安全的session ID生成
+    return crypto.randomBytes(32).toString('hex'); // 增加至32位元組提升安全性
   }
 }));
 
@@ -942,9 +973,11 @@ app.post('/driver/login', async (req, res) => {
     
     console.log('🚛 外送員登入嘗試:', trimmedPhone);
     
-    // 驗證外送員帳號（這裡可以從資料庫驗證）
-    // 暫時使用預設帳號：手機 0912345678，密碼 driver123
-    if (trimmedPhone === '0912345678' && trimmedPassword === 'driver123') {
+    // 驗證外送員帳號 - 使用環境變數或資料庫驗證
+    const driverPhone = process.env.DEMO_DRIVER_PHONE || '0912345678';
+    const driverPassword = process.env.DEMO_DRIVER_PASSWORD || 'driver123';
+
+    if (trimmedPhone === driverPhone && trimmedPassword === driverPassword) {
       // 成功登入
       const now = new Date();
       req.session.driverId = 1;
@@ -2354,7 +2387,15 @@ app.get('/admin/login', (req, res) => {
 app.post('/admin/login', validateAdminPassword, (req, res) => {
   try {
     const { password } = req.body;
-    const adminPassword = process.env.ADMIN_PASSWORD || 'shnf830629';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    // 安全檢查：確保管理員密碼已設置
+    if (!adminPassword) {
+      console.error('❌ 安全錯誤: ADMIN_PASSWORD 環境變數未設置');
+      return res.status(500).render('admin_login', {
+        error: '系統配置錯誤，請聯繫系統管理員'
+      });
+    }
     
     // 輸入驗證
     if (!password || password.trim().length === 0) {
@@ -4975,6 +5016,87 @@ app.get('/track-order/:id', async (req, res, next) => {
   }
 });
 
+// 測試路由
+app.get('/api/test', (req, res) => {
+  console.log('🧪 測試API被調用');
+  res.json({ message: '測試成功', timestamp: new Date().toISOString() });
+});
+
+// 通過手機號碼查詢訂單API (供前台訂單查詢彈窗使用)
+app.get('/api/orders/search/:phone', async (req, res) => {
+  console.log('🔍 搜索API被調用，手機號碼:', req.params.phone);
+  try {
+    const phone = req.params.phone;
+
+    // 驗證手機號碼格式
+    const phoneRegex = /^09\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: '請輸入正確的手機號碼格式 (09XXXXXXXX)'
+      });
+    }
+
+    if (demoMode) {
+      // 示範模式：返回模擬訂單資料
+      const mockOrders = [
+        {
+          id: 1001,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivering',
+          total_amount: 350,
+          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
+          notes: '請小心包裝'
+        },
+        {
+          id: 1002,
+          contact_name: '示範客戶',
+          contact_phone: phone,
+          address: '台北市大安區示範路123號',
+          status: 'delivered',
+          total_amount: 280,
+          created_at: new Date(Date.now() - 86400000).toISOString(), // 1天前
+          notes: ''
+        }
+      ];
+
+      console.log(`📝 示範模式：返回手機號碼 ${phone} 的模擬訂單`);
+      return res.json({
+        success: true,
+        orders: mockOrders,
+        total: mockOrders.length
+      });
+    }
+
+    // 生產模式：查詢真實資料
+    const result = await pool.query(`
+      SELECT
+        id, contact_name, contact_phone, address,
+        status, total_amount, created_at, notes,
+        subtotal, delivery_fee, payment_method
+      FROM orders
+      WHERE contact_phone = $1
+      ORDER BY created_at DESC
+      LIMIT 10
+    `, [phone]);
+
+    res.json({
+      success: true,
+      orders: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('查詢訂單失敗:', error);
+    res.status(500).json({
+      success: false,
+      message: '查詢訂單時發生錯誤，請稍後再試'
+    });
+  }
+});
+
 // 獲取訂單狀態API (供前端使用)
 app.get('/api/orders/:id/status', async (req, res) => {
   try {
@@ -5012,80 +5134,6 @@ app.get('/api/orders/:id/status', async (req, res) => {
   } catch (error) {
     console.error('獲取訂單狀態失敗:', error);
     res.status(500).json({ error: '服務器錯誤' });
-  }
-});
-
-// 通過手機號碼查詢訂單API (供前台訂單查詢彈窗使用)
-app.get('/api/orders/search/:phone', async (req, res) => {
-  try {
-    const phone = req.params.phone;
-    
-    // 驗證手機號碼格式
-    const phoneRegex = /^09\d{8}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: '請輸入正確的手機號碼格式 (09XXXXXXXX)' 
-      });
-    }
-    
-    if (demoMode) {
-      // 示範模式：返回模擬訂單資料
-      const mockOrders = [
-        {
-          id: 1001,
-          contact_name: '示範客戶',
-          contact_phone: phone,
-          address: '台北市大安區示範路123號',
-          status: 'delivering',
-          total_amount: 350,
-          created_at: new Date(Date.now() - 3600000).toISOString(), // 1小時前
-          notes: '請小心包裝'
-        },
-        {
-          id: 1002,
-          contact_name: '示範客戶',
-          contact_phone: phone,
-          address: '台北市大安區示範路123號',
-          status: 'delivered',
-          total_amount: 280,
-          created_at: new Date(Date.now() - 86400000).toISOString(), // 1天前
-          notes: ''
-        }
-      ];
-      
-      console.log(`📝 示範模式：返回手機號碼 ${phone} 的模擬訂單`);
-      return res.json({
-        success: true,
-        orders: mockOrders,
-        total: mockOrders.length
-      });
-    }
-    
-    // 生產模式：查詢真實資料
-    const result = await pool.query(`
-      SELECT 
-        id, contact_name, contact_phone, address, 
-        status, total_amount, created_at, notes,
-        subtotal, delivery_fee, payment_method
-      FROM orders 
-      WHERE contact_phone = $1 
-      ORDER BY created_at DESC 
-      LIMIT 10
-    `, [phone]);
-    
-    res.json({
-      success: true,
-      orders: result.rows,
-      total: result.rows.length
-    });
-    
-  } catch (error) {
-    console.error('查詢訂單失敗:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '查詢訂單時發生錯誤，請稍後再試' 
-    });
   }
 });
 

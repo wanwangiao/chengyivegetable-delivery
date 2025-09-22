@@ -848,7 +848,11 @@ function generateMockGoogleMapsUrl(orders) {
         return `markers=color:${color}|label:${label}|${lat},${lng}`;
     }).join('&');
     
-    return `https://maps.googleapis.com/maps/api/staticmap?size=800x600&maptype=roadmap&${markers}&key=AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE`;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      throw new Error('GOOGLE_MAPS_API_KEY 環境變數未設置');
+    }
+    return `https://maps.googleapis.com/maps/api/staticmap?size=800x600&maptype=roadmap&${markers}&key=${apiKey}`;
 }
 
 // 生成模擬Google導航URL

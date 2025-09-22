@@ -8,7 +8,7 @@ const axios = require('axios');
 class GoogleMapsService {
   constructor(pool = null) {
     this.name = 'GoogleMapsService';
-    this.apiKey = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBRwW-NMUDGMXaDhvl3oYJs_OqjfXWTTNE';
+    this.apiKey = process.env.GOOGLE_MAPS_API_KEY;
     this.baseUrl = 'https://maps.googleapis.com/maps/api';
     this.pool = pool; // 資料庫連線池
     
