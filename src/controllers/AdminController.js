@@ -16,7 +16,7 @@ class AdminController extends BaseController {
    */
   loginPage = (req, res) => {
     try {
-      res.render('admin-login', { title: '管理員登入' });
+      res.render('admin_login', { title: '管理員登入' });
     } catch (error) {
       this.handleError(error, res, '載入管理員登入頁面');
     }
