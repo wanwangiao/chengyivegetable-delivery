@@ -52,6 +52,15 @@
               <option value="bank_transfer">🏦 銀行轉帳</option>
             </select>
           </div>
+
+          <div class="form-group" style="text-align: center;">
+            <button type="button" id="clear-saved-data" style="background: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 3px; font-size: 12px; cursor: pointer;">
+              🗑️ 清除已保存的個人資料
+            </button>
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+              💡 您的個人資料會被保存以便下次快速填入
+            </p>
+          </div>
           
           <div class="info-box">
             <p>📋 <strong>注意事項：</strong></p>
@@ -71,22 +80,60 @@
       </section>
     </div>
     <script>
-      // 從 localStorage 取得購物車和 LINE 用戶資料
+      // 從 localStorage 取得購物車、LINE 用戶資料和客戶資料
       const cart = JSON.parse(localStorage.getItem('cart') || '[]');
       const lineProfile = JSON.parse(localStorage.getItem('lineProfile') || 'null');
-      
-      // 如果有 LINE 用戶資料，自動填入姓名
-      if (lineProfile) {
-        console.log('✅ 檢測到 LINE 用戶資料，自動填入姓名:', lineProfile.displayName);
-        // 等待頁面載入完成後填入資料
-        document.addEventListener('DOMContentLoaded', function() {
-          const nameInput = document.getElementById('name');
-          if (nameInput && !nameInput.value) {
-            nameInput.value = lineProfile.displayName;
-            nameInput.style.backgroundColor = '#e8f5e8'; // 淺綠色背景表示自動填入
+      const savedCustomerData = JSON.parse(localStorage.getItem('customerData') || 'null');
+
+      // 自動填入已保存的客戶資料
+      document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.getElementById('name');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+
+        // 優先使用 LINE 用戶資料，其次使用保存的客戶資料
+        if (lineProfile && nameInput && !nameInput.value) {
+          console.log('✅ 檢測到 LINE 用戶資料，自動填入姓名:', lineProfile.displayName);
+          nameInput.value = lineProfile.displayName;
+          nameInput.style.backgroundColor = '#e8f5e8'; // 淺綠色背景表示自動填入
+        } else if (savedCustomerData) {
+          console.log('✅ 檢測到已保存的客戶資料，自動填入');
+          if (nameInput && !nameInput.value && savedCustomerData.name) {
+            nameInput.value = savedCustomerData.name;
+            nameInput.style.backgroundColor = '#f0f8ff'; // 淺藍色背景表示來自記憶
           }
-        });
-      }
+          if (phoneInput && !phoneInput.value && savedCustomerData.phone) {
+            phoneInput.value = savedCustomerData.phone;
+            phoneInput.style.backgroundColor = '#f0f8ff';
+          }
+          if (addressInput && !addressInput.value && savedCustomerData.address) {
+            addressInput.value = savedCustomerData.address;
+            addressInput.style.backgroundColor = '#f0f8ff';
+          }
+        }
+
+        // 清除已保存資料的按鈕事件
+        const clearButton = document.getElementById('clear-saved-data');
+        if (clearButton) {
+          clearButton.addEventListener('click', function() {
+            if (confirm('確定要清除已保存的個人資料嗎？')) {
+              localStorage.removeItem('customerData');
+              console.log('✅ 已清除保存的客戶資料');
+
+              // 清空表單並重置背景色
+              document.getElementById('name').value = '';
+              document.getElementById('phone').value = '';
+              document.getElementById('address').value = '';
+              document.getElementById('name').style.backgroundColor = '';
+              document.getElementById('phone').style.backgroundColor = '';
+              document.getElementById('address').style.backgroundColor = '';
+
+              alert('個人資料已清除！');
+            }
+          });
+        }
+      });
+
       function renderOrder() {
         const orderSection = document.getElementById('order-section');
         if (!cart || cart.length === 0) {
@@ -244,6 +291,16 @@
         .then(resp => resp.json())
         .then(data => {
           if (data.success) {
+            // 保存客戶資料到 localStorage（用於下次自動填入）
+            const customerDataToSave = {
+              name: name,
+              phone: phone,
+              address: address,
+              lastOrderDate: new Date().toISOString()
+            };
+            localStorage.setItem('customerData', JSON.stringify(customerDataToSave));
+            console.log('✅ 客戶資料已保存到瀏覽器記憶體');
+
             localStorage.removeItem('cart');
             document.getElementById('checkout-form').style.display = 'none';
             showMessage(`
@@ -251,10 +308,11 @@
               📝 訂單編號：${data.orderId}<br>
               💰 預估金額：${data.data ? '$' + data.data.total : '待確認'}<br>
               ⏰ 預計送達：${data.data ? data.data.estimatedDelivery : '2-3小時內'}<br>
-              📱 我們會透過LINE或電話通知您最新狀態
+              📱 我們會透過LINE或電話通知您最新狀態<br>
+              💾 您的資料已保存，下次訂購將自動填入
             `, 'success');
-            
-            // 3秒後跳轉到首頁
+
+            // 5秒後跳轉到首頁
             setTimeout(() => {
               window.location.href = '/';
             }, 5000);
