@@ -82,7 +82,7 @@ class DriverController extends BaseController {
    */
   dashboard = (req, res) => {
     try {
-      res.render('driver_dashboard_simplified', {
+      res.render('driver_dashboard', {
         title: '外送員儀表板',
         driverName: req.session.driverName || '外送員',
         driver: {
@@ -144,9 +144,13 @@ class DriverController extends BaseController {
    */
   gpsPage = (req, res) => {
     try {
-      res.render('driver_gps', {
+      res.render('driver_dashboard_gps', {
         title: '外送員GPS追蹤',
-        driverName: req.session.driverName || '外送員'
+        driverName: req.session.driverName || '外送員',
+        driver: {
+          name: req.session.driverName || '外送員',
+          id: req.session.driverId
+        }
       });
     } catch (error) {
       this.handleError(error, res, '載入外送員GPS頁面');
