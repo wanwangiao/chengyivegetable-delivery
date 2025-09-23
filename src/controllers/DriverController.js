@@ -85,6 +85,10 @@ class DriverController extends BaseController {
       res.render('driver_dashboard_simplified', {
         title: '外送員儀表板',
         driverName: req.session.driverName || '外送員',
+        driver: {
+          name: req.session.driverName || '外送員',
+          id: req.session.driverId
+        },
         loginTime: req.session.loginTime || new Date()
       });
     } catch (error) {
