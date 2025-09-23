@@ -1163,13 +1163,32 @@ async function submitCheckoutOrder() {
   if (community) {
     fullAddress = `${city}${district}${community}${address}`;
   }
-  
+
+  // 檢查是否有LINE用戶資料（背景綁定）
+  let lineUserId = null;
+  let lineDisplayName = null;
+  try {
+    const lineProfile = localStorage.getItem('lineProfile');
+    if (lineProfile) {
+      const profile = JSON.parse(lineProfile);
+      if (profile && profile.userId) {
+        lineUserId = profile.userId;
+        lineDisplayName = profile.displayName;
+        console.log('🔗 檢測到LINE用戶，將進行背景綁定:', lineDisplayName);
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ 讀取LINE資料失敗，繼續正常訂單流程:', error);
+  }
+
   const orderData = {
     name: name,
     phone: phone,
     address: fullAddress,
     notes: notes,
     paymentMethod: paymentMethod,
+    lineUserId: lineUserId, // 背景傳送LINE ID
+    lineDisplayName: lineDisplayName, // 背景傳送LINE顯示名稱
     items: cart.map(item => ({
       productId: item.productId,
       quantity: item.quantity
