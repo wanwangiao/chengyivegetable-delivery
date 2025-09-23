@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>外送員工作台 - 誠憶鮮蔬</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2196F3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        /* ==================== 第1層：接單管理頁面 ==================== */
+        .layer1-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部15% - 外送員資訊 */
+        .header-section {
+            height: 15vh;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .driver-info h2 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .driver-status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* 主要70% - 可接訂單列表 */
+        .orders-section {
+            height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+            background: white;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .order-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .order-item.selected {
+            border-color: #2196F3;
+            background: #f3f9ff;
+        }
+
+        .order-checkbox {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .order-checkbox.checked {
+            background: #2196F3;
+            border-color: #2196F3;
+            color: white;
+        }
+
+        .order-content {
+            margin-left: 40px;
+        }
+
+        .order-customer {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .order-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2196F3;
+            margin-bottom: 8px;
+        }
+
+        .order-payment {
+            display: inline-block;
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .order-address {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* 底部15% - 訂單欄 */
+        .bottom-section {
+            height: 15vh;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .selected-orders {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .orders-badge {
+            background: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-lock {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-start {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ==================== 第2層：配送執行頁面 ==================== */
+        .layer2-container {
+            height: 100vh;
+            display: none;
+            flex-direction: column;
+        }
+
+        /* 85% - 地圖區域 */
+        .map-section {
+            height: 85vh;
+            background: #e0e0e0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-placeholder {
+            font-size: 18px;
+            color: #666;
+        }
+
+        /* 15% - 配送狀態列 */
+        .delivery-status {
+            height: 15vh;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .current-order {
+            flex: 1;
+        }
+
+        .customer-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .distance-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .delivery-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-problem {
+            background: #ff5722;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .btn-arrived {
+            background: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        /* 訂單詳情彈窗 */
+        .order-details-modal {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .order-details-modal.show {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .detail-icon {
+            width: 40px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .photo-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .photo-input {
+            display: none;
+        }
+
+        .photo-btn {
+            background: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .photo-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .complete-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .btn-complete {
+            background: #4caf50;
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-complete:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 480px) {
+            .header-section {
+                padding: 0 15px;
+            }
+
+            .orders-section {
+                padding: 15px;
+            }
+
+            .bottom-section {
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 第1層：接單管理頁面 -->
+    <div class="layer1-container" id="layer1">
+        <!-- 頂部15% - 外送員資訊 -->
+        <div class="header-section">
+            <div class="driver-info">
+                <h2>👤 <%= driver.name %></h2>
+                <div class="driver-status">🟢 上線中</div>
+            </div>
+            <button class="logout-btn" onclick="logout()">登出</button>
+        </div>
+
+        <!-- 主要70% - 可接訂單列表 -->
+        <div class="orders-section">
+            <div class="section-title">📋 可接訂單</div>
+            <div id="ordersList">
+                <!-- 訂單將通過JavaScript動態載入 -->
+            </div>
+        </div>
+
+        <!-- 底部15% - 訂單欄 -->
+        <div class="bottom-section">
+            <div class="selected-orders">
+                <div class="orders-badge" onclick="showSelectedOrders()">
+                    📦 <span id="selectedCount">0</span> 已選訂單
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-lock" id="lockBtn" onclick="lockOrders()" disabled>鎖定</button>
+                <button class="btn btn-start" id="startBtn" onclick="startDelivery()" disabled>開始配送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第2層：配送執行頁面 -->
+    <div class="layer2-container" id="layer2">
+        <!-- 85% - 地圖區域 -->
+        <div class="map-section">
+            <div class="map-placeholder">🗺️ 地圖導航區域</div>
+        </div>
+
+        <!-- 15% - 配送狀態列 -->
+        <div class="delivery-status" onclick="showOrderDetails()">
+            <div class="current-order">
+                <div class="customer-name" id="currentCustomer">前往：王小明</div>
+                <div class="distance-info" id="distanceInfo">還有 1.2km</div>
+            </div>
+            <div class="delivery-actions">
+                <button class="btn-problem" onclick="reportProblem()">問題回報</button>
+                <button class="btn-arrived" id="arrivedBtn" onclick="markArrived()">已到達</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訂單詳情彈窗 -->
+    <div class="order-details-modal" id="orderModal">
+        <div class="modal-header">
+            <div class="modal-title">📦 訂單詳情</div>
+            <button class="close-btn" onclick="closeOrderDetails()">&times;</button>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-icon">👤</div>
+            <div><strong id="modalCustomerName">王小明</strong> <span id="modalPhone">📞 0912345678</span></div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-icon">📍</div>
+            <div id="modalAddress">三峽區民生街123號</div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-icon">💰</div>
+            <div id="modalAmount">$350 (現金)</div>
+        </div>
+
+        <div class="photo-section">
+            <div style="margin-bottom: 15px; font-weight: 600;">📸 送達拍照</div>
+            <input type="file" class="photo-input" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+            <button class="photo-btn" onclick="document.getElementById('photoInput').click()">拍照上傳</button>
+            <div id="photoStatus" style="font-size: 12px; color: #666;">必須拍照才能完成配送</div>
+            <img id="photoPreview" class="photo-preview" style="display: none;">
+        </div>
+
+        <div class="complete-section">
+            <button class="btn-complete" id="completeBtn" onclick="completeDelivery()" disabled>
+                ❌ 未拍照，無法完成
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let selectedOrders = [];
+        let currentLayer = 1;
+        let isLocked = false;
+        let photoUploaded = false;
+        let currentOrderData = null;
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailableOrders();
+        });
+
+        // 載入可接訂單
+        async function loadAvailableOrders() {
+            try {
+                const response = await fetch('/api/driver/area-orders/all');
+                const data = await response.json();
+
+                if (data.success) {
+                    displayOrders(data.orders || []);
+                }
+            } catch (error) {
+                console.error('載入訂單失敗:', error);
+            }
+        }
+
+        // 顯示訂單列表
+        function displayOrders(orders) {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '';
+
+            orders.forEach((order, index) => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'order-item';
+                orderElement.onclick = () => toggleOrderSelection(order.id);
+
+                orderElement.innerHTML = `
+                    <div class="order-checkbox" id="checkbox-${order.id}">
+                        <span style="display: none;">✓</span>
+                    </div>
+                    <div class="order-content">
+                        <div class="order-customer">${order.customer_name || '客戶' + (index + 1)}</div>
+                        <div class="order-amount">$${order.total_amount || '350'}</div>
+                        <div class="order-payment">${order.payment_method || '現金'}</div>
+                        <div class="order-address">${order.delivery_address || order.customer_address || '地址資訊'}</div>
+                    </div>
+                `;
+
+                ordersList.appendChild(orderElement);
+            });
+        }
+
+        // 切換訂單選擇
+        function toggleOrderSelection(orderId) {
+            const orderElement = document.querySelector(`.order-item[onclick*="${orderId}"]`);
+            const checkbox = document.getElementById(`checkbox-${orderId}`);
+
+            if (selectedOrders.includes(orderId)) {
+                // 取消選擇
+                selectedOrders = selectedOrders.filter(id => id !== orderId);
+                orderElement.classList.remove('selected');
+                checkbox.classList.remove('checked');
+                checkbox.querySelector('span').style.display = 'none';
+            } else {
+                // 選擇訂單
+                selectedOrders.push(orderId);
+                orderElement.classList.add('selected');
+                checkbox.classList.add('checked');
+                checkbox.querySelector('span').style.display = 'block';
+            }
+
+            updateSelectedCount();
+            updateActionButtons();
+        }
+
+        // 更新已選訂單數量
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedOrders.length;
+        }
+
+        // 更新操作按鈕狀態
+        function updateActionButtons() {
+            const lockBtn = document.getElementById('lockBtn');
+            const startBtn = document.getElementById('startBtn');
+
+            if (selectedOrders.length > 0) {
+                lockBtn.disabled = false;
+                if (isLocked) {
+                    lockBtn.textContent = '解除鎖定';
+                    lockBtn.className = 'btn btn-unlock';
+                    startBtn.disabled = false;
+                } else {
+                    lockBtn.textContent = '鎖定';
+                    lockBtn.className = 'btn btn-lock';
+                    startBtn.disabled = true;
+                }
+            } else {
+                lockBtn.disabled = true;
+                startBtn.disabled = true;
+                isLocked = false;
+                lockBtn.textContent = '鎖定';
+                lockBtn.className = 'btn btn-lock';
+            }
+        }
+
+        // 顯示已選訂單
+        function showSelectedOrders() {
+            if (selectedOrders.length === 0) {
+                alert('尚未選擇任何訂單');
+                return;
+            }
+
+            const orderDetails = selectedOrders.map(id => `訂單 ${id}`).join('\n');
+            alert(`已選擇的訂單：\n${orderDetails}`);
+        }
+
+        // 鎖定/解鎖訂單
+        async function lockOrders() {
+            if (selectedOrders.length === 0) return;
+
+            try {
+                const endpoint = isLocked ? '/api/driver/unlock-orders' : '/api/driver/lock-orders';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds: selectedOrders })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    isLocked = !isLocked;
+                    updateActionButtons();
+                    alert(isLocked ? '訂單已鎖定' : '訂單已解鎖');
+                }
+            } catch (error) {
+                console.error('鎖定操作失敗:', error);
+                alert('操作失敗，請重試');
+            }
+        }
+
+        // 開始配送
+        async function startDelivery() {
+            if (selectedOrders.length === 0 || !isLocked) return;
+
+            try {
+                const response = await fetch('/api/driver/batch-accept-orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds: selectedOrders })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // 切換到第2層（配送模式）
+                    switchToLayer2();
+                    // 開始第一個訂單的導航
+                    startFirstOrderNavigation();
+                }
+            } catch (error) {
+                console.error('開始配送失敗:', error);
+                alert('開始配送失敗，請重試');
+            }
+        }
+
+        // 切換到第2層
+        function switchToLayer2() {
+            document.getElementById('layer1').style.display = 'none';
+            document.getElementById('layer2').style.display = 'flex';
+            currentLayer = 2;
+        }
+
+        // 切換到第1層
+        function switchToLayer1() {
+            document.getElementById('layer1').style.display = 'flex';
+            document.getElementById('layer2').style.display = 'none';
+            currentLayer = 1;
+        }
+
+        // 開始第一個訂單導航
+        function startFirstOrderNavigation() {
+            // 模擬導航到第一個訂單
+            document.getElementById('currentCustomer').textContent = '前往：王小明';
+            document.getElementById('distanceInfo').textContent = '還有 1.2km';
+
+            // 這裡可以整合Google Maps API
+            alert('開始導航到第一個客戶：王小明');
+        }
+
+        // 顯示訂單詳情
+        function showOrderDetails() {
+            const modal = document.getElementById('orderModal');
+            modal.classList.add('show');
+
+            // 載入當前訂單詳情
+            document.getElementById('modalCustomerName').textContent = '王小明';
+            document.getElementById('modalPhone').textContent = '📞 0912345678';
+            document.getElementById('modalAddress').textContent = '三峽區民生街123號';
+            document.getElementById('modalAmount').textContent = '$350 (現金)';
+        }
+
+        // 關閉訂單詳情
+        function closeOrderDetails() {
+            const modal = document.getElementById('orderModal');
+            modal.classList.remove('show');
+        }
+
+        // 處理拍照
+        function handlePhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+
+                    photoUploaded = true;
+                    updateCompleteButton();
+
+                    document.getElementById('photoStatus').textContent = '✅ 已拍照，可以完成配送';
+                    document.getElementById('photoStatus').style.color = '#4caf50';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 更新完成按鈕狀態
+        function updateCompleteButton() {
+            const completeBtn = document.getElementById('completeBtn');
+            if (photoUploaded) {
+                completeBtn.disabled = false;
+                completeBtn.textContent = '✅ 完成配送';
+                completeBtn.style.background = '#4caf50';
+            } else {
+                completeBtn.disabled = true;
+                completeBtn.textContent = '❌ 未拍照，無法完成';
+                completeBtn.style.background = '#ccc';
+            }
+        }
+
+        // 完成配送
+        async function completeDelivery() {
+            if (!photoUploaded) {
+                alert('請先拍照再完成配送');
+                return;
+            }
+
+            try {
+                // 這裡上傳照片並完成配送
+                alert('配送完成！照片已自動發送給客戶');
+
+                // 關閉詳情彈窗
+                closeOrderDetails();
+
+                // 檢查是否還有其他訂單
+                if (selectedOrders.length > 1) {
+                    // 開始下一個訂單
+                    startNextOrder();
+                } else {
+                    // 所有訂單完成，回到第1層
+                    alert('所有訂單配送完成！');
+                    resetAndBackToLayer1();
+                }
+
+            } catch (error) {
+                console.error('完成配送失敗:', error);
+                alert('完成配送失敗，請重試');
+            }
+        }
+
+        // 開始下一個訂單
+        function startNextOrder() {
+            // 重置拍照狀態
+            photoUploaded = false;
+            updateCompleteButton();
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('photoStatus').textContent = '必須拍照才能完成配送';
+            document.getElementById('photoStatus').style.color = '#666';
+
+            // 更新當前訂單資訊
+            document.getElementById('currentCustomer').textContent = '前往：李阿姨';
+            document.getElementById('distanceInfo').textContent = '還有 0.8km';
+
+            alert('自動導航到下一位客戶：李阿姨');
+        }
+
+        // 重置並回到第1層
+        function resetAndBackToLayer1() {
+            selectedOrders = [];
+            isLocked = false;
+            photoUploaded = false;
+            updateSelectedCount();
+            updateActionButtons();
+            updateCompleteButton();
+            switchToLayer1();
+            loadAvailableOrders();
+        }
+
+        // 問題回報
+        function reportProblem() {
+            const problems = [
+                '連絡不到客戶',
+                '地址有誤',
+                '其他問題'
+            ];
+
+            const choice = prompt('請選擇問題類型：\n1. ' + problems.join('\n2. '));
+            if (choice) {
+                alert('問題已回報：' + problems[parseInt(choice) - 1]);
+            }
+        }
+
+        // 標記已到達
+        function markArrived() {
+            alert('已標記到達，請展開詳情進行拍照');
+            showOrderDetails();
+        }
+
+        // 登出
+        function logout() {
+            if (confirm('確定要登出嗎？')) {
+                window.location.href = '/driver/logout';
+            }
+        }
+
+        // 阻止頁面滾動
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.orders-section') === null &&
+                e.target.closest('.order-details-modal') === null) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 註冊Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+</body>
+</html>

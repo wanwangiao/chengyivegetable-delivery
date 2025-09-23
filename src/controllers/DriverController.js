@@ -82,8 +82,8 @@ class DriverController extends BaseController {
    */
   dashboard = (req, res) => {
     try {
-      res.render('driver_dashboard', {
-        title: '外送員儀表板',
+      res.render('driver_pwa', {
+        title: '外送員工作台',
         driverName: req.session.driverName || '外送員',
         driver: {
           name: req.session.driverName || '外送員',

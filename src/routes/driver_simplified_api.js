@@ -237,9 +237,9 @@ router.post('/batch-accept-orders', async (req, res) => {
             // 實際資料庫操作
             const placeholders = orderIds.map((_, index) => `$${index + 2}`).join(',');
             const query = `
-                UPDATE orders 
-                SET driver_id = $1, 
-                    status = 'assigned',
+                UPDATE orders
+                SET driver_id = $1,
+                    status = 'delivering',
                     taken_at = NOW()
                 WHERE id IN (${placeholders}) 
                     AND status = 'packed' 
@@ -298,8 +298,8 @@ router.get('/my-orders', async (req, res) => {
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN products p ON oi.product_id = p.id
-                WHERE o.driver_id = $1 
-                    AND o.status = 'assigned'
+                WHERE o.driver_id = $1
+                    AND o.status = 'delivering'
                 GROUP BY o.id
                 ORDER BY o.created_at ASC
             `;
