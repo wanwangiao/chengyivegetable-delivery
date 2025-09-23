@@ -78,86 +78,135 @@ class OrderController extends BaseController {
    */
   createOrder = async (req, res) => {
     try {
-      this.checkDatabaseConnection();
+      const { name, phone, address, notes, paymentMethod, items, lineUserId, lineDisplayName } = req.body;
 
-      const {
-        customer_name,
-        customer_phone,
-        delivery_address,
-        items,
-        total_amount,
-        payment_method,
-        notes
-      } = req.body;
+      if (!name || !phone || !address || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: '參數不完整' });
+      }
 
-      this.validateRequiredFields(req.body, [
-        'customer_name',
-        'customer_phone',
-        'delivery_address',
-        'items',
-        'total_amount'
-      ]);
+      // 檢查是否為示範模式 - 只有明確設為true或auto才啟用
+      const demoMode = process.env.DEMO_MODE === 'true' || process.env.DEMO_MODE === 'auto';
+      console.log('🔧 DEMO_MODE檢查:', process.env.DEMO_MODE, '→ demoMode:', demoMode);
 
-      // 開始交易
-      const client = await this.pool.connect();
+      // 示範模式處理
+      if (demoMode) {
+        console.log('📋 示範模式：模擬訂單建立');
+        const mockOrderId = Math.floor(Math.random() * 9000) + 1000;
 
-      try {
-        await client.query('BEGIN');
+        // 簡化示範商品資料
+        const demoProducts = [
+          { id: 1, name: "高麗菜", price: 40, is_priced_item: false },
+          { id: 2, name: "白蘿蔔", price: 30, is_priced_item: false },
+          { id: 3, name: "紅蘿蔔", price: 25, is_priced_item: false }
+        ];
 
-        // 建立訂單
-        const orderQuery = `
-          INSERT INTO orders (
-            customer_name, customer_phone, delivery_address,
-            total_amount, payment_method, notes, status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())
-          RETURNING id
-        `;
-
-        const orderResult = await client.query(orderQuery, [
-          customer_name,
-          customer_phone,
-          delivery_address,
-          total_amount,
-          payment_method || 'cash',
-          notes || ''
-        ]);
-
-        const orderId = orderResult.rows[0].id;
-
-        // 建立訂單項目
-        for (const item of items) {
-          const itemQuery = `
-            INSERT INTO order_items (
-              order_id, product_id, product_name, quantity,
-              unit_price, total_price
-            ) VALUES ($1, $2, $3, $4, $5, $6)
-          `;
-
-          await client.query(itemQuery, [
-            orderId,
-            item.product_id,
-            item.product_name,
-            item.quantity,
-            item.unit_price,
-            item.total_price
-          ]);
+        // 計算模擬訂單金額
+        let subtotal = 0;
+        for (const it of items) {
+          const { productId, quantity } = it;
+          const product = demoProducts.find(p => p.id == productId);
+          if (product && !product.is_priced_item) {
+            subtotal += Number(product.price) * Number(quantity);
+          }
         }
 
-        await client.query('COMMIT');
+        const deliveryFee = subtotal >= 200 ? 0 : 50;
+        const total = subtotal + deliveryFee;
 
-        console.log(`✅ 新訂單建立成功: ${orderId}`);
-
-        this.sendSuccess(res, {
-          orderId: orderId,
-          message: '訂單建立成功'
+        return res.json({
+          success: true,
+          orderId: mockOrderId,
+          message: '✨ 示範模式：訂單已模擬建立！實際部署後將連接真實資料庫',
+          data: {
+            orderId: mockOrderId,
+            total,
+            estimatedDelivery: '2-3小時內（示範模式）'
+          }
         });
-
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      } finally {
-        client.release();
       }
+
+      // 正常資料庫模式
+      this.checkDatabaseConnection();
+
+      let subtotal = 0;
+      const orderItems = [];
+      for (const it of items) {
+        const { productId, quantity, selectedUnit } = it;
+        const { rows } = await this.pool.query('SELECT * FROM products WHERE id=$1', [productId]);
+        if (rows.length === 0) {
+          continue;
+        }
+        const p = rows[0];
+        let lineTotal = 0;
+        if (!p.is_priced_item) {
+          lineTotal = Number(p.price) * Number(quantity);
+          subtotal += lineTotal;
+        }
+        orderItems.push({
+          product_id: p.id,
+          name: p.name,
+          is_priced_item: p.is_priced_item,
+          quantity: Number(quantity),
+          unit_price: p.price,
+          line_total: lineTotal,
+          actual_weight: null,
+          selectedUnit: selectedUnit || p.unit_hint
+        });
+      }
+
+      const deliveryFee = subtotal >= 200 ? 0 : 50;
+      const total = subtotal + deliveryFee;
+
+      console.log('Creating order with data:', { name, phone, address, notes, paymentMethod, subtotal, deliveryFee, total, lineUserId });
+
+      // 插入訂單
+      const insertOrder = await this.pool.query(
+        'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total, payment_method, status, line_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
+        [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'placed', lineUserId || null]
+      );
+      const orderId = insertOrder.rows[0].id;
+
+      // 處理LINE用戶綁定
+      if (lineUserId && lineDisplayName) {
+        try {
+          const existingUser = await this.pool.query(`
+            SELECT id FROM users WHERE line_user_id = $1
+          `, [lineUserId]);
+
+          if (existingUser.rows.length > 0) {
+            await this.pool.query(`
+              UPDATE users
+              SET phone = $1, name = $2, line_display_name = $3
+              WHERE line_user_id = $4
+            `, [phone, name, lineDisplayName, lineUserId]);
+            console.log(`📱 更新現有 LINE 用戶資料: ${lineDisplayName} (${lineUserId})`);
+          } else {
+            await this.pool.query(`
+              INSERT INTO users (phone, name, line_user_id, line_display_name, created_at)
+              VALUES ($1, $2, $3, $4, NOW())
+            `, [phone, name, lineUserId, lineDisplayName]);
+            console.log(`📱 創建新 LINE 用戶: ${lineDisplayName} (${lineUserId})`);
+          }
+        } catch (userError) {
+          console.warn('⚠️ LINE 用戶資料處理失敗，但訂單已成功創建:', userError.message);
+        }
+      }
+
+      // 插入訂單項目
+      for (const item of orderItems) {
+        await this.pool.query(
+          'INSERT INTO order_items (order_id, product_id, name, is_priced_item, quantity, unit_price, line_total, actual_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+          [orderId, item.product_id, item.name, item.is_priced_item, item.quantity, item.unit_price, item.line_total, item.actual_weight]
+        );
+      }
+
+      console.log(`✅ 新訂單建立成功: ${orderId}`);
+
+      this.sendSuccess(res, {
+        orderId: orderId,
+        total: total,
+        message: '訂單建立成功'
+      });
 
     } catch (error) {
       this.handleError(error, res, '建立訂單');
@@ -372,6 +421,64 @@ class OrderController extends BaseController {
 
     } catch (error) {
       this.handleError(error, res, '搜尋訂單');
+    }
+  };
+
+  /**
+   * 獲取訂單詳情
+   * GET /api/orders/:orderId/details/:phone
+   */
+  getOrderDetails = async (req, res) => {
+    try {
+      this.checkDatabaseConnection();
+
+      const { orderId, phone } = req.params;
+
+      const query = `
+        SELECT
+          o.*,
+          oi.name as product_name,
+          oi.quantity,
+          oi.price,
+          oi.subtotal
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.id = $1 AND o.contact_phone = $2
+        ORDER BY oi.id
+      `;
+
+      const result = await this.pool.query(query, [orderId, phone]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '找不到訂單或訂單不屬於此手機號碼'
+        });
+      }
+
+      // 整理訂單資料
+      const orderData = {
+        id: result.rows[0].id,
+        contact_name: result.rows[0].contact_name,
+        contact_phone: result.rows[0].contact_phone,
+        address: result.rows[0].address,
+        total: result.rows[0].total,
+        payment_method: result.rows[0].payment_method,
+        status: result.rows[0].status,
+        notes: result.rows[0].notes,
+        created_at: result.rows[0].created_at,
+        items: result.rows.map(row => ({
+          product_name: row.product_name,
+          quantity: row.quantity,
+          price: row.price,
+          subtotal: row.subtotal
+        })).filter(item => item.product_name) // 過濾掉空的項目
+      };
+
+      this.sendSuccess(res, orderData, '訂單詳情獲取成功');
+
+    } catch (error) {
+      this.handleError(error, res, '獲取訂單詳情');
     }
   };
 }

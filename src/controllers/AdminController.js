@@ -16,7 +16,10 @@ class AdminController extends BaseController {
    */
   loginPage = (req, res) => {
     try {
-      res.render('admin_login', { title: '管理員登入' });
+      res.render('admin_login', {
+        title: '管理員登入',
+        error: null
+      });
     } catch (error) {
       this.handleError(error, res, '載入管理員登入頁面');
     }
@@ -26,12 +29,56 @@ class AdminController extends BaseController {
    * 管理員登入處理
    * POST /admin/login
    */
-  login = (req, res) => {
-    // TODO: 從 server.js 遷移管理員登入邏輯
+  login = async (req, res) => {
     try {
-      this.sendSuccess(res, { message: '管理員登入功能待實作' });
+      const { password } = req.body;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+
+      // 安全檢查：確保管理員密碼已設置
+      if (!adminPassword) {
+        console.error('❌ 安全錯誤: ADMIN_PASSWORD 環境變數未設置');
+        return res.status(500).render('admin_login', {
+          title: '管理員登入',
+          error: '系統配置錯誤，請聯繫系統管理員'
+        });
+      }
+
+      // 輸入驗證
+      if (!password || password.trim().length === 0) {
+        console.log('❌ 登入失敗: 密碼為空');
+        return res.render('admin_login', {
+          title: '管理員登入',
+          error: '請輸入密碼'
+        });
+      }
+
+      const trimmedPassword = password.trim();
+      console.log('🔐 管理員登入嘗試');
+
+      if (trimmedPassword === adminPassword) {
+        // 成功登入
+        req.session.isAdmin = true;
+        req.session.loginTime = new Date();
+        req.session.lastActivity = new Date();
+        req.session.userAgent = req.get('User-Agent');
+
+        console.log('✅ 管理員登入成功，重導向到 dashboard');
+        return res.redirect('/admin/dashboard');
+      }
+
+      // 密碼錯誤
+      console.log('❌ 管理員登入失敗: 密碼錯誤');
+      res.render('admin_login', {
+        title: '管理員登入',
+        error: '密碼錯誤，請重新輸入'
+      });
+
     } catch (error) {
-      this.handleError(error, res, '管理員登入');
+      console.error('❌ 登入處理錯誤:', error);
+      res.render('admin_login', {
+        title: '管理員登入',
+        error: '系統錯誤，請稍後再試'
+      });
     }
   };
 
@@ -69,9 +116,20 @@ class AdminController extends BaseController {
    * GET /admin/dashboard
    */
   dashboard = async (req, res) => {
-    // TODO: 從 server.js 遷移管理員儀表板邏輯
     try {
-      res.render('admin-dashboard', { title: '管理員儀表板' });
+      // 檢查管理員身份
+      if (!req.session.isAdmin) {
+        return res.redirect('/admin/login');
+      }
+
+      res.render('admin_dashboard', {
+        title: '管理員儀表板',
+        user: {
+          loginTime: req.session.loginTime,
+          lastActivity: req.session.lastActivity
+        },
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+      });
     } catch (error) {
       this.handleError(error, res, '載入管理員儀表板');
     }
@@ -97,7 +155,7 @@ class AdminController extends BaseController {
   ordersPage = async (req, res) => {
     // TODO: 從 server.js 遷移訂單管理頁面邏輯
     try {
-      res.render('admin-orders', { title: '訂單管理' });
+      res.render('admin_orders', { title: '訂單管理' });
     } catch (error) {
       this.handleError(error, res, '載入訂單管理頁面');
     }
@@ -110,7 +168,7 @@ class AdminController extends BaseController {
   productsPage = async (req, res) => {
     // TODO: 從 server.js 遷移商品管理頁面邏輯
     try {
-      res.render('admin-products', { title: '商品管理' });
+      res.render('admin_products', { title: '商品管理' });
     } catch (error) {
       this.handleError(error, res, '載入商品管理頁面');
     }
@@ -123,7 +181,7 @@ class AdminController extends BaseController {
   inventoryPage = async (req, res) => {
     // TODO: 從 server.js 遷移庫存管理頁面邏輯
     try {
-      res.render('admin-inventory', { title: '庫存管理' });
+      res.render('admin_inventory', { title: '庫存管理' });
     } catch (error) {
       this.handleError(error, res, '載入庫存管理頁面');
     }
@@ -136,7 +194,7 @@ class AdminController extends BaseController {
   reportsPage = async (req, res) => {
     // TODO: 從 server.js 遷移報表頁面邏輯
     try {
-      res.render('admin-reports', { title: '報表統計' });
+      res.render('admin_reports', { title: '報表統計' });
     } catch (error) {
       this.handleError(error, res, '載入報表頁面');
     }
@@ -149,7 +207,7 @@ class AdminController extends BaseController {
   deliveryPage = async (req, res) => {
     // TODO: 從 server.js 遷移外送管理頁面邏輯
     try {
-      res.render('admin-delivery', { title: '外送管理' });
+      res.render('admin_delivery_management', { title: '外送管理' });
     } catch (error) {
       this.handleError(error, res, '載入外送管理頁面');
     }
@@ -161,7 +219,7 @@ class AdminController extends BaseController {
    */
   basicSettingsPage = (req, res) => {
     try {
-      res.render('admin-basic-settings', { title: '基本設定' });
+      res.render('admin_basic_settings', { title: '基本設定' });
     } catch (error) {
       this.handleError(error, res, '載入基本設定頁面');
     }
@@ -173,7 +231,7 @@ class AdminController extends BaseController {
    */
   businessHoursPage = (req, res) => {
     try {
-      res.render('admin-business-hours', { title: '營業時間設定' });
+      res.render('admin_business_hours', { title: '營業時間設定' });
     } catch (error) {
       this.handleError(error, res, '載入營業時間設定頁面');
     }
@@ -185,7 +243,7 @@ class AdminController extends BaseController {
    */
   mapPage = (req, res) => {
     try {
-      res.render('admin-map', { title: '地圖監控' });
+      res.render('admin_map', { title: '地圖監控' });
     } catch (error) {
       this.handleError(error, res, '載入地圖監控頁面');
     }
@@ -197,7 +255,7 @@ class AdminController extends BaseController {
    */
   websocketMonitorPage = (req, res) => {
     try {
-      res.render('admin-websocket-monitor', { title: 'WebSocket監控' });
+      res.render('admin_websocket_monitor', { title: 'WebSocket監控' });
     } catch (error) {
       this.handleError(error, res, '載入WebSocket監控頁面');
     }
@@ -209,7 +267,7 @@ class AdminController extends BaseController {
    */
   deliveryAreasPage = (req, res) => {
     try {
-      res.render('admin-delivery-areas', { title: '外送區域設定' });
+      res.render('admin_delivery_areas', { title: '外送區域設定' });
     } catch (error) {
       this.handleError(error, res, '載入外送區域設定頁面');
     }
@@ -222,7 +280,7 @@ class AdminController extends BaseController {
   driverPerformancePage = async (req, res) => {
     // TODO: 從 server.js 遷移外送員效能頁面邏輯
     try {
-      res.render('admin-driver-performance', { title: '外送員效能' });
+      res.render('admin_driver_performance', { title: '外送員效能' });
     } catch (error) {
       this.handleError(error, res, '載入外送員效能頁面');
     }
@@ -234,7 +292,7 @@ class AdminController extends BaseController {
    */
   orderManagementPage = (req, res) => {
     try {
-      res.render('admin-order-management', { title: '訂單管理' });
+      res.render('admin_order_management', { title: '訂單管理' });
     } catch (error) {
       this.handleError(error, res, '載入訂單管理頁面');
     }

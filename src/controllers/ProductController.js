@@ -20,12 +20,9 @@ class ProductController extends BaseController {
 
       const query = `
         SELECT
-          id, name, price, unit, category, available,
-          image_url, description, stock_quantity,
-          size_options, price_history
+          id, name, price, is_priced_item, unit_hint
         FROM products
-        WHERE available = true
-        ORDER BY category, name
+        ORDER BY name
       `;
 
       const result = await this.pool.query(query);
@@ -34,9 +31,7 @@ class ProductController extends BaseController {
       const products = result.rows.map(product => ({
         ...product,
         price: parseFloat(product.price) || 0,
-        stock_quantity: parseInt(product.stock_quantity) || 0,
-        size_options: product.size_options || null,
-        price_history: product.price_history || null
+        unit: product.unit_hint || ''
       }));
 
       this.sendSuccess(res, products, '商品列表獲取成功');

@@ -1373,16 +1373,16 @@ async function searchOrders() {
     const data = await response.json();
     
     if (data.success) {
-      currentOrders = data.orders;
-      
-      if (data.orders.length === 0) {
+      currentOrders = data.data; // 修復：後端返回的數據在data屬性中，不是data.orders
+
+      if (data.data.length === 0) {
         showNoOrdersMessage();
-      } else if (data.orders.length === 1) {
+      } else if (data.data.length === 1) {
         // 只有一筆訂單，直接顯示詳情
-        loadOrderDetails(data.orders[0].id);
+        loadOrderDetails(data.data[0].id);
       } else {
         // 多筆訂單，顯示列表
-        showOrderList(data.orders);
+        showOrderList(data.data);
       }
     } else {
       showError(data.message || '查詢訂單時發生錯誤');
@@ -1457,9 +1457,9 @@ async function loadOrderDetails(orderId) {
   try {
     const response = await fetch(`/api/orders/${orderId}/details/${currentOrderPhone}`);
     const data = await response.json();
-    
+
     if (data.success) {
-      showOrderDetails(data.order);
+      showOrderDetails(data.data); // 修復：後端返回的訂單數據在data屬性中
     } else {
       showError(data.message || '載入訂單詳情時發生錯誤');
     }
