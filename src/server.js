@@ -52,6 +52,7 @@ const { apiLimiter, orderLimiter, loginLimiter } = require('./middleware/rateLim
       { router: driverSimplifiedApiRoutes, setDatabasePool: setDriverSimplifiedDatabasePool } = require('./routes/driver_simplified_api'),
       customerApiRoutes = require('./routes/customer_api'),
       adminReportsApiRoutes = require('./routes/admin_reports_api'),
+      adminRoutes = require('./routes/admin'),
       { router: googleMapsApiRoutes, setDatabasePool: setGoogleMapsDatabasePool } = require('./routes/google_maps_api'),
       { router: googleMapsSecureApiRoutes, setDatabasePool: setGoogleMapsSecureDatabasePool } = require('./routes/google_maps_secure_api'),
       { router: websocketApiRoutes, setWebSocketManager } = require('./routes/websocket_api'),
@@ -544,6 +545,9 @@ app.use('/api/admin/reports', adminReportsApiRoutes);
 // 後台遷移API路由
 const adminMigrationRoutes = require('./routes/admin_migration');
 app.use('/admin/migration', adminMigrationRoutes);
+
+// 管理員主要路由
+app.use('/admin', adminRoutes);
 
 // Google Maps API路由
 app.use('/api/maps', googleMapsApiRoutes);
