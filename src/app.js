@@ -294,10 +294,10 @@ class VegetableDeliveryApp {
     this.app.post('/driver/login', controllers.driver.login);
     this.app.get('/driver/logout', controllers.driver.logout);
     this.app.get('/driver', controllers.driver.driverHome);
-    this.app.get('/driver/dashboard', this.ensureDriverPage, controllers.driver.dashboard);
-    this.app.get('/driver/mobile', this.ensureDriverPage, controllers.driver.mobileDashboard);
-    this.app.get('/driver/chat', this.ensureDriverPage, controllers.driver.chatPage);
-    this.app.get('/driver/dashboard-gps', this.ensureDriverPage, controllers.driver.gpsPage);
+    this.app.get('/driver/dashboard', controllers.driver.ensureDriverPage, controllers.driver.dashboard);
+    this.app.get('/driver/mobile', controllers.driver.ensureDriverPage, controllers.driver.mobileDashboard);
+    this.app.get('/driver/chat', controllers.driver.ensureDriverPage, controllers.driver.chatPage);
+    this.app.get('/driver/dashboard-gps', controllers.driver.ensureDriverPage, controllers.driver.gpsPage);
 
     // LINE路由
     this.app.get('/auth/line/login', controllers.line.loginRedirect);
