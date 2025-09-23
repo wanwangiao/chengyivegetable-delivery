@@ -63,7 +63,7 @@ class DriverController extends BaseController {
         const returnTo = req.session.returnTo;
         delete req.session.returnTo;
 
-        return res.redirect(returnTo || '/driver');
+        return res.redirect(returnTo || '/driver/dashboard');
       }
 
       // 登入失敗
@@ -82,7 +82,7 @@ class DriverController extends BaseController {
    */
   dashboard = (req, res) => {
     try {
-      res.render('driver_dashboard', {
+      res.render('driver_dashboard_simplified', {
         title: '外送員儀表板',
         driverName: req.session.driverName || '外送員',
         loginTime: req.session.loginTime || new Date()
