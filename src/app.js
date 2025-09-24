@@ -88,9 +88,16 @@ class VegetableDeliveryApp {
     const dbConfig = {
       connectionString: process.env.DATABASE_URL,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      max: 10, // 減少最大連接數
+      min: 2,  // 最小連接數
+      idleTimeoutMillis: 60000,  // 增加空閒超時到60秒
+      connectionTimeoutMillis: 20000, // 增加連接超時到20秒
+      acquireTimeoutMillis: 20000,    // 增加獲取連接超時
+      statement_timeout: 30000,       // SQL 語句超時
+      query_timeout: 30000,          // 查詢超時
+      application_name: 'chengyivegetable_production',
+      keepAlive: true,               // 保持連接活躍
+      keepAliveInitialDelayMillis: 10000
     };
 
     this.pool = new Pool(dbConfig);
