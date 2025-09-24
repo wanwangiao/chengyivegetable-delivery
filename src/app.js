@@ -340,6 +340,9 @@ class VegetableDeliveryApp {
     this.app.post('/api/orders/:id/cancel', controllers.order.cancelOrder);
     this.app.get('/api/orders', this.ensureAdmin, controllers.order.getOrders);
 
+    // 資料庫管理路由 (管理員專用)
+    this.app.use('/api/admin', require('./routes/database_init'));
+
     // 載入現有的路由模組 (暫時保留)
     this.app.use('/api/driver', require('./routes/driver_simplified_api').router);
     this.app.use('/api/customer', require('./routes/customer_api'));
