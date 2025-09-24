@@ -186,7 +186,7 @@ router.get('/area-orders/*', async (req, res) => {
                        COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
-                               'product_name', COALESCE(p.name, oi.name, '商品'),
+                               'product_name', COALESCE(p.name, oi.product_name, '商品'),
                                'quantity', oi.quantity,
                                'price', COALESCE(p.price, 0)
                            )
@@ -290,7 +290,7 @@ router.get('/my-orders', async (req, res) => {
                        COALESCE(o.payment_method, 'cash') as payment_method,
                        array_agg(
                            json_build_object(
-                               'product_name', COALESCE(p.name, oi.name, '商品'),
+                               'product_name', COALESCE(p.name, oi.product_name, '商品'),
                                'quantity', oi.quantity,
                                'price', COALESCE(p.price, 0)
                            )
@@ -1668,7 +1668,7 @@ router.post('/area-orders-by-name', async (req, res) => {
                        COALESCE(
                            json_agg(
                                json_build_object(
-                                   'product_name', COALESCE(p.name, oi.name, '商品'),
+                                   'product_name', COALESCE(p.name, oi.product_name, '商品'),
                                    'quantity', oi.quantity,
                                    'price', COALESCE(p.price, 0)
                                )
