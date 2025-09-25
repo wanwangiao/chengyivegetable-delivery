@@ -84,8 +84,8 @@ class OrderController extends BaseController {
         return res.status(400).json({ success: false, message: '參數不完整' });
       }
 
-      // 檢查是否為示範模式 - 只有明確設為true或auto才啟用
-      const demoMode = process.env.DEMO_MODE === 'true' || process.env.DEMO_MODE === 'auto';
+      // 檢查是否為示範模式 - 只有明確設為true才啟用
+      const demoMode = process.env.DEMO_MODE === 'true';
       console.log('🔧 DEMO_MODE檢查:', process.env.DEMO_MODE, '→ demoMode:', demoMode);
 
       // 示範模式處理
