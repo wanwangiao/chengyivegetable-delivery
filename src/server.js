@@ -77,7 +77,7 @@ let priceChangeNotificationService = null;
 let basicSettingsService = null;
 
 // 系統模式設定
-let demoMode = true; // 啟用示範模式 // 關閉示範模式，使用真實資料庫數據
+let demoMode = process.env.DEMO_MODE === 'true'; // 根據環境變數決定是否啟用示範模式
 
 // 版本資訊 - 用於測試部署
 const DEPLOY_VERSION = 'v2025.09.18.optimized - 訂單流程優化與狀態統一版本';
