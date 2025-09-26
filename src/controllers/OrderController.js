@@ -192,12 +192,48 @@ class OrderController extends BaseController {
         }
       }
 
-      // 插入訂單項目
+      // 插入訂單項目並扣減庫存
       for (const item of orderItems) {
+        // 插入訂單項目
         await this.pool.query(
           'INSERT INTO order_items (order_id, product_id, name, is_priced_item, quantity, unit_price, line_total, actual_weight) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
           [orderId, item.product_id, item.name, item.is_priced_item, item.quantity, item.unit_price, item.line_total, item.actual_weight]
         );
+
+        // 扣減庫存（只處理非計價商品）
+        if (!item.is_priced_item && item.quantity > 0) {
+          try {
+            // 檢查是否存在庫存記錄
+            const inventoryCheck = await this.pool.query(
+              'SELECT current_stock FROM inventory WHERE product_id = $1',
+              [item.product_id]
+            );
+
+            if (inventoryCheck.rows.length > 0) {
+              // 更新現有庫存
+              await this.pool.query(
+                'UPDATE inventory SET current_stock = GREATEST(current_stock - $1, 0), last_updated = NOW() WHERE product_id = $2',
+                [item.quantity, item.product_id]
+              );
+            } else {
+              // 創建新的庫存記錄（預設庫存為0）
+              await this.pool.query(
+                'INSERT INTO inventory (product_id, current_stock, min_stock_alert, max_stock_capacity, last_updated, created_at) VALUES ($1, 0, 10, 1000, NOW(), NOW())',
+                [item.product_id]
+              );
+            }
+
+            // 記錄庫存異動
+            await this.pool.query(
+              'INSERT INTO stock_movements (product_id, movement_type, quantity, reason, reference_order_id, operator_name, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+              [item.product_id, 'out', item.quantity, '訂單出貨', orderId, '系統自動']
+            );
+
+            console.log(`📦 商品 ${item.name} 庫存已扣減 ${item.quantity} 個單位`);
+          } catch (inventoryError) {
+            console.warn(`⚠️ 商品 ${item.name} 庫存扣減失敗: ${inventoryError.message}`);
+          }
+        }
       }
 
       console.log(`✅ 新訂單建立成功: ${orderId}`);
