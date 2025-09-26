@@ -715,12 +715,13 @@ function displayOrders(orders) {
                 <td class="amount">$${order.total_amount}</td>
                 <td>
                     <select onchange="updateOrderStatus(${order.id}, this.value)" class="status-select">
-                        <option value="placed" ${order.status === 'placed' ? 'selected' : ''}>新訂單</option>
-                        <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>已確認</option>
-                        <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>準備中</option>
-                        <option value="ready" ${order.status === 'ready' ? 'selected' : ''}>準備完成</option>
+                        <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>待確認</option>
+                        <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>包裝中</option>
+                        <option value="ready" ${order.status === 'ready' ? 'selected' : ''}>包裝完成</option>
                         <option value="delivering" ${order.status === 'delivering' ? 'selected' : ''}>配送中</option>
-                        <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>已完成</option>
+                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>已送達</option>
+                        <option value="problem" ${order.status === 'problem' ? 'selected' : ''}>待解決</option>
+                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>已取消</option>
                     </select>
                 </td>
                 <td>${orderTime}</td>

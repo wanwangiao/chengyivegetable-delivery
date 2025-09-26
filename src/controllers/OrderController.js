@@ -162,7 +162,7 @@ class OrderController extends BaseController {
       // 插入訂單
       const insertOrder = await this.pool.query(
         'INSERT INTO orders (contact_name, contact_phone, address, notes, subtotal, delivery_fee, total, payment_method, status, line_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
-        [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'placed', lineUserId || null]
+        [name, phone, address, notes || '', subtotal, deliveryFee, total, paymentMethod || 'cash', 'pending', lineUserId || null]
       );
       const orderId = insertOrder.rows[0].id;
 
@@ -290,7 +290,7 @@ class OrderController extends BaseController {
       const orderId = req.params.orderId;
       const { status, notes } = req.body;
 
-      const validStatuses = ['pending', 'confirmed', 'assigned', 'picked_up', 'delivering', 'delivered', 'cancelled'];
+      const validStatuses = ['pending', 'preparing', 'ready', 'delivering', 'delivered', 'problem', 'cancelled'];
 
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ error: '無效的訂單狀態' });

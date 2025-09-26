@@ -92,7 +92,7 @@ router.get('/order-counts', async (req, res) => {
                     END as area,
                     COUNT(*) as count
                 FROM orders 
-                WHERE status = 'packed' 
+                WHERE status = 'ready' 
                     AND driver_id IS NULL
                     AND address NOT LIKE '%其他%'
                 GROUP BY 1
@@ -194,7 +194,7 @@ router.get('/area-orders/*', async (req, res) => {
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN products p ON oi.product_id = p.id
-                WHERE o.status = 'packed' 
+                WHERE o.status = 'ready' 
                     AND o.driver_id IS NULL 
                     AND ${areaCondition}
                 GROUP BY o.id, o.total_amount, o.total, o.payment_method
@@ -242,7 +242,7 @@ router.post('/batch-accept-orders', async (req, res) => {
                     status = 'delivering',
                     taken_at = NOW()
                 WHERE id IN (${placeholders}) 
-                    AND status = 'packed' 
+                    AND status = 'ready' 
                     AND driver_id IS NULL
                 RETURNING id
             `;
@@ -332,11 +332,11 @@ router.post('/remove-order/:orderId', async (req, res) => {
             const query = `
                 UPDATE orders 
                 SET driver_id = NULL, 
-                    status = 'packed',
+                    status = 'ready',
                     taken_at = NULL
                 WHERE id = $1 
                     AND driver_id = $2
-                    AND status = 'assigned'
+                    AND status = 'delivering'
                 RETURNING id
             `;
             
@@ -454,7 +454,7 @@ router.post('/complete-order/:orderId', async (req, res) => {
                     completed_at = NOW()
                 WHERE id = $1 
                     AND driver_id = $2
-                    AND status = 'assigned'
+                    AND status = 'delivering'
                 RETURNING id, customer_name, customer_phone
             `;
             
@@ -1678,7 +1678,7 @@ router.post('/area-orders-by-name', async (req, res) => {
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN products p ON oi.product_id = p.id
-                WHERE o.address LIKE $1 AND o.status = 'packed' AND o.driver_id IS NULL
+                WHERE o.address LIKE $1 AND o.status = 'ready' AND o.driver_id IS NULL
                 GROUP BY o.id, o.contact_name, o.customer_name, o.contact_phone, o.customer_phone, o.address, o.delivery_fee, o.total_amount, o.total, o.payment_method, o.created_at
                 ORDER BY o.created_at DESC
             `, [`%${area}%`]);
@@ -1850,7 +1850,7 @@ async function processOfflineOrderCompletion(taskId, orderId, payload) {
         const result = await db.query(`
             UPDATE orders 
             SET status = 'delivered', completed_at = NOW()
-            WHERE id = $1 AND driver_id = $2 AND status = 'assigned'
+            WHERE id = $1 AND driver_id = $2 AND status = 'delivering'
             RETURNING id, customer_name, customer_phone
         `, [orderId, driverId]);
         

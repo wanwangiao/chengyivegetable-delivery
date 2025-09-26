@@ -790,11 +790,11 @@
 
     // 快速更新訂單狀態
     async function updateOrderStatus(orderId) {
-      const newStatus = prompt('請選擇新狀態:\n1. preparing (準備中)\n2. ready (包裝完成)\n3. delivering (配送中)\n4. completed (已完成)', 'ready');
+      const newStatus = prompt('請選擇新狀態:\n1. pending (待確認)\n2. preparing (包裝中)\n3. ready (包裝完成)\n4. delivering (配送中)\n5. delivered (已送達)\n6. problem (待解決)\n7. cancelled (已取消)', 'preparing');
       
       if (!newStatus) return;
       
-      const validStatuses = ['preparing', 'ready', 'delivering', 'completed'];
+      const validStatuses = ['pending', 'preparing', 'ready', 'delivering', 'delivered', 'problem', 'cancelled'];
       if (!validStatuses.includes(newStatus)) {
         alert('無效的狀態！');
         return;

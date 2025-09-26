@@ -44,8 +44,11 @@ class OrderNotificationHook {
    * @param {string} newStatus - 新狀態
    */
   shouldSendNotification(oldStatus, newStatus) {
-    // 在狀態變更為 "packed" (包裝完成) 或 "ready" 時發送通知
-    return newStatus === 'packed' || newStatus === 'ready';
+    // 在狀態變更為以下狀態時發送通知：
+    // - ready: 包裝完成，發送包含付款連結的通知
+    // - delivering: 開始配送，發送配送中通知
+    // - delivered: 已送達，發送送達確認通知
+    return newStatus === 'ready' || newStatus === 'delivering' || newStatus === 'delivered';
   }
   
   /**
@@ -58,33 +61,33 @@ class OrderNotificationHook {
     try {
       let order = orderData;
       let orderItems = [];
-      
+
       // 如果沒有提供訂單數據，則查詢資料庫（包含付款方式）
       if (!order) {
         const orderResult = await this.pool.query(`
-          SELECT o.*, u.line_user_id 
+          SELECT o.*, u.line_user_id
           FROM orders o
           LEFT JOIN users u ON o.contact_phone = u.phone
           WHERE o.id = $1
         `, [orderId]);
-        
+
         if (orderResult.rows.length === 0) {
           console.warn(`⚠️ 找不到訂單 #${orderId}`);
           return;
         }
-        
+
         order = orderResult.rows[0];
-        
+
         // 查詢訂單項目
         const itemsResult = await this.pool.query(`
           SELECT * FROM order_items WHERE order_id = $1 ORDER BY id
         `, [orderId]);
-        
+
         orderItems = itemsResult.rows;
       } else {
         // 使用提供的訂單數據（示範模式或已有資料）
         console.log(`📝 使用提供的訂單數據 (示範模式): 訂單 #${orderId}`);
-        
+
         // 創建示範訂單項目
         orderItems = [
           {
@@ -105,23 +108,35 @@ class OrderNotificationHook {
           }
         ];
       }
-      
-      // 處理包裝完成 (packed/ready) 狀態的通知
-      if (status !== 'packed' && status !== 'ready') {
-        console.log(`📱 狀態 ${status} 不需要發送通知`);
-        return;
+
+      let result;
+
+      // 根據不同狀態發送對應的通知
+      switch (status) {
+        case 'ready':
+          // 發送包裝完成通知（包含付款連結）
+          result = await this.lineBotService.sendPackagingCompleteNotification(order, orderItems);
+          break;
+        case 'delivering':
+          // 發送配送中通知
+          result = await this.sendDeliveringNotification(order, orderItems);
+          break;
+        case 'delivered':
+          // 發送已送達通知
+          result = await this.sendDeliveredNotification(order, orderItems);
+          break;
+        default:
+          console.log(`📱 狀態 ${status} 不需要發送通知`);
+          return;
       }
-      
-      // 發送包裝完成通知（包含付款連結）
-      const result = await this.lineBotService.sendPackagingCompleteNotification(order, orderItems);
-      
+
       // 記錄發送結果
       if (result.success) {
         console.log(`✅ 訂單 #${orderId} ${status} 通知發送成功`);
       } else {
         console.warn(`⚠️ 訂單 #${orderId} ${status} 通知發送失敗:`, result.reason || result.error);
       }
-      
+
     } catch (error) {
       console.error(`❌ 發送訂單 #${orderId} 通知失敗:`, error);
     }
