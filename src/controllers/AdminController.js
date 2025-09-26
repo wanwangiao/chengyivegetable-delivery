@@ -288,13 +288,19 @@ class AdminController extends BaseController {
       const inventoryQuery = await this.pool.query(`
         SELECT
           p.*,
-          COALESCE(p.stock_quantity, 0) as stock_quantity,
+          COALESCE(i.current_stock, 0) as stock_quantity,
+          i.min_stock_alert,
+          i.max_stock_capacity,
+          i.unit_cost,
+          i.supplier_name,
+          i.supplier_phone,
           CASE
-            WHEN p.stock_quantity <= 10 THEN 'low'
-            WHEN p.stock_quantity <= 50 THEN 'medium'
+            WHEN COALESCE(i.current_stock, 0) <= COALESCE(i.min_stock_alert, 10) THEN 'low'
+            WHEN COALESCE(i.current_stock, 0) <= 50 THEN 'medium'
             ELSE 'high'
           END as stock_level
         FROM products p
+        LEFT JOIN inventory i ON p.id = i.product_id
         ORDER BY p.name
       `);
 
