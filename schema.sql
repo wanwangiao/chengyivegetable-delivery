@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_method TEXT DEFAULT 'cash',
   status TEXT NOT NULL DEFAULT 'placed',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  cancelled_at TIMESTAMP,
+  cancel_reason TEXT,
+  driver_id INTEGER,
+  line_user_id TEXT,
   -- 新增座標欄位與地理資料狀態
   lat NUMERIC,
   lng NUMERIC,

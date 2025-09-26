@@ -437,10 +437,10 @@ class OrderController extends BaseController {
       const query = `
         SELECT
           o.*,
-          oi.product_name,
+          oi.name as product_name,
           oi.quantity,
-          oi.price,
-          (oi.quantity * oi.price) as subtotal
+          oi.unit_price as price,
+          oi.line_total as subtotal
         FROM orders o
         LEFT JOIN order_items oi ON o.id = oi.order_id
         WHERE o.id = $1 AND o.contact_phone = $2
