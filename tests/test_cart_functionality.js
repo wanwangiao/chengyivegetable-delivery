@@ -1,102 +1,102 @@
-const puppeteer = require('puppeteer');
+﻿const puppeteer = require('puppeteer');
 
 async function testCartFunctionality() {
-    console.log('🛒 開始測試購物車功能...\n');
+    console.log('?? ??皜祈岫鞈潛頠???..\n');
     
     const browser = await puppeteer.launch({ 
-        headless: false,  // 顯示瀏覽器以便觀察
+        headless: false,  // 憿舐內?汗?其誑靘輯?撖?
         defaultViewport: { width: 1200, height: 800 }
     });
     
     const page = await browser.newPage();
     
     try {
-        // 1. 導航到網站
-        console.log('📱 導航到誠憶鮮蔬網站...');
-        await page.goto('https://chengyivegetable.vercel.app', { 
+        // 1. 撠?啁雯蝡?
+        console.log('? 撠?啗??園悅?祉雯蝡?..');
+        await page.goto('https://chengyivegetable-production-7b4a.up.railway.app', { 
             waitUntil: 'networkidle2',
             timeout: 10000 
         });
         
-        // 等待頁面載入
+        // 蝑??頛
         await page.waitForTimeout(3000);
         
-        // 2. 檢查購物車圖標是否存在
-        console.log('🔍 檢查購物車圖標...');
+        // 2. 瑼Ｘ鞈潛頠?璅?血???
+        console.log('?? 瑼Ｘ鞈潛頠?璅?..');
         const cartIcon = await page.$('.cart-icon, #cart-icon, [class*="cart"]');
         if (cartIcon) {
-            console.log('✅ 購物車圖標存在');
+            console.log('??鞈潛頠?璅???);
         } else {
-            console.log('❌ 未找到購物車圖標');
+            console.log('???芣?啗頃?抵???');
         }
         
-        // 3. 尋找產品並測試添加到購物車
-        console.log('🥬 尋找可用產品...');
+        // 3. 撠?Ｗ?銝行葫閰行溶?鞈潛頠?
+        console.log('?布 撠?舐?Ｗ?...');
         
-        // 等待產品載入
+        // 蝑??Ｗ?頛
         await page.waitForSelector('.product-item, .product-card, [class*="product"]', { timeout: 10000 });
         
-        // 取得所有產品
+        // ??????
         const products = await page.$$('.product-item, .product-card, [class*="product"]');
-        console.log(`📦 找到 ${products.length} 個產品`);
+        console.log(`? ?曉 ${products.length} ??);
         
         if (products.length > 0) {
-            // 4. 測試添加第一個產品到購物車
-            console.log('➕ 嘗試添加第一個產品到購物車...');
+            // 4. 皜祈岫瘛餃?蝚砌???鞈潛頠?
+            console.log('???岫瘛餃?蝚砌???鞈潛頠?..');
             
-            // 查找"加入購物車"按鈕
+            // ?交"?鞈潛頠???
             const addToCartBtn = await page.$('button[onclick*="addToCart"], .add-to-cart, [class*="add-cart"]');
             
             if (addToCartBtn) {
                 await addToCartBtn.click();
-                console.log('✅ 成功點擊加入購物車按鈕');
+                console.log('????暺??鞈潛頠???);
                 
-                // 等待一下讓動畫完成
+                // 蝑?銝銝??摰?
                 await page.waitForTimeout(2000);
                 
-                // 5. 檢查購物車是否有數量顯示
+                // 5. 瑼Ｘ鞈潛頠?行??賊?憿舐內
                 const cartCount = await page.$('.cart-count, .cart-quantity, [class*="cart-num"]');
                 if (cartCount) {
                     const count = await cartCount.textContent();
-                    console.log(`✅ 購物車顯示數量: ${count}`);
+                    console.log(`??鞈潛頠＊蝷箸?? ${count}`);
                 }
                 
             } else {
-                console.log('❌ 未找到加入購物車按鈕');
+                console.log('???芣?啣??亥頃?抵???');
             }
         }
         
-        // 6. 測試打開購物車
-        console.log('🛒 嘗試打開購物車...');
+        // 6. 皜祈岫??鞈潛頠?
+        console.log('?? ?岫??鞈潛頠?..');
         if (cartIcon) {
             await cartIcon.click();
             await page.waitForTimeout(2000);
             
-            // 檢查購物車面板是否出現
+            // 瑼Ｘ鞈潛頠?踵?血??
             const cartModal = await page.$('.cart-modal, .shopping-cart, [class*="cart-panel"]');
             if (cartModal) {
-                console.log('✅ 購物車面板成功打開');
+                console.log('??鞈潛頠?踵?????);
                 
-                // 7. 檢查購物車內容
+                // 7. 瑼Ｘ鞈潛頠摰?
                 const cartItems = await page.$$('.cart-item, [class*="cart-product"]');
-                console.log(`📋 購物車中有 ${cartItems.length} 個項目`);
+                console.log(`?? 鞈潛頠葉??${cartItems.length} ???害);
                 
             } else {
-                console.log('❌ 購物車面板未打開');
+                console.log('??鞈潛頠?踵??');
             }
         }
         
-        // 8. 截圖保存測試結果
+        // 8. ?芸?靽?皜祈岫蝯?
         await page.screenshot({ path: 'cart_test_screenshot.png', fullPage: true });
-        console.log('📸 已保存測試截圖: cart_test_screenshot.png');
+        console.log('? 撌脖?摮葫閰行?? cart_test_screenshot.png');
         
     } catch (error) {
-        console.error('❌ 測試過程中發生錯誤:', error.message);
+        console.error('??皜祈岫??銝剔?隤?', error.message);
     }
     
-    console.log('\n🏁 購物車功能測試完成');
+    console.log('\n?? 鞈潛頠??賣葫閰血???);
     await browser.close();
 }
 
-// 執行測試
+// ?瑁?皜祈岫
 testCartFunctionality().catch(console.error);
