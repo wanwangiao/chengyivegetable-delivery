@@ -1,0 +1,99 @@
+import { randomUUID } from 'node:crypto';
+import type { Order, OrderStatus } from '@chengyi/domain';
+import { OrderEntity, OrderSchema } from '@chengyi/domain';
+import type { OrderRepository } from '../infrastructure/prisma/order.repository';
+import { createOrderStatusChangedEvent } from '@chengyi/domain';
+import { eventBus } from '@chengyi/lib';
+
+export class OrderService {
+  constructor(private readonly repository: OrderRepository) {}
+
+  async list(): Promise<Order[]> {
+    return await this.repository.list();
+  }
+
+  async findById(id: string): Promise<Order | null> {
+    return await this.repository.findById(id);
+  }
+
+  async searchByPhone(phone: string): Promise<Order[]> {
+    return await this.repository.findByPhone(phone);
+  }
+
+  async getHistory(id: string) {
+    const history = await this.repository.getStatusHistory(id);
+    return history.map(entry => ({
+      status: entry.status,
+      note: entry.note ?? undefined,
+      changedAt: entry.changedAt
+    }));
+  }
+
+  async create(input: Omit<Order, 'id' | 'status'>): Promise<Order> {
+    const order = OrderSchema.parse({
+      ...input,
+      id: randomUUID(),
+      status: 'pending'
+    });
+
+    const saved = await this.repository.create(order);
+
+    eventBus.emit('order.created', {
+      orderId: saved.id,
+      payload: saved
+    });
+
+    return saved;
+  }
+
+  async updateStatus(
+    id: string,
+    status: OrderStatus,
+    reason?: string,
+    actor?: { sub: string; role: string }
+  ): Promise<Order> {
+    const current = await this.repository.findById(id);
+    if (!current) {
+      throw new Error('Order not found');
+    }
+
+    const entity = new OrderEntity(current);
+    if (!entity.canTransitionTo(status)) {
+      throw new Error(`Invalid transition from ${current.status} to ${status}`);
+    }
+
+    let driverIdToSet: string | undefined | null = undefined;
+
+    if (actor?.role === 'DRIVER') {
+      const driverId = actor.sub;
+      const alreadyAssignedToDriver = current.driverId === driverId;
+      const assignedToAnotherDriver = current.driverId && current.driverId !== driverId;
+
+      if (assignedToAnotherDriver) {
+        throw new Error('ORDER_ALREADY_CLAIMED');
+      }
+
+      const isClaimingFlow = ['delivering', 'delivered'].includes(status);
+      if (!alreadyAssignedToDriver && isClaimingFlow) {
+        driverIdToSet = driverId;
+      } else if (!alreadyAssignedToDriver) {
+        throw new Error('ORDER_NOT_ASSIGNED_TO_DRIVER');
+      }
+    }
+
+    if (actor?.role === 'ADMIN' && status === 'pending') {
+      driverIdToSet = null;
+    }
+
+    const updated = await this.repository.updateStatus(id, status, reason, driverIdToSet);
+
+    eventBus.emit('order.status-changed', createOrderStatusChangedEvent({
+      orderId: id,
+      previousStatus: current.status,
+      newStatus: status,
+      reason
+    }));
+
+    return updated;
+  }
+}

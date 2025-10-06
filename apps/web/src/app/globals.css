@@ -1,0 +1,237 @@
+:root {
+  color-scheme: light dark;
+  font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+body {
+  margin: 0;
+  background: #f6f8f9;
+  color: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+}
+
+.legacy-home {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
+  color: #2d4a3a;
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+}
+
+.legacy-home .store-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.legacy-home .search-area {
+  margin-top: 1.5rem;
+}
+
+.legacy-home .search-box {
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.legacy-home .search-input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(124, 179, 66, 0.3);
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 18px rgba(45, 90, 61, 0.08);
+  transition: all 0.2s ease;
+}
+
+.legacy-home .search-input:focus {
+  outline: none;
+  border-color: #7cb342;
+  box-shadow: 0 8px 20px rgba(124, 179, 66, 0.18);
+}
+
+.legacy-home .search-clear {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: rgba(124, 179, 66, 0.18);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #2d5a3d;
+  cursor: pointer;
+}
+
+.legacy-home .products-section {
+  margin-top: 1.5rem;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 32px rgba(45, 90, 61, 0.12);
+}
+
+.legacy-home .product-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.2rem 1.4rem;
+  border-bottom: 1px solid rgba(240, 240, 240, 0.8);
+}
+
+.legacy-home .product-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.legacy-home .btn-primary,
+.legacy-home .btn-secondary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.legacy-home .btn-primary {
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 6px 15px rgba(124, 179, 66, 0.35);
+}
+
+.legacy-home .btn-secondary {
+  background: rgba(124, 179, 66, 0.12);
+  color: #2d4a3a;
+}
+
+.legacy-home .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(124, 179, 66, 0.4);
+}
+
+.legacy-home .category-tab {
+  border: none;
+}
+
+.legacy-home .cta-card {
+  background: linear-gradient(135deg, rgba(124, 179, 66, 0.15), rgba(139, 195, 74, 0.05));
+  padding: 1.5rem;
+  border-radius: 18px;
+  text-align: center;
+  border: 1px solid rgba(124, 179, 66, 0.2);
+  box-shadow: 0 10px 25px rgba(45, 90, 61, 0.1);
+}
+
+.legacy-home .error-message {
+  color: #c53030;
+  font-weight: 600;
+}
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+  font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+}
+
+.admin-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #2d5a3d, #1e3d2a);
+  color: #fff;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  padding-bottom: 2rem;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #fff;
+}
+
+.nav-link.active {
+  background: rgba(124, 179, 66, 0.3);
+  color: #fff;
+  border-left: 3px solid #8bc34a;
+}
+
+.admin-content {
+  margin-left: 280px;
+  flex: 1;
+  padding: 2.5rem;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.admin-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2d4a3a;
+}
+
+.admin-main-section {
+  background: #fff;
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
+}
+
+.user-table tbody tr td {
+  vertical-align: middle;
+}
+
+.token-box {
+  background: rgba(124, 179, 66, 0.08);
+  border: 1px solid rgba(124, 179, 66, 0.2);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-form-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 22px rgba(45, 90, 61, 0.08);
+}

@@ -1,0 +1,104 @@
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import compression from 'compression';
+import multer from 'multer';
+import { ZodError } from 'zod';
+import { env } from './config/env';
+import { storageConfig } from './config/storage';
+import { OrderService } from './domain/order-service';
+import { ProductService } from './domain/product-service';
+import { AuthService } from './domain/auth-service';
+import { prismaOrderRepository } from './infrastructure/prisma/order.repository';
+import { prismaProductRepository } from './infrastructure/prisma/product.repository';
+import { prismaUserRepository } from './infrastructure/prisma/user.repository';
+import { prismaDriverRepository } from './infrastructure/prisma/driver.repository';
+import { OrderController } from './application/controllers/order.controller';
+import { ProductController } from './application/controllers/product.controller';
+import { AuthController } from './application/controllers/auth.controller';
+import { DriverController } from './application/controllers/driver.controller';
+import { UserManagementController } from './application/controllers/user-management.controller';
+import { AdminOrdersController } from './application/controllers/admin-orders.controller';
+import { AdminProductsController } from './application/controllers/admin-products.controller';
+import { createRoutes } from './application/routes';
+import { initAuthMiddleware } from './middleware/auth';
+import { DriverService } from './domain/driver-service';
+import { UserManagementService } from './domain/user-management-service';
+import './application/subscribers/order-events';
+import { logger } from '@chengyi/lib';
+import { DeliveryService } from './domain/delivery-service';
+import { AdminDeliveryController } from './application/controllers/admin-delivery.controller';
+import { DriverDeliveryController } from './application/controllers/driver-delivery.controller';
+import { prismaDeliveryRepository } from './infrastructure/prisma/delivery.repository';
+import { GoogleMapsService } from './infrastructure/maps/google-maps.service';
+
+export const createApp = () => {
+  const app = express();
+
+  app.set('trust proxy', 1);
+  app.use(helmet());
+  app.use(cors({
+    origin: env.NODE_ENV === 'production' ? [/chengyi\.tw$/] : true,
+    credentials: true
+  }));
+  app.use(compression());
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true }));
+  app.use('/uploads', express.static(storageConfig.root));
+
+  const orderRepository = prismaOrderRepository;
+  const productRepository = prismaProductRepository;
+  const userRepository = prismaUserRepository;
+  const driverRepository = prismaDriverRepository;
+  const deliveryConfigRepository = prismaDeliveryRepository;
+  const mapsService = env.GOOGLE_MAPS_API_KEY
+    ? new GoogleMapsService(env.GOOGLE_MAPS_API_KEY)
+    : undefined;
+
+  const orderService = new OrderService(orderRepository);
+  const productService = new ProductService(productRepository);
+  const authService = new AuthService(userRepository);
+  const driverService = new DriverService(driverRepository);
+  const userManagementService = new UserManagementService(userRepository);
+
+  const orderController = new OrderController(orderService);
+  const productController = new ProductController(productService);
+  const authController = new AuthController(authService);
+  const driverController = new DriverController(driverService);
+  const userManagementController = new UserManagementController(userManagementService);
+  const adminOrdersController = new AdminOrdersController(orderService);
+  const adminProductsController = new AdminProductsController(productService);
+  const deliveryService = new DeliveryService({
+    orderRepository,
+    driverRepository,
+    deliveryConfigRepository,
+    mapsService
+  });
+  const adminDeliveryController = new AdminDeliveryController(deliveryService);
+  const driverDeliveryController = new DriverDeliveryController(deliveryService);
+
+  initAuthMiddleware(authService);
+
+  app.use('/api/v1', createRoutes({ orderController, productController, authController, driverController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }));
+
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err instanceof ZodError) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        issues: err.flatten()
+      });
+    }
+
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({
+        error: 'UPLOAD_ERROR',
+        message: err.message
+      });
+    }
+
+    logger.error(err, 'Unhandled error');
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+  });
+
+  return app;
+};

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Builds
+dist/
+build/
+.turbo/
+.next/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+*.log
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Prisma
+prisma/migrations/
+apps/api/prisma/dev.db

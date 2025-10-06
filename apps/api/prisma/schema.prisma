@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id            String        @id @default(uuid())
+  contactName   String
+  contactPhone  String
+  address       String
+  latitude      Float?
+  longitude     Float?
+  geocodedAt    DateTime?
+  status        String        @default("pending")
+  subtotal      Decimal       @default(0)
+  deliveryFee   Decimal       @default(0)
+  totalAmount   Decimal       @default(0)
+  paymentMethod String
+  notes         String?
+  driverId      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  driver        Driver?       @relation(fields: [driverId], references: [id])
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  name       String
+  quantity   Float
+  unit       String
+  unitPrice  Decimal
+  lineTotal  Decimal
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(uuid())
+  orderId   String
+  status    String
+  note      String?
+  changedAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  category     String
+  unit         String
+  unitHint     String?
+  price        Decimal? @default(0)
+  stock        Float   @default(0)
+  isAvailable  Boolean @default(true)
+  isPricedItem Boolean @default(false)
+  weightPricePerUnit Decimal?
+  sortOrder    Int     @default(0)
+  imageUrl     String?
+  imageKey     String?
+  imageUploadedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  options      ProductOption[]
+}
+
+model ProductOption {
+  id        String   @id @default(uuid())
+  productId String
+  name      String
+  price     Decimal?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model DeliveryArea {
+  id        String   @id @default(uuid())
+  name      String
+  polygon   Json
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeliveryConfig {
+  id                  String   @id @default("delivery-config")
+  pickupName          String
+  pickupAddress       String
+  pickupLat           Float
+  pickupLng           Float
+  recommendedBatchMin Int      @default(5)
+  recommendedBatchMax Int      @default(8)
+  autoBatchingEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Driver {
+  id                 String   @id
+  user               User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  name               String
+  phone              String
+  status             String   @default("offline")
+  currentLat         Float?
+  currentLng         Float?
+  lastLocationUpdate DateTime?
+  orders             Order[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model LineUser {
+  id        String   @id @default(uuid())
+  lineUserId String  @unique
+  displayName String
+  pictureUrl  String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      UserRole @default(CUSTOMER)
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  driver    Driver?
+}
+
+enum UserRole {
+  ADMIN
+  DRIVER
+  CUSTOMER
+}

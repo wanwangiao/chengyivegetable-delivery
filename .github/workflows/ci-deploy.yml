@@ -1,0 +1,116 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Deployment reason"
+        required: false
+        default: "Manual trigger"
+
+env:
+  K6_ENABLED: ${{ vars.K6_ENABLED || 'false' }}
+  K6_API_BASE_URL: ${{ vars.K6_API_BASE_URL || '' }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run API tests
+        run: pnpm test:api
+
+      - name: Run Driver tests
+        run: pnpm test:driver
+
+      - name: Install Playwright browsers
+        run: pnpm --dir apps/web exec npx playwright install --with-deps
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter config build
+          pnpm --filter domain build
+          pnpm --filter lib build
+
+      - name: Build Web app
+        run: pnpm --filter web build
+
+      - name: Run Web E2E tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3001
+        run: pnpm --dir apps/web test:e2e
+
+      - name: Setup k6 (optional)
+        if: ${{ env.K6_ENABLED == 'true' }}
+        uses: grafana/setup-k6-action@v1
+        with:
+          version: v0.48.0
+
+      - name: Run k6 smoke test (optional)
+        if: ${{ env.K6_ENABLED == 'true' }}
+        env:
+          API_BASE_URL: ${{ env.K6_API_BASE_URL || 'http://localhost:3000/api/v1' }}
+          K6_VUS: 5
+          K6_DURATION: 30s
+        run: k6 run tests/k6/orders-smoke.js
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter api --filter web --filter config --filter domain --filter lib
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter api prisma migrate deploy
+
+      - name: Build production artifacts
+        run: |
+          pnpm --filter config build
+          pnpm --filter domain build
+          pnpm --filter lib build
+          pnpm --filter api build
+          pnpm --filter web build
+
+      - name: Deploy to Railway (placeholder)
+        if: ${{ secrets.RAILWAY_TOKEN }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REASON: ${{ github.event.inputs.reason || github.event.head_commit.message }}
+        run: |
+          echo "Deploying with reason: $DEPLOY_REASON"
+          echo "TODO: Replace with Railway CLI deploy command, e.g. railway up"

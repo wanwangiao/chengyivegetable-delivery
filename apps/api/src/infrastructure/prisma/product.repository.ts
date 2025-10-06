@@ -1,0 +1,349 @@
+import type { Prisma } from '@prisma/client';
+import { prisma } from './client';
+
+const productInclude = {
+  options: {
+    orderBy: { createdAt: 'asc' }
+  }
+} as const;
+
+type ProductRecord = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
+type ProductOptionRecord = Prisma.ProductOptionGetPayload<{}>;
+
+const toNullableNumber = (value: Prisma.Decimal | null | undefined) => {
+  return value === null || value === undefined ? null : Number(value);
+};
+
+const mapOption = (option: ProductOptionRecord): ProductOption => ({
+  id: option.id,
+  name: option.name,
+  price: toNullableNumber(option.price)
+});
+
+const mapProduct = (product: ProductRecord): Product => ({
+  id: product.id,
+  name: product.name,
+  description: product.description ?? undefined,
+  category: product.category,
+  unit: product.unit,
+  unitHint: product.unitHint ?? undefined,
+  price: toNullableNumber(product.price),
+  stock: product.stock,
+  isAvailable: product.isAvailable,
+  isPricedItem: product.isPricedItem,
+  weightPricePerUnit: toNullableNumber(product.weightPricePerUnit),
+  sortOrder: product.sortOrder,
+  imageUrl: product.imageUrl ?? undefined,
+  imageKey: product.imageKey ?? undefined,
+  imageUploadedAt: product.imageUploadedAt ?? undefined,
+  options: product.options?.map(mapOption) ?? []
+});
+
+const buildCreateData = (input: ProductCreateInput): Prisma.ProductCreateInput => ({
+  name: input.name,
+  description: input.description,
+  category: input.category,
+  unit: input.unit,
+  unitHint: input.unitHint,
+  price: input.price ?? null,
+  stock: input.stock,
+  isAvailable: input.isAvailable,
+  isPricedItem: input.isPricedItem,
+  weightPricePerUnit: input.weightPricePerUnit ?? null,
+  sortOrder: input.sortOrder ?? 0,
+  imageUrl: input.imageUrl,
+  imageKey: input.imageKey,
+  imageUploadedAt: input.imageUploadedAt ?? (input.imageUrl ? new Date() : null),
+  options: input.options
+    ? {
+        create: input.options.map(option => ({
+          name: option.name,
+          price: option.price ?? null
+        }))
+      }
+    : undefined
+});
+
+const buildUpdateData = (input: ProductUpdateInput): Prisma.ProductUpdateInput => {
+  const data: Prisma.ProductUpdateInput = {};
+
+  if (input.name !== undefined) data.name = input.name;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.category !== undefined) data.category = input.category;
+  if (input.unit !== undefined) data.unit = input.unit;
+  if (input.unitHint !== undefined) data.unitHint = input.unitHint;
+  if (input.price !== undefined) data.price = input.price;
+  if (input.stock !== undefined) data.stock = input.stock;
+  if (input.isAvailable !== undefined) data.isAvailable = input.isAvailable;
+  if (input.isPricedItem !== undefined) data.isPricedItem = input.isPricedItem;
+  if (input.weightPricePerUnit !== undefined) data.weightPricePerUnit = input.weightPricePerUnit;
+  if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
+  if (input.imageUrl !== undefined) data.imageUrl = input.imageUrl;
+  if (input.imageKey !== undefined) data.imageKey = input.imageKey;
+  if (input.imageUploadedAt !== undefined) data.imageUploadedAt = input.imageUploadedAt;
+
+  return data;
+};
+
+const syncOptions = async (tx: Prisma.TransactionClient, productId: string, options: ProductOptionInput[] | undefined) => {
+  if (!options) return;
+
+  const idsToKeep = options.filter(option => option.id).map(option => option.id!) as string[];
+
+  if (idsToKeep.length > 0) {
+    await tx.productOption.deleteMany({
+      where: {
+        productId,
+        id: {
+          notIn: idsToKeep
+        }
+      }
+    });
+  } else {
+    await tx.productOption.deleteMany({ where: { productId } });
+  }
+
+  for (const option of options) {
+    if (option.id) {
+      await tx.productOption.upsert({
+        where: { id: option.id },
+        update: {
+          name: option.name,
+          price: option.price ?? null
+        },
+        create: {
+          id: option.id,
+          productId,
+          name: option.name,
+          price: option.price ?? null
+        }
+      });
+    } else {
+      await tx.productOption.create({
+        data: {
+          productId,
+          name: option.name,
+          price: option.price ?? null
+        }
+      });
+    }
+  }
+};
+
+export interface ProductOption {
+  id: string;
+  name: string;
+  price: number | null;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  unit: string;
+  unitHint?: string;
+  price: number | null;
+  stock: number;
+  isAvailable: boolean;
+  isPricedItem: boolean;
+  weightPricePerUnit?: number | null;
+  sortOrder: number;
+  imageUrl?: string;
+  imageKey?: string;
+  imageUploadedAt?: Date;
+  options: ProductOption[];
+}
+
+export interface ProductOptionInput {
+  id?: string;
+  name: string;
+  price?: number | null;
+}
+
+export interface ProductCreateInput {
+  name: string;
+  description?: string;
+  category: string;
+  unit: string;
+  unitHint?: string;
+  price?: number | null;
+  stock: number;
+  isAvailable: boolean;
+  isPricedItem: boolean;
+  weightPricePerUnit?: number | null;
+  sortOrder?: number;
+  imageUrl?: string;
+  imageKey?: string;
+  imageUploadedAt?: Date;
+  options?: ProductOptionInput[];
+}
+
+export interface ProductUpdateInput extends Partial<ProductCreateInput> {
+  options?: ProductOptionInput[];
+}
+
+export interface ProductBulkUpsertInput extends ProductUpdateInput {
+  id?: string;
+}
+
+export interface ProductRepository {
+  list(params?: { keyword?: string; category?: string; onlyAvailable?: boolean }): Promise<Product[]>;
+  findById(id: string): Promise<Product | null>;
+  create(input: ProductCreateInput): Promise<Product>;
+  update(id: string, input: ProductUpdateInput): Promise<Product>;
+  toggleAvailability(id: string, isAvailable: boolean): Promise<Product>;
+  updateImage(id: string, image: { imageUrl: string; imageKey: string; imageUploadedAt?: Date }): Promise<Product>;
+  bulkUpsert(inputs: ProductBulkUpsertInput[]): Promise<Product[]>;
+}
+
+const applyFilters = (params?: { keyword?: string; category?: string; onlyAvailable?: boolean }): Prisma.ProductWhereInput => {
+  const where: Prisma.ProductWhereInput = {};
+
+  if (params?.keyword) {
+    where.OR = [
+      { name: { contains: params.keyword, mode: 'insensitive' } },
+      { description: { contains: params.keyword, mode: 'insensitive' } }
+    ];
+  }
+
+  if (params?.category) {
+    where.category = params.category;
+  }
+
+  if (params?.onlyAvailable) {
+    where.isAvailable = true;
+  }
+
+  return where;
+};
+
+export const prismaProductRepository: ProductRepository = {
+  async list(params) {
+    const products = await prisma.product.findMany({
+      where: applyFilters(params),
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      include: productInclude
+    });
+
+    return products.map(mapProduct);
+  },
+
+  async findById(id) {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: productInclude
+    });
+
+    return product ? mapProduct(product) : null;
+  },
+
+  async create(input) {
+    const created = await prisma.product.create({
+      data: buildCreateData(input),
+      include: productInclude
+    });
+
+    return mapProduct(created);
+  },
+
+  async update(id, input) {
+    const result = await prisma.$transaction(async tx => {
+      await tx.product.update({
+        where: { id },
+        data: buildUpdateData(input)
+      });
+
+      await syncOptions(tx, id, input.options);
+
+      const updated = await tx.product.findUnique({
+        where: { id },
+        include: productInclude
+      });
+
+      if (!updated) {
+        throw new Error('PRODUCT_NOT_FOUND');
+      }
+
+      return updated;
+    });
+
+    return mapProduct(result);
+  },
+
+  async toggleAvailability(id, isAvailable) {
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { isAvailable },
+      include: productInclude
+    });
+
+    return mapProduct(updated);
+  },
+
+  async updateImage(id, image) {
+    const updated = await prisma.product.update({
+      where: { id },
+      data: {
+        imageUrl: image.imageUrl,
+        imageKey: image.imageKey,
+        imageUploadedAt: image.imageUploadedAt ?? new Date()
+      },
+      include: productInclude
+    });
+
+    return mapProduct(updated);
+  },
+
+  async bulkUpsert(inputs) {
+    if (inputs.length === 0) return [];
+
+    const products = await prisma.$transaction(async tx => {
+      const records: ProductRecord[] = [];
+
+      for (const input of inputs) {
+        const { id, options, ...rest } = input;
+
+        if (id) {
+          await tx.product.update({
+            where: { id },
+            data: buildUpdateData(rest)
+          });
+
+          await syncOptions(tx, id, options);
+
+          const updated = await tx.product.findUnique({
+            where: { id },
+            include: productInclude
+          });
+
+          if (updated) {
+            records.push(updated);
+          }
+        } else {
+          const created = await tx.product.create({
+            data: buildCreateData({
+              ...(rest as ProductCreateInput),
+              options
+            })
+          });
+
+          await syncOptions(tx, created.id, options);
+
+          const refreshed = await tx.product.findUnique({
+            where: { id: created.id },
+            include: productInclude
+          });
+
+          if (refreshed) {
+            records.push(refreshed);
+          }
+        }
+      }
+
+      return records;
+    });
+
+    return products.map(mapProduct);
+  }
+};

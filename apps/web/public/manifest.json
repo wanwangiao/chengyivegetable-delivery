@@ -1,0 +1,9 @@
+{
+  "name": "誠憶鮮蔬線上系統",
+  "short_name": "誠憶鮮蔬",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#22c55e",
+  "icons": []
+}

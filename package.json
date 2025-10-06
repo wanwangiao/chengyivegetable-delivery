@@ -1,0 +1,31 @@
+{
+  "name": "chengyi-veg-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "誠憶鮮蔬全新線上系統 Monorepo",
+  "packageManager": "pnpm@9.9.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r --parallel run lint",
+    "test": "pnpm -r run test",
+    "test:api": "pnpm --dir apps/api test",
+    "test:web": "pnpm --dir apps/web test",
+    "test:driver": "pnpm --dir apps/driver test",
+    "prisma:generate": "pnpm --filter api prisma generate",
+    "storybook": "pnpm --filter web storybook"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.4.0",
+    "@commitlint/config-conventional": "^19.4.0",
+    "@types/minimatch": "^6.0.0",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.9",
+    "typescript": "^5.6.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "pnpm --filter api test"
+    ]
+  }
+}
