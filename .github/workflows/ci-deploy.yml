@@ -149,11 +149,11 @@ jobs:
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: npm install -g @railway/cli
 
-      - name: Configure Railway token
+      - name: Authenticate Railway CLI
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
-          mkdir -p ~/.railway
-          printf '{"token":"%s"}' "$RAILWAY_TOKEN" > ~/.railway/config.json
+          set -euo pipefail
+          printf '%s\n' "$RAILWAY_TOKEN" | railway login --browserless
 
       - name: Link Railway project
         if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_PROJECT_ID != '' }}
