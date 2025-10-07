@@ -84,7 +84,9 @@ export class AdminProductsController {
       return res.status(400).json({ error: 'EMPTY_SORT_PAYLOAD', message: '請提供要更新的排序資料' });
     }
 
-    const products = await this.productService.reorder(items);
+    const products = await (this.productService as ProductService & {
+      reorder: (payload: unknown) => Promise<unknown[]>;
+    }).reorder(items);
     res.json({ data: products, count: products.length });
   };
 }

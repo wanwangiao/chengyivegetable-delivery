@@ -12,6 +12,14 @@
     "allowSyntheticDefaultImports": true,
     "noImplicitOverride": true,
     "incremental": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@chengyi/config": ["packages/config/dist/index.d.ts"],
+      "@chengyi/config/*": ["packages/config/dist/*.d.ts"],
+      "@chengyi/domain": ["packages/domain/dist/index.d.ts"],
+      "@chengyi/domain/*": ["packages/domain/dist/*.d.ts"],
+      "@chengyi/lib": ["packages/lib/dist/index.d.ts"],
+      "@chengyi/lib/*": ["packages/lib/dist/*.d.ts"]
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Client } from '@googlemaps/google-maps-services-js';
+import { Client, UnitSystem } from '@googlemaps/google-maps-services-js';
 
 export interface LatLng {
   lat: number;
@@ -54,7 +54,7 @@ export class GoogleMapsService {
         origins: originStrings,
         destinations: destinationStrings,
         language: 'zh-TW',
-        units: 'metric'
+        units: UnitSystem.metric
       }
     });
 
