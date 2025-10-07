@@ -40,6 +40,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages
+        run: |
+          pnpm --filter config build
+          pnpm --filter domain build
+          pnpm --filter lib build
+
       - name: Run API tests
         run: pnpm test:api
 
@@ -48,12 +54,6 @@ jobs:
 
       - name: Install Playwright browsers
         run: pnpm --dir apps/web exec npx playwright install --with-deps
-
-      - name: Build shared packages
-        run: |
-          pnpm --filter config build
-          pnpm --filter domain build
-          pnpm --filter lib build
 
       - name: Build Web app
         run: pnpm --filter web build
