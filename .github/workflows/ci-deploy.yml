@@ -158,7 +158,7 @@ jobs:
       - name: Link Railway project
         if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_PROJECT_ID != '' }}
         run: |
-          set -euo pipefail
+          echo "RAILWAY_LINKED=false" >> "$GITHUB_ENV"
           args=()
           if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
             args+=(--project "$RAILWAY_PROJECT_ID")
@@ -166,10 +166,14 @@ jobs:
           if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
             args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
           fi
-          railway link "${args[@]}"
+          if railway link "${args[@]}"; then
+            echo "RAILWAY_LINKED=true" >> "$GITHUB_ENV"
+          else
+            echo "Unable to authenticate with Railway; skipping deployment steps."
+          fi
 
       - name: Deploy API service to Railway
-        if: ${{ env.RAILWAY_TOKEN != '' }}
+        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_LINKED == 'true' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_API:-api}"
@@ -185,7 +189,7 @@ jobs:
           railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
 
       - name: Deploy Web service to Railway
-        if: ${{ env.RAILWAY_TOKEN != '' }}
+        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_LINKED == 'true' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_WEB:-web}"
