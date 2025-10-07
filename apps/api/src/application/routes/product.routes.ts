@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { ProductController } from '../controllers/product.controller';
 
-export const createProductRouter = (controller: ProductController) => {
+export const createProductRouter = (controller: ProductController): Router => {
   const router = Router();
 
   router.get('/', controller.list);

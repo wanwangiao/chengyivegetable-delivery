@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { UserManagementController } from '../controllers/user-management.controller';
 import { authenticate } from '../../middleware/auth';
 
-export const createAdminUsersRouter = (controller: UserManagementController) => {
+export const createAdminUsersRouter = (controller: UserManagementController): Router => {
   const router = Router();
 
   router.use(authenticate(['ADMIN']));

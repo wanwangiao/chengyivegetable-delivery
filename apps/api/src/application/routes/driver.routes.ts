@@ -3,7 +3,10 @@ import type { DriverController } from '../controllers/driver.controller';
 import type { DriverDeliveryController } from '../controllers/driver-delivery.controller';
 import { authenticate } from '../../middleware/auth';
 
-export const createDriverRouter = (controller: DriverController, deliveryController: DriverDeliveryController) => {
+export const createDriverRouter = (
+  controller: DriverController,
+  deliveryController: DriverDeliveryController,
+): Router => {
   const router = Router();
 
   router.get('/', authenticate(['ADMIN']), controller.listDrivers);

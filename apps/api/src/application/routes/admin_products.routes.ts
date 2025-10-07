@@ -3,7 +3,7 @@ import type { AdminProductsController } from '../controllers/admin-products.cont
 import { authenticate } from '../../middleware/auth';
 import { csvUpload, productImageUpload } from '../../middleware/upload';
 
-export const createAdminProductsRouter = (controller: AdminProductsController) => {
+export const createAdminProductsRouter = (controller: AdminProductsController): Router => {
   const router = Router();
 
   router.use(authenticate(['ADMIN']));

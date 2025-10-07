@@ -29,7 +29,7 @@ export interface RouteDependencies {
   adminDeliveryController: AdminDeliveryController;
 }
 
-export const createRoutes = ({ orderController, productController, authController, driverController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }: RouteDependencies) => {
+export const createRoutes = ({ orderController, productController, authController, driverController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }: RouteDependencies): Router => {
   const router = Router();
 
   router.get('/health', (_req, res) => {

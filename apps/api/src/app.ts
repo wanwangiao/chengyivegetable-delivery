@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Application } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
@@ -32,7 +32,7 @@ import { DriverDeliveryController } from './application/controllers/driver-deliv
 import { prismaDeliveryRepository } from './infrastructure/prisma/delivery.repository';
 import { GoogleMapsService } from './infrastructure/maps/google-maps.service';
 
-export const createApp = () => {
+export const createApp = (): Application => {
   const app = express();
 
   app.set('trust proxy', 1);
