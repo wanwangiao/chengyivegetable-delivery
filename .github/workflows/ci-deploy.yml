@@ -145,61 +145,30 @@ jobs:
           pnpm --filter api build
           pnpm --filter web build
 
-      - name: Install Railway CLI
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: npm install -g @railway/cli
-
-      - name: Authenticate Railway CLI
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: |
-          set -euo pipefail
-          printf '%s\n' "$RAILWAY_TOKEN" | railway login --browserless
-
-      - name: Link Railway project
-        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_PROJECT_ID != '' }}
-        run: |
-          echo "RAILWAY_LINKED=false" >> "$GITHUB_ENV"
-          args=()
-          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
-            args+=(--project "$RAILWAY_PROJECT_ID")
-          fi
-          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
-            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
-          fi
-          if railway link "${args[@]}"; then
-            echo "RAILWAY_LINKED=true" >> "$GITHUB_ENV"
-          else
-            echo "Unable to authenticate with Railway; skipping deployment steps."
-          fi
-
       - name: Deploy API service to Railway
-        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_LINKED == 'true' }}
+        if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_API:-api}"
-          args=()
-          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
-            args+=(--project "$RAILWAY_PROJECT_ID")
-          fi
-          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
-            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
-          fi
-          args+=(--service "$SERVICE_NAME")
-          railway link "${args[@]}"
-          railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
+          docker run --rm \
+            -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
+            -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -v "$PWD":/app \
+            -w /app \
+            ghcr.io/railwayapp/cli:latest \
+            railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
 
       - name: Deploy Web service to Railway
-        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_LINKED == 'true' }}
+        if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_WEB:-web}"
-          args=()
-          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
-            args+=(--project "$RAILWAY_PROJECT_ID")
-          fi
-          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
-            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
-          fi
-          args+=(--service "$SERVICE_NAME")
-          railway link "${args[@]}"
-          railway up apps/web --service "$SERVICE_NAME" --ci --path-as-root
+          docker run --rm \
+            -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
+            -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -v "$PWD":/app \
+            -w /app \
+            ghcr.io/railwayapp/cli:latest \
+            railway up apps/web --service "$SERVICE_NAME" --ci --path-as-root
