@@ -7,7 +7,6 @@ export default withPWA({
   disable: !isProd,
 })({
   experimental: {
-    typedRoutes: true,
-    serverActions: true
+    typedRoutes: true
   }
 });

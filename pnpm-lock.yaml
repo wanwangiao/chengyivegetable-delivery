@@ -217,6 +217,9 @@ importers:
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
+      minimatch:
+        specifier: ^10.0.1
+        version: 10.0.3
       next:
         specifier: ^14.2.5
         version: 14.2.33(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -242,9 +245,6 @@ importers:
       '@types/leaflet':
         specifier: ^1.9.8
         version: 1.9.20
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
       '@types/node':
         specifier: ^20.16.5
         version: 20.19.19
