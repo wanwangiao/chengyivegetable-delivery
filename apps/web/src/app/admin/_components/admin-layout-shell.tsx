@@ -3,8 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import type { Route } from 'next';
 
-const NAV_ITEMS = [
+type NavItem = {
+  label: string;
+  href: Route;
+};
+
+const NAV_ITEMS: NavItem[] = [
   { label: '儀表板', href: '/admin' },
   { label: '訂單管理', href: '/admin/orders' },
   { label: '商品管理', href: '/admin/products' },
