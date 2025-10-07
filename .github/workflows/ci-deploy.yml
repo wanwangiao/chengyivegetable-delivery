@@ -46,6 +46,9 @@ jobs:
           pnpm --filter domain build
           pnpm --filter lib build
 
+      - name: Generate Prisma client
+        run: pnpm --filter api prisma:generate
+
       - name: Run API tests
         run: pnpm test:api
 
