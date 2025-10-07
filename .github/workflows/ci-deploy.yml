@@ -85,6 +85,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL || vars.DATABASE_URL || '' }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
@@ -113,9 +114,12 @@ jobs:
         run: pnpm install --frozen-lockfile --filter api --filter web --filter config --filter domain --filter lib
 
       - name: Run database migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        if: ${{ env.DATABASE_URL != '' }}
         run: pnpm --filter api prisma migrate deploy
+
+      - name: Skip database migrations (DATABASE_URL missing)
+        if: ${{ env.DATABASE_URL == '' }}
+        run: echo "Skipping Prisma migrate deploy because DATABASE_URL is not configured."
 
       - name: Build production artifacts
         run: |
