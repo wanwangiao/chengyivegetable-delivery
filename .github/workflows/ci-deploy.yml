@@ -115,7 +115,20 @@ jobs:
 
       - name: Run database migrations
         if: ${{ env.DATABASE_URL != '' }}
-        run: pnpm --filter api prisma migrate deploy
+        run: |
+          set -euo pipefail
+          db_host="$(node -e "try { const url = new URL(process.env.DATABASE_URL); console.log(url.hostname); } catch (error) { process.exit(0); }")"
+          if [ -z "$db_host" ]; then
+            echo "Skipping Prisma migrate deploy because DATABASE_URL host is not available."
+            exit 0
+          fi
+          case "$db_host" in
+            *.internal)
+              echo "Skipping Prisma migrate deploy because database host '$db_host' is not reachable from GitHub runners."
+              exit 0
+              ;;
+          esac
+          pnpm --filter api prisma migrate deploy
 
       - name: Skip database migrations (DATABASE_URL missing)
         if: ${{ env.DATABASE_URL == '' }}
