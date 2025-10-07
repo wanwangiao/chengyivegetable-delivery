@@ -76,6 +76,12 @@ jobs:
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+      RAILWAY_SERVICE_API: ${{ vars.RAILWAY_SERVICE_API }}
+      RAILWAY_SERVICE_WEB: ${{ vars.RAILWAY_SERVICE_WEB }}
 
     steps:
       - name: Checkout repository
@@ -106,11 +112,51 @@ jobs:
           pnpm --filter api build
           pnpm --filter web build
 
-      - name: Deploy to Railway (placeholder)
-        if: ${{ secrets.RAILWAY_TOKEN }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          DEPLOY_REASON: ${{ github.event.inputs.reason || github.event.head_commit.message }}
+      - name: Install Railway CLI
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: npm install -g @railway/cli
+
+      - name: Link Railway project
+        if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_PROJECT_ID != '' }}
         run: |
-          echo "Deploying with reason: $DEPLOY_REASON"
-          echo "TODO: Replace with Railway CLI deploy command, e.g. railway up"
+          set -euo pipefail
+          args=()
+          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
+            args+=(--project "$RAILWAY_PROJECT_ID")
+          fi
+          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
+            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
+          fi
+          railway link "${args[@]}"
+
+      - name: Deploy API service to Railway
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="${RAILWAY_SERVICE_API:-api}"
+          args=()
+          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
+            args+=(--project "$RAILWAY_PROJECT_ID")
+          fi
+          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
+            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
+          fi
+          args+=(--service "$SERVICE_NAME")
+          railway link "${args[@]}"
+          railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
+
+      - name: Deploy Web service to Railway
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="${RAILWAY_SERVICE_WEB:-web}"
+          args=()
+          if [ -n "${RAILWAY_PROJECT_ID:-}" ]; then
+            args+=(--project "$RAILWAY_PROJECT_ID")
+          fi
+          if [ -n "${RAILWAY_ENVIRONMENT_ID:-}" ]; then
+            args+=(--environment "$RAILWAY_ENVIRONMENT_ID")
+          fi
+          args+=(--service "$SERVICE_NAME")
+          railway link "${args[@]}"
+          railway up apps/web --service "$SERVICE_NAME" --ci --path-as-root
