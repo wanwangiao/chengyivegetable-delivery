@@ -14,8 +14,8 @@
     "test:driver": "pnpm --dir apps/driver test",
     "prisma:generate": "pnpm --filter api prisma generate",
     "storybook": "pnpm --filter web storybook",
-    "deploy:api": "rm -rf .railway/api && pnpm --filter api deploy .railway/api",
-    "deploy:web": "rm -rf .railway/web && pnpm --filter web deploy .railway/web"
+    "deploy:api": "rm -rf .railway/api && pnpm --filter api build && pnpm --filter api deploy --prod .railway/api",
+    "deploy:web": "rm -rf .railway/web && pnpm --filter web build && pnpm --filter web deploy --prod .railway/web"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.4.0",
