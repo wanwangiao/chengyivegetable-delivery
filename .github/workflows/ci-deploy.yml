@@ -152,6 +152,7 @@ jobs:
             echo "RAILWAY_TOKEN is empty" >&2
             exit 1
           fi
+          echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
 
       - name: Deploy API service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
