@@ -154,6 +154,10 @@ jobs:
           fi
           echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
 
+      - name: Prepare API deploy artifacts
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: cp pnpm-lock.yaml apps/api/
+
       - name: Deploy API service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
@@ -169,6 +173,10 @@ jobs:
             -w /app \
             ghcr.io/railwayapp/cli:latest \
             railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
+
+      - name: Prepare Web deploy artifacts
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: cp pnpm-lock.yaml apps/web/
 
       - name: Deploy Web service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
