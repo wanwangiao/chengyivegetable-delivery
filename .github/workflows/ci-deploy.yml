@@ -172,7 +172,7 @@ jobs:
             -e NIXPACKS_BUILD_COMMAND="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter api build" \
             -e NIXPACKS_START_CMD="pnpm --filter api start" \
             -e NIXPACKS_START_COMMAND="pnpm --filter api start" \
-            -e NIXPACKS_CONFIG_FILE=apps/api/nixpacks.toml \
+            -e RAILWAY_BUILD_TARGET=api \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
@@ -196,7 +196,7 @@ jobs:
             -e NIXPACKS_BUILD_COMMAND="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter web build" \
             -e NIXPACKS_START_CMD="pnpm --filter web start" \
             -e NIXPACKS_START_COMMAND="pnpm --filter web start" \
-            -e NIXPACKS_CONFIG_FILE=apps/web/nixpacks.toml \
+            -e RAILWAY_BUILD_TARGET=web \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
