@@ -6,6 +6,7 @@ dist/
 build/
 .turbo/
 .next/
+.railway/
 
 # Env
 .env
