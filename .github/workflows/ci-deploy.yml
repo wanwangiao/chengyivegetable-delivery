@@ -154,10 +154,6 @@ jobs:
           fi
           echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
 
-      - name: Prepare API deploy artifacts
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: cp pnpm-lock.yaml apps/api/
-
       - name: Deploy API service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
@@ -169,14 +165,12 @@ jobs:
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
+            -e NIXPACKS_BUILD_CMD="pnpm install --frozen-lockfile && pnpm --filter api build" \
+            -e NIXPACKS_START_CMD="pnpm --filter api start" \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
-
-      - name: Prepare Web deploy artifacts
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: cp pnpm-lock.yaml apps/web/
+            railway up . --service "$SERVICE_NAME" --ci
 
       - name: Deploy Web service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
@@ -189,7 +183,9 @@ jobs:
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
+            -e NIXPACKS_BUILD_CMD="pnpm install --frozen-lockfile && pnpm --filter web build" \
+            -e NIXPACKS_START_CMD="pnpm --filter web start" \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up apps/web --service "$SERVICE_NAME" --ci --path-as-root
+            railway up . --service "$SERVICE_NAME" --ci
