@@ -29,5 +29,9 @@
     "*.{ts,tsx,js,jsx}": [
       "pnpm --filter api test"
     ]
-  }
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }
