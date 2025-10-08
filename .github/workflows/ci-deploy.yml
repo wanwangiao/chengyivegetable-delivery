@@ -166,13 +166,7 @@ jobs:
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_INSTALL_CMD="pnpm install --frozen-lockfile" \
-            -e NIXPACKS_INSTALL_COMMAND="pnpm install --frozen-lockfile" \
-            -e NIXPACKS_BUILD_CMD="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter api build" \
-            -e NIXPACKS_BUILD_COMMAND="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter api build" \
-            -e NIXPACKS_START_CMD="pnpm --filter api start" \
-            -e NIXPACKS_START_COMMAND="pnpm --filter api start" \
-            -e RAILWAY_BUILD_TARGET=api \
+            -e NIXPACKS_CONFIG_FILE=apps/api/nixpacks.toml \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
@@ -190,13 +184,7 @@ jobs:
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_INSTALL_CMD="pnpm install --frozen-lockfile" \
-            -e NIXPACKS_INSTALL_COMMAND="pnpm install --frozen-lockfile" \
-            -e NIXPACKS_BUILD_CMD="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter web build" \
-            -e NIXPACKS_BUILD_COMMAND="pnpm --filter config build && pnpm --filter domain build && pnpm --filter lib build && pnpm --filter web build" \
-            -e NIXPACKS_START_CMD="pnpm --filter web start" \
-            -e NIXPACKS_START_COMMAND="pnpm --filter web start" \
-            -e RAILWAY_BUILD_TARGET=web \
+            -e NIXPACKS_CONFIG_FILE=apps/web/nixpacks.toml \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
