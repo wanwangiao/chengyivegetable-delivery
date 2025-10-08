@@ -89,8 +89,8 @@ jobs:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
-      RAILWAY_SERVICE_API: ${{ vars.RAILWAY_SERVICE_API }}
-      RAILWAY_SERVICE_WEB: ${{ vars.RAILWAY_SERVICE_WEB }}
+      RAILWAY_SERVICE_API: ${{ secrets.RAILWAY_SERVICE_API || '' }}
+      RAILWAY_SERVICE_WEB: ${{ secrets.RAILWAY_SERVICE_WEB || '' }}
 
     steps:
       - name: Checkout repository
