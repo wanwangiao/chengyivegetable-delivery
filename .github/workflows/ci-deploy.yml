@@ -154,40 +154,42 @@ jobs:
           fi
           echo "RAILWAY_TOKEN length: ${#RAILWAY_TOKEN}"
 
-      - name: Prepare API deploy bundle
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: pnpm deploy:api
-
       - name: Deploy API service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_API:-api}"
+          cp pnpm-lock.yaml apps/api/
           docker run --rm \
             -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
+            -e NIXPACKS_BUILD_CMD="pnpm install --frozen-lockfile && pnpm build" \
+            -e NIXPACKS_START_CMD="pnpm start" \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up .railway/api --service "$SERVICE_NAME" --ci
-
-      - name: Prepare Web deploy bundle
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: pnpm deploy:web
+            railway up apps/api --service "$SERVICE_NAME" --ci --path-as-root
+          rm -f apps/api/pnpm-lock.yaml
 
       - name: Deploy Web service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
           set -euo pipefail
           SERVICE_NAME="${RAILWAY_SERVICE_WEB:-web}"
+          cp pnpm-lock.yaml apps/web/
           docker run --rm \
             -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
+            -e NIXPACKS_BUILD_CMD="pnpm install --frozen-lockfile && pnpm build" \
+            -e NIXPACKS_START_CMD="pnpm start" \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up .railway/web --service "$SERVICE_NAME" --ci
+            railway up apps/web --service "$SERVICE_NAME" --ci --path-as-root
+          rm -f apps/web/pnpm-lock.yaml
