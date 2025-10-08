@@ -164,6 +164,7 @@ jobs:
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
@@ -179,6 +180,7 @@ jobs:
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
