@@ -13,9 +13,9 @@ cmds = [
   'pnpm --filter config build',
   'pnpm --filter domain build',
   'pnpm --filter lib build',
-  'pnpm --filter api build'
+  'pnpm --filter  build'
 ]
 dependsOn = ['install']
 
 [start]
-cmd = 'pnpm --filter api start'
+cmd = 'pnpm --filter  start'

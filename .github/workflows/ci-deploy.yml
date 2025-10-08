@@ -166,7 +166,7 @@ jobs:
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_CONFIG_FILE=apps/api/nixpacks.toml \
+            -e NIXPACKS_APP_TARGET=api \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
@@ -184,7 +184,7 @@ jobs:
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
             -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_CONFIG_FILE=apps/web/nixpacks.toml \
+            -e NIXPACKS_APP_TARGET=web \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
