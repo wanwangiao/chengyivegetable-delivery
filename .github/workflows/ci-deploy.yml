@@ -145,6 +145,14 @@ jobs:
           pnpm --filter api build
           pnpm --filter web build
 
+      - name: Verify Railway token
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ]; then
+            echo "RAILWAY_TOKEN is empty" >&2
+            exit 1
+          fi
+
       - name: Deploy API service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
@@ -152,6 +160,7 @@ jobs:
           SERVICE_NAME="${RAILWAY_SERVICE_API:-api}"
           docker run --rm \
             -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -v "$PWD":/app \
@@ -166,6 +175,7 @@ jobs:
           SERVICE_NAME="${RAILWAY_SERVICE_WEB:-web}"
           docker run --rm \
             -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
             -v "$PWD":/app \
