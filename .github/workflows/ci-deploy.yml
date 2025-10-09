@@ -150,36 +150,14 @@ jobs:
           rm -rf .railway/api
           pnpm --filter api deploy --prod .railway/api
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
-          cat <<'JSON' > .railway/api/railway.json
-          {
-            "$schema": "https://railway.com/railway.schema.json",
-            "build": {
-              "builder": "DOCKERFILE",
-              "dockerfilePath": "Dockerfile"
-            },
-            "deploy": {
-              "startCommand": "node dist/index.js"
-            }
-          }
-JSON
+          cp infra/railway/api.railway.json .railway/api/railway.json
 
       - name: Bundle Web deployment artifact
         run: |
           rm -rf .railway/web
           pnpm --filter web deploy --prod .railway/web
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
-          cat <<'JSON' > .railway/web/railway.json
-          {
-            "$schema": "https://railway.com/railway.schema.json",
-            "build": {
-              "builder": "DOCKERFILE",
-              "dockerfilePath": "Dockerfile"
-            },
-            "deploy": {
-              "startCommand": "node node_modules/next/dist/bin/next start -p 3000"
-            }
-          }
-JSON
+          cp infra/railway/web.railway.json .railway/web/railway.json
 
       - name: Verify Railway token
         if: ${{ env.RAILWAY_TOKEN != '' }}
