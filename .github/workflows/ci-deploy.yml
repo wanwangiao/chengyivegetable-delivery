@@ -145,6 +145,18 @@ jobs:
           pnpm --filter api build
           pnpm --filter web build
 
+      - name: Bundle API deployment artifact
+        run: |
+          rm -rf .railway/api
+          pnpm --filter api deploy --prod .railway/api
+          cp infra/docker/api.Dockerfile .railway/api/Dockerfile
+
+      - name: Bundle Web deployment artifact
+        run: |
+          rm -rf .railway/web
+          pnpm --filter web deploy --prod .railway/web
+          cp infra/docker/web.Dockerfile .railway/web/Dockerfile
+
       - name: Verify Railway token
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: |
@@ -164,15 +176,10 @@ jobs:
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
-            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
-            -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_APP_TARGET=api \
-            -e NIXPACKS_CONFIG_FILE=nixpacks.toml \
-            -e NIXPACKS_LOG_LEVEL=debug \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up --service "$SERVICE_NAME" --ci
+            railway up .railway/api --service "$SERVICE_NAME" --ci --dockerfile Dockerfile
 
       - name: Deploy Web service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
@@ -184,12 +191,7 @@ jobs:
             -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
             -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
             -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
-            -e NIXPACKS_NODE_PACKAGE_MANAGER=pnpm \
-            -e NIXPACKS_NODE_VERSION=20 \
-            -e NIXPACKS_APP_TARGET=web \
-            -e NIXPACKS_CONFIG_FILE=nixpacks.toml \
-            -e NIXPACKS_LOG_LEVEL=debug \
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up --service "$SERVICE_NAME" --ci
+            railway up .railway/web --service "$SERVICE_NAME" --ci --dockerfile Dockerfile
