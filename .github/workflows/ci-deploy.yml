@@ -179,7 +179,7 @@ jobs:
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up .railway/api --service "$SERVICE_NAME" --ci
+            railway up .railway/api --service "$SERVICE_NAME" --ci --path-as-root
 
       - name: Deploy Web service to Railway
         if: ${{ env.RAILWAY_TOKEN != '' }}
@@ -194,4 +194,4 @@ jobs:
             -v "$PWD":/app \
             -w /app \
             ghcr.io/railwayapp/cli:latest \
-            railway up .railway/web --service "$SERVICE_NAME" --ci
+            railway up .railway/web --service "$SERVICE_NAME" --ci --path-as-root
