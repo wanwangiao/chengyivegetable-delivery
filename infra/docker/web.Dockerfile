@@ -6,6 +6,8 @@ WORKDIR /app
 
 COPY . ./
 
+RUN if [ -f node_modules.tgz ]; then       tar -xzf node_modules.tgz && rm node_modules.tgz;     fi
+
 EXPOSE 3000
 
 CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]
