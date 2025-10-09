@@ -151,6 +151,8 @@ jobs:
           pnpm --filter api deploy --prod .railway/api
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
+          tar -czf .railway/api/node_modules.tgz -C .railway/api node_modules .pnpm || true
+          rm -rf .railway/api/node_modules .railway/api/.pnpm || true
 
       - name: Bundle Web deployment artifact
         run: |
@@ -158,6 +160,8 @@ jobs:
           pnpm --filter web deploy --prod .railway/web
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
           cp infra/railway/web.railway.json .railway/web/railway.json
+          tar -czf .railway/web/node_modules.tgz -C .railway/web node_modules .pnpm || true
+          rm -rf .railway/web/node_modules .railway/web/.pnpm || true
 
       - name: Verify Railway token
         if: ${{ env.RAILWAY_TOKEN != '' }}
