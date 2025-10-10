@@ -5,7 +5,15 @@ const target = process.env.RAILWAY_BUILD_TARGET || 'api';
 
 const run = (cmd, options = {}) => {
   console.log(`$ ${cmd}`);
-  execSync(cmd, { stdio: 'inherit', env: process.env });
+  const mergedOptions = {
+    stdio: 'inherit',
+    ...options,
+    env: {
+      ...process.env,
+      ...(options.env ?? {})
+    }
+  };
+  execSync(cmd, mergedOptions);
 };
 
 const buildSharedPackages = () => {
@@ -29,7 +37,11 @@ if (target === 'api') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
   const port = process.env.PORT ?? '3000';
-  run(`pnpm --filter driver exec expo start --web --non-interactive --port ${port}`);
+  run(`pnpm --filter driver exec expo start --web --non-interactive --port ${port}`, {
+    env: {
+      CI: '1'
+    }
+  });
 } else {
   throw new Error(`Unsupported RAILWAY_BUILD_TARGET: ${target}`);
 }
