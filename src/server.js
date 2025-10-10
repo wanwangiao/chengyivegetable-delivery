@@ -15,7 +15,7 @@ if (target === 'api') {
 } else if (target === 'web') {
   console.log('Starting Web deployment runtime');
   run('pnpm --filter web build');
-  run('pnpm --filter web start');
+  run('pnpm --filter web exec next start');
 } else {
   throw new Error(`Unsupported RAILWAY_BUILD_TARGET: ${target}`);
 }
