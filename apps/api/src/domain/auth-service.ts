@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { sign, verify, type Secret, type SignOptions } from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 import { z } from 'zod';
 import type { UserRepository } from '../infrastructure/prisma/user.repository';
 import { env } from '../config/env';
@@ -58,7 +58,7 @@ export class AuthService {
     const options: SignOptions = {
       expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn']
     };
-    const accessToken = sign({ sub: userId, role }, secret, options);
+    const accessToken = jwt.sign({ sub: userId, role }, secret, options);
 
     return {
       accessToken,
@@ -67,6 +67,6 @@ export class AuthService {
   }
 
   verify(token: string) {
-    return verify(token, env.JWT_SECRET) as { sub: string; role: string };
+    return jwt.verify(token, env.JWT_SECRET) as { sub: string; role: string };
   }
 }
