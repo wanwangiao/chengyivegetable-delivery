@@ -16,6 +16,10 @@ if (target === 'api') {
   console.log('Starting Web deployment runtime');
   run('pnpm --filter web build');
   run('pnpm --filter web exec next start');
+} else if (target === 'driver') {
+  console.log('Starting Driver web runtime');
+  const port = process.env.PORT ?? '3000';
+  run(`pnpm --filter driver exec expo start --web --non-interactive --port ${port}`);
 } else {
   throw new Error(`Unsupported RAILWAY_BUILD_TARGET: ${target}`);
 }
