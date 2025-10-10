@@ -26,8 +26,7 @@ if (target === 'api') {
   console.log('Starting API deployment runtime');
   buildSharedPackages();
   run('pnpm --filter api prisma generate');
-  run('pnpm --filter api build');
-  run('node --experimental-specifier-resolution=node apps/api/dist/index.js');
+  run('pnpm --filter api exec tsx --tsconfig tsconfig.build.json src/index.ts');
 } else if (target === 'web') {
   console.log('Starting Web deployment runtime');
   buildSharedPackages();
