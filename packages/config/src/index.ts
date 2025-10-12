@@ -54,3 +54,4 @@ export const loadEnv = (options?: { path?: string }) => {
 };
 
 export const env = loadEnv();
+export default env;
