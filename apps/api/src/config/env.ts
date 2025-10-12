@@ -1,4 +1,4 @@
-import { env as sharedEnv } from '@chengyi/config';
+import sharedEnv from '@chengyi/config';
 
 export const env = {
   ...sharedEnv,
