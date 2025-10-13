@@ -10,6 +10,8 @@ COPY packages/config/package.json packages/config/
 COPY packages/domain/package.json packages/domain/
 COPY packages/lib/package.json packages/lib/
 
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY . .
