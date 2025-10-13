@@ -84,6 +84,7 @@ docker exec <api-container> pnpm --filter api prisma migrate deploy
 - Driver Web 端尚未完成 UI 與 API 串接；完成後需更新 Expo/React 依賴版本以符合官方建議。
 - 確認 Web / Driver 服務均設定 `API_BASE_URL`、`SESSION_SECRET`、`JWT_SECRET` 等核心環境變數，保持與 API 一致。
 - 將 Prisma 遷移 (`pnpm --filter api prisma migrate deploy`) 納入部署流程並加上健康檢查腳本。
+- 規劃 Driver 端需求（登入、接單列表、配送流程、導航／簽收、定位回報），補齊 Expo Router UI 與 API 串接，並設定 `API_BASE_URL` 等環境變數。
 
 ---
 若導入 GitHub Actions，可於 `.github/workflows/deploy.yml` 中新增實際部署指令（Docker login、推送、平台 CLI 部署等），再搭配上方流程完成自動化。
