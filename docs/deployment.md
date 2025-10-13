@@ -1,5 +1,10 @@
 # 部署指南
 
+## 最新部署狀態（2025-10-13）
+- **API**：使用根目錄 `Dockerfile` 建置。部署流程會依序建置 `config`、`domain`、`lib` 套件，執行 `pnpm --filter api prisma generate`，最後以 `pnpm --filter api exec tsx --tsconfig tsconfig.build.json src/index.ts` 啟動。容器已安裝 `openssl`，並將 Prisma `binaryTargets` 設為 `debian-openssl-3.0.x`，解決 `libssl` 缺失。
+- **Web**：`RAILWAY_BUILD_TARGET=web` 搭配 `pnpm run start`，請清空 Build 頁面 `Custom Build Command`，讓建置完全依賴 Dockerfile 內的 `pnpm install` 與 Next.js build。
+- **Driver**：Expo Web 服務可啟動，仍需補齊正式 UI 並依 Expo 建議調整 React/TypeScript 版本。
+
 ## 1. 環境需求
 - Node.js 20（若使用 pnpm on-host 部署）。
 - PostgreSQL 16 與 Redis 7。
@@ -76,6 +81,9 @@ docker exec <api-container> pnpm --filter api prisma migrate deploy
 - Terraform 模組尚未建立，可依最終平台補齊。
 - 撰寫備援 / 備份策略（資料庫快照、檔案備份）。
 - 針對 LINE 通知設定網域白名單與 webhook。
+- Driver Web 端尚未完成 UI 與 API 串接；完成後需更新 Expo/React 依賴版本以符合官方建議。
+- 確認 Web / Driver 服務均設定 `API_BASE_URL`、`SESSION_SECRET`、`JWT_SECRET` 等核心環境變數，保持與 API 一致。
+- 將 Prisma 遷移 (`pnpm --filter api prisma migrate deploy`) 納入部署流程並加上健康檢查腳本。
 
 ---
 若導入 GitHub Actions，可於 `.github/workflows/deploy.yml` 中新增實際部署指令（Docker login、推送、平台 CLI 部署等），再搭配上方流程完成自動化。
