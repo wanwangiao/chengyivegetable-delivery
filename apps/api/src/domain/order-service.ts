@@ -4,9 +4,15 @@ import { OrderEntity, OrderSchema } from '@chengyi/domain';
 import type { OrderRepository } from '../infrastructure/prisma/order.repository';
 import { createOrderStatusChangedEvent } from '@chengyi/domain';
 import { eventBus } from '@chengyi/lib';
+import { SystemConfigService } from './system-config-service';
+import { prismaSystemConfigRepository } from '../infrastructure/prisma/system-config.repository';
 
 export class OrderService {
-  constructor(private readonly repository: OrderRepository) {}
+  private systemConfigService: SystemConfigService;
+
+  constructor(private readonly repository: OrderRepository) {
+    this.systemConfigService = new SystemConfigService(prismaSystemConfigRepository);
+  }
 
   async list(): Promise<Order[]> {
     return await this.repository.list();
@@ -30,17 +36,26 @@ export class OrderService {
   }
 
   async create(input: Omit<Order, 'id' | 'status'>): Promise<Order> {
+    // 取得配送日期和預訂單標記
+    const { deliveryDate, isPreOrder } = await this.systemConfigService.getDeliveryDate();
+
     const order = OrderSchema.parse({
       ...input,
       id: randomUUID(),
-      status: 'pending'
+      status: 'pending',
+      deliveryDate: deliveryDate.toISOString(),
+      isPreOrder
     });
 
     const saved = await this.repository.create(order);
 
     eventBus.emit('order.created', {
       orderId: saved.id,
-      payload: saved
+      phone: saved.contactPhone,
+      contactName: saved.contactName,
+      totalAmount: saved.totalAmount,
+      deliveryDate: saved.deliveryDate,
+      isPreOrder: saved.isPreOrder
     });
 
     return saved;
@@ -87,12 +102,20 @@ export class OrderService {
 
     const updated = await this.repository.updateStatus(id, status, reason, driverIdToSet);
 
-    eventBus.emit('order.status-changed', createOrderStatusChangedEvent({
-      orderId: id,
-      previousStatus: current.status,
-      newStatus: status,
-      reason
-    }));
+    // 觸發狀態變更事件（整合 audit log 和 LINE 通知所需資訊）
+    eventBus.emit('order.status-changed', {
+      ...createOrderStatusChangedEvent({
+        orderId: id,
+        previousStatus: current.status,
+        newStatus: status,
+        reason
+      }),
+      // 額外的 LINE 通知所需資訊
+      phone: updated.contactPhone,
+      status: updated.status,
+      note: reason,
+      driverId: driverIdToSet
+    });
 
     return updated;
   }

@@ -15,7 +15,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: '訂單管理', href: '/admin/orders' },
   { label: '商品管理', href: '/admin/products' },
   { label: '配送監控', href: '/admin/delivery' },
-  { label: '帳號管理', href: '/admin/users' }
+  { label: '帳號管理', href: '/admin/users' },
+  { label: '系統設定', href: '/admin/settings' }
 ];
 
 export default function AdminLayoutShell({ children }: { children: ReactNode }) {

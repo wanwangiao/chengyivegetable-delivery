@@ -11,6 +11,8 @@ export const createAdminProductsRouter = (controller: AdminProductsController): 
   router.post('/import', csvUpload, controller.importCsv);
   router.post('/bulk', controller.bulkUpsert);
   router.post('/reorder', controller.reorder);
+  router.post('/sync-next-day-prices', controller.syncNextDayPrices);
+  router.post('/check-price-changes', controller.checkPriceChanges);
   router.get('/', controller.list);
   router.patch('/:id', controller.update);
   router.patch('/:id/toggle', controller.toggle);

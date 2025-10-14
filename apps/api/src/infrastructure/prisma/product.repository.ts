@@ -28,10 +28,12 @@ const mapProduct = (product: ProductRecord): Product => ({
   unit: product.unit,
   unitHint: product.unitHint ?? undefined,
   price: toNullableNumber(product.price),
+  nextDayPrice: toNullableNumber(product.nextDayPrice),
   stock: product.stock,
   isAvailable: product.isAvailable,
   isPricedItem: product.isPricedItem,
   weightPricePerUnit: toNullableNumber(product.weightPricePerUnit),
+  nextDayWeightPricePerUnit: toNullableNumber(product.nextDayWeightPricePerUnit),
   sortOrder: product.sortOrder,
   imageUrl: product.imageUrl ?? undefined,
   imageKey: product.imageKey ?? undefined,
@@ -46,10 +48,12 @@ const buildCreateData = (input: ProductCreateInput): Prisma.ProductCreateInput =
   unit: input.unit,
   unitHint: input.unitHint,
   price: input.price ?? null,
+  nextDayPrice: input.nextDayPrice ?? null,
   stock: input.stock,
   isAvailable: input.isAvailable,
   isPricedItem: input.isPricedItem,
   weightPricePerUnit: input.weightPricePerUnit ?? null,
+  nextDayWeightPricePerUnit: input.nextDayWeightPricePerUnit ?? null,
   sortOrder: input.sortOrder ?? 0,
   imageUrl: input.imageUrl,
   imageKey: input.imageKey,
@@ -73,10 +77,12 @@ const buildUpdateData = (input: ProductUpdateInput): Prisma.ProductUpdateInput =
   if (input.unit !== undefined) data.unit = input.unit;
   if (input.unitHint !== undefined) data.unitHint = input.unitHint;
   if (input.price !== undefined) data.price = input.price;
+  if (input.nextDayPrice !== undefined) data.nextDayPrice = input.nextDayPrice;
   if (input.stock !== undefined) data.stock = input.stock;
   if (input.isAvailable !== undefined) data.isAvailable = input.isAvailable;
   if (input.isPricedItem !== undefined) data.isPricedItem = input.isPricedItem;
   if (input.weightPricePerUnit !== undefined) data.weightPricePerUnit = input.weightPricePerUnit;
+  if (input.nextDayWeightPricePerUnit !== undefined) data.nextDayWeightPricePerUnit = input.nextDayWeightPricePerUnit;
   if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
   if (input.imageUrl !== undefined) data.imageUrl = input.imageUrl;
   if (input.imageKey !== undefined) data.imageKey = input.imageKey;
@@ -144,10 +150,12 @@ export interface Product {
   unit: string;
   unitHint?: string;
   price: number | null;
+  nextDayPrice?: number | null;
   stock: number;
   isAvailable: boolean;
   isPricedItem: boolean;
   weightPricePerUnit?: number | null;
+  nextDayWeightPricePerUnit?: number | null;
   sortOrder: number;
   imageUrl?: string;
   imageKey?: string;
@@ -168,10 +176,12 @@ export interface ProductCreateInput {
   unit: string;
   unitHint?: string;
   price?: number | null;
+  nextDayPrice?: number | null;
   stock: number;
   isAvailable: boolean;
   isPricedItem: boolean;
   weightPricePerUnit?: number | null;
+  nextDayWeightPricePerUnit?: number | null;
   sortOrder?: number;
   imageUrl?: string;
   imageKey?: string;
@@ -195,6 +205,7 @@ export interface ProductRepository {
   toggleAvailability(id: string, isAvailable: boolean): Promise<Product>;
   updateImage(id: string, image: { imageUrl: string; imageKey: string; imageUploadedAt?: Date }): Promise<Product>;
   bulkUpsert(inputs: ProductBulkUpsertInput[]): Promise<Product[]>;
+  bulkUpdate(updates: Array<{ id: string; [key: string]: any }>): Promise<Product[]>;
 }
 
 const applyFilters = (params?: { keyword?: string; category?: string; onlyAvailable?: boolean }): Prisma.ProductWhereInput => {
@@ -345,5 +356,22 @@ export const prismaProductRepository: ProductRepository = {
     });
 
     return products.map(mapProduct);
+  },
+
+  async bulkUpdate(updates) {
+    if (updates.length === 0) return [];
+
+    const results = await Promise.all(
+      updates.map(update => {
+        const { id, ...data } = update;
+        return prisma.product.update({
+          where: { id },
+          data: buildUpdateData(data as ProductUpdateInput),
+          include: productInclude
+        });
+      })
+    );
+
+    return results.map(mapProduct);
   }
 };

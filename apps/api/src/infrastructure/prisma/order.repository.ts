@@ -55,6 +55,11 @@ const mapDbOrderToDomain = (result: any): Order => ({
   paymentMethod: result.paymentMethod as Order['paymentMethod'],
   notes: result.notes ?? undefined,
   driverId: result.driverId ?? undefined,
+  deliveryDate: result.deliveryDate?.toISOString?.() ?? result.deliveryDate ?? undefined,
+  isPreOrder: result.isPreOrder ?? false,
+  priceAlertSent: result.priceAlertSent ?? false,
+  priceConfirmed: result.priceConfirmed ?? undefined,
+  priceAlertSentAt: result.priceAlertSentAt?.toISOString?.() ?? result.priceAlertSentAt ?? undefined,
   createdAt: result.createdAt?.toISOString?.() ?? result.createdAt ?? undefined,
   updatedAt: result.updatedAt?.toISOString?.() ?? result.updatedAt ?? undefined,
   deliveryProofs:
@@ -126,6 +131,21 @@ export const prismaOrderRepository: OrderRepository = {
         paymentMethod: order.paymentMethod,
         notes: order.notes,
         driverId: order.driverId,
+        deliveryDate:
+          order.deliveryDate !== undefined
+            ? typeof order.deliveryDate === 'string'
+              ? new Date(order.deliveryDate)
+              : order.deliveryDate
+            : new Date(),
+        isPreOrder: order.isPreOrder ?? false,
+        priceAlertSent: order.priceAlertSent ?? false,
+        priceConfirmed: order.priceConfirmed ?? undefined,
+        priceAlertSentAt:
+          order.priceAlertSentAt !== undefined
+            ? typeof order.priceAlertSentAt === 'string'
+              ? new Date(order.priceAlertSentAt)
+              : order.priceAlertSentAt
+            : undefined,
         items: {
           createMany: {
             data: order.items.map(item => ({

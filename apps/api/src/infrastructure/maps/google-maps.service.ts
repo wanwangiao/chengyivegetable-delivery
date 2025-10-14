@@ -36,7 +36,7 @@ export class GoogleMapsService {
       params: {
         address,
         key: this.apiKey,
-        language: 'zh-TW'
+        language: 'zh-TW' as any
       }
     });
 
@@ -64,7 +64,7 @@ export class GoogleMapsService {
         key: this.apiKey,
         origins: originStrings,
         destinations: destinationStrings,
-        language: 'zh-TW',
+        language: 'zh-TW' as any,
         units: UnitSystem.metric
       }
     });
@@ -85,7 +85,7 @@ export class GoogleMapsService {
         key: this.apiKey,
         origin: `${origin.lat},${origin.lng}`,
         destination: `${destination.lat},${destination.lng}`,
-        language: 'zh-TW',
+        language: 'zh-TW' as any,
         units: UnitSystem.metric
       }
     });
@@ -124,8 +124,8 @@ export class GoogleMapsService {
         origin: `${origin.lat},${origin.lng}`,
         destination: `${destination.lat},${destination.lng}`,
         waypoints: waypoints.map(wp => `${wp.lat},${wp.lng}`),
-        optimize_waypoints: true,
-        language: 'zh-TW',
+        optimize: true,
+        language: 'zh-TW' as any,
         units: UnitSystem.metric
       }
     });

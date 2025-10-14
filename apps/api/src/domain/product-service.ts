@@ -2,6 +2,8 @@
 import { stringify } from 'csv-stringify/sync';
 import { z } from 'zod';
 import type { ProductRepository, ProductBulkUpsertInput, ProductOptionInput } from '../infrastructure/prisma/product.repository';
+import type { OrderRepository } from '../infrastructure/prisma/order.repository';
+import { PriceCheckService, type PriceChangeReport } from './price-check-service';
 
 const optionSchema = z.object({
   id: z.string().uuid().optional(),
@@ -16,10 +18,12 @@ const baseProductSchema = z.object({
   unit: z.string().min(1, '商品單位不可為空'),
   unitHint: z.string().optional(),
   price: z.number().nonnegative('價格需為非負數').nullable().optional(),
+  nextDayPrice: z.number().nonnegative('隔天預估價需為非負數').nullable().optional(),
   stock: z.number().nonnegative('庫存需為非負數').default(0),
   isAvailable: z.boolean().default(true),
   isPricedItem: z.boolean().default(false),
   weightPricePerUnit: z.number().nonnegative('秤重商品應有單位價格').nullable().optional(),
+  nextDayWeightPricePerUnit: z.number().nonnegative('隔天秤重預估價需為非負數').nullable().optional(),
   sortOrder: z.number().int().optional(),
   imageUrl: z.string().min(1).optional(),
   imageKey: z.string().optional(),
@@ -56,10 +60,12 @@ const csvColumns = [
   'unit',
   'unitHint',
   'price',
+  'nextDayPrice',
   'stock',
   'isAvailable',
   'isPricedItem',
   'weightPricePerUnit',
+  'nextDayWeightPricePerUnit',
   'sortOrder',
   'imageUrl',
   'imageKey',
@@ -82,7 +88,16 @@ const toNumber = (value: string | undefined): number | null => {
 const serializeNumber = (value: number | null | undefined) => (value === null || value === undefined ? '' : value.toString());
 
 export class ProductService {
-  constructor(private readonly repository: ProductRepository) {}
+  private priceCheckService?: PriceCheckService;
+
+  constructor(
+    private readonly repository: ProductRepository,
+    orderRepository?: OrderRepository
+  ) {
+    if (orderRepository) {
+      this.priceCheckService = new PriceCheckService(orderRepository, repository);
+    }
+  }
 
   async list(params?: { keyword?: string; category?: string; onlyAvailable?: boolean }) {
     return await this.repository.list(params);
@@ -171,10 +186,12 @@ export class ProductService {
       unit: product.unit,
       unitHint: product.unitHint ?? '',
       price: serializeNumber(product.price),
+      nextDayPrice: serializeNumber(product.nextDayPrice ?? null),
       stock: serializeNumber(product.stock),
       isAvailable: product.isAvailable ? '1' : '0',
       isPricedItem: product.isPricedItem ? '1' : '0',
       weightPricePerUnit: serializeNumber(product.weightPricePerUnit ?? null),
+      nextDayWeightPricePerUnit: serializeNumber(product.nextDayWeightPricePerUnit ?? null),
       sortOrder: serializeNumber(product.sortOrder),
       imageUrl: product.imageUrl ?? '',
       imageKey: product.imageKey ?? '',
@@ -212,10 +229,12 @@ export class ProductService {
         unit: row.unit?.trim() ?? '',
         unitHint: row.unitHint?.trim() || undefined,
         price: toNumber(row.price),
+        nextDayPrice: toNumber(row.nextDayPrice),
         stock: toNumber(row.stock) ?? 0,
         isAvailable: toBoolean(row.isAvailable, true),
         isPricedItem: toBoolean(row.isPricedItem, false),
         weightPricePerUnit: toNumber(row.weightPricePerUnit),
+        nextDayWeightPricePerUnit: toNumber(row.nextDayWeightPricePerUnit),
         sortOrder: toNumber(row.sortOrder) ?? undefined,
         imageUrl: row.imageUrl?.trim() || undefined,
         imageKey: row.imageKey?.trim() || undefined,
@@ -241,5 +260,24 @@ export class ProductService {
     } catch (error) {
       throw new Error('商品選項 JSON 解析失敗，請確認格式是否正確');
     }
+  }
+
+  async syncNextDayPrices(): Promise<{ updated: number; products: any[] }> {
+    const products = await this.repository.list();
+    const updates = products.map(product => ({
+      id: product.id,
+      nextDayPrice: product.price,
+      nextDayWeightPricePerUnit: product.weightPricePerUnit
+    }));
+
+    const updated = await this.repository.bulkUpdate(updates);
+    return { updated: updated.length, products: updated };
+  }
+
+  async checkPriceChanges(threshold: number): Promise<PriceChangeReport[]> {
+    if (!this.priceCheckService) {
+      throw new Error('PriceCheckService is not initialized. OrderRepository is required.');
+    }
+    return await this.priceCheckService.checkTodayPreOrders(threshold);
   }
 }

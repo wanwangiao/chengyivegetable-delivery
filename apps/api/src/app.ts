@@ -35,6 +35,12 @@ import { DriverOrdersService } from './domain/driver-orders-service';
 import { DriverOrdersController } from './application/controllers/driver-orders.controller';
 import { DriverRouteController } from './application/controllers/driver-route.controller';
 import { prismaDeliveryProofRepository } from './infrastructure/prisma/delivery-proof.repository';
+import { SystemConfigService } from './domain/system-config-service';
+import { AdminSettingsController } from './application/controllers/admin-settings.controller';
+import { prismaSystemConfigRepository } from './infrastructure/prisma/system-config.repository';
+import { PriceAlertAutoAcceptService } from './domain/price-alert-auto-accept-service';
+import { LineWebhookController } from './application/controllers/line-webhook.controller';
+import { createLineRouter } from './application/routes/line.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -46,6 +52,11 @@ export const createApp = (): Application => {
     credentials: true
   }));
   app.use(compression());
+
+  // LINE Webhook 路由必須在 express.json() 之前註冊，因為需要原始 body 來驗證簽章
+  const lineWebhookController = new LineWebhookController();
+  app.use('/api/v1/line', createLineRouter(lineWebhookController));
+
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use('/uploads', express.static(storageConfig.root));
@@ -61,7 +72,7 @@ export const createApp = (): Application => {
     : undefined;
 
   const orderService = new OrderService(orderRepository);
-  const productService = new ProductService(productRepository);
+  const productService = new ProductService(productRepository, orderRepository);
   const authService = new AuthService(userRepository);
   const driverService = new DriverService(driverRepository);
   const driverOrdersService = new DriverOrdersService({
@@ -70,6 +81,7 @@ export const createApp = (): Application => {
     deliveryProofRepository
   });
   const userManagementService = new UserManagementService(userRepository);
+  const systemConfigService = new SystemConfigService(prismaSystemConfigRepository);
 
   const orderController = new OrderController(orderService);
   const productController = new ProductController(productService);
@@ -88,6 +100,7 @@ export const createApp = (): Application => {
   const adminDeliveryController = new AdminDeliveryController(deliveryService);
   const driverDeliveryController = new DriverDeliveryController(deliveryService);
   const driverRouteController = new DriverRouteController(mapsService);
+  const adminSettingsController = new AdminSettingsController(systemConfigService);
 
   initAuthMiddleware(authService);
 
@@ -102,7 +115,8 @@ export const createApp = (): Application => {
     userManagementController,
     adminOrdersController,
     adminProductsController,
-    adminDeliveryController
+    adminDeliveryController,
+    adminSettingsController
   }));
 
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -123,6 +137,13 @@ export const createApp = (): Application => {
     logger.error(err, 'Unhandled error');
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
   });
+
+  // 啟動價格通知自動接受服務
+  if (env.NODE_ENV === 'production') {
+    const autoAcceptService = new PriceAlertAutoAcceptService();
+    autoAcceptService.startPeriodicCheck();
+    logger.info('Price alert auto-accept service started');
+  }
 
   return app;
 };

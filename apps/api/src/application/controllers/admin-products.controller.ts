@@ -89,4 +89,26 @@ export class AdminProductsController {
     }).reorder(items);
     res.json({ data: products, count: products.length });
   };
+
+  syncNextDayPrices = async (_req: Request, res: Response) => {
+    const result = await this.productService.syncNextDayPrices();
+    res.json({
+      success: true,
+      message: `已同步 ${result.updated} 項商品的明日價格`,
+      data: result.products
+    });
+  };
+
+  checkPriceChanges = async (req: Request, res: Response) => {
+    const { threshold } = req.body;
+    const thresholdValue = typeof threshold === 'number' ? threshold : 10;
+
+    const report = await this.productService.checkPriceChanges(thresholdValue);
+
+    res.json({
+      success: true,
+      ordersWithAlert: report.length,
+      data: report
+    });
+  };
 }

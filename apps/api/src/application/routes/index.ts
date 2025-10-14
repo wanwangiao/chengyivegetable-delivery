@@ -10,6 +10,7 @@ import type { AdminOrdersController } from '../controllers/admin-orders.controll
 import type { AdminProductsController } from '../controllers/admin-products.controller';
 import type { AdminDeliveryController } from '../controllers/admin-delivery.controller';
 import type { DriverDeliveryController } from '../controllers/driver-delivery.controller';
+import type { AdminSettingsController } from '../controllers/admin-settings.controller';
 import { createOrderRouter } from './order.routes';
 import { createProductRouter } from './product.routes';
 import { createAuthRouter } from './auth.routes';
@@ -18,6 +19,7 @@ import { createAdminUsersRouter } from './admin_users.routes';
 import { createAdminOrdersRouter } from './admin_orders.routes';
 import { createAdminProductsRouter } from './admin_products.routes';
 import { createAdminDeliveryRouter } from './admin_delivery.routes';
+import { createAdminSettingsRouter } from './admin_settings.routes';
 
 export interface RouteDependencies {
   orderController: OrderController;
@@ -31,9 +33,10 @@ export interface RouteDependencies {
   adminOrdersController: AdminOrdersController;
   adminProductsController: AdminProductsController;
   adminDeliveryController: AdminDeliveryController;
+  adminSettingsController: AdminSettingsController;
 }
 
-export const createRoutes = ({ orderController, productController, authController, driverController, driverOrdersController, driverDeliveryController, driverRouteController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }: RouteDependencies): Router => {
+export const createRoutes = ({ orderController, productController, authController, driverController, driverOrdersController, driverDeliveryController, driverRouteController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController, adminSettingsController }: RouteDependencies): Router => {
   const router = Router();
 
   router.get('/health', (_req, res) => {
@@ -48,6 +51,7 @@ export const createRoutes = ({ orderController, productController, authControlle
   router.use('/admin/orders', createAdminOrdersRouter(adminOrdersController));
   router.use('/admin/products', createAdminProductsRouter(adminProductsController));
   router.use('/admin/delivery', createAdminDeliveryRouter(adminDeliveryController));
+  router.use('/admin/settings', createAdminSettingsRouter(adminSettingsController));
 
   return router;
 };

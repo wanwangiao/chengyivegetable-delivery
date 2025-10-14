@@ -57,6 +57,11 @@ export const OrderSchema = z.object({
   paymentMethod: z.enum(['cash', 'transfer', 'line_pay', 'credit']),
   notes: z.string().optional(),
   driverId: z.string().uuid().optional(),
+  deliveryDate: z.union([z.string(), z.date()]).optional(),
+  isPreOrder: z.boolean().optional(),
+  priceAlertSent: z.boolean().optional(),
+  priceConfirmed: z.boolean().optional(),
+  priceAlertSentAt: z.union([z.string(), z.date()]).optional(),
   createdAt: z.union([z.string(), z.date()]).optional(),
   updatedAt: z.union([z.string(), z.date()]).optional(),
   deliveryProofs: z.array(DeliveryProofSchema).optional()

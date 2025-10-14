@@ -48,10 +48,12 @@ type Product = {
   unit: string;
   unitHint?: string;
   price: number | null;
+  nextDayPrice: number | null;
   stock: number;
   isAvailable: boolean;
   isPricedItem: boolean;
   weightPricePerUnit?: number | null;
+  nextDayWeightPricePerUnit?: number | null;
   sortOrder: number;
   imageUrl?: string;
   options: ProductOption[];
@@ -81,10 +83,12 @@ type ProductFormState = {
   unit: string;
   unitHint: string;
   price: string;
+  nextDayPrice: string;
   stock: string;
   isAvailable: boolean;
   isPricedItem: boolean;
   weightPricePerUnit: string;
+  nextDayWeightPricePerUnit: string;
   sortOrder: string;
   options: ProductOptionFormState[];
   imageUrl?: string;
@@ -107,6 +111,7 @@ const toFormState = (product: Product): ProductFormState => ({
   unit: product.unit,
   unitHint: product.unitHint ?? '',
   price: product.price === null || product.price === undefined ? '' : String(product.price),
+  nextDayPrice: product.nextDayPrice === null || product.nextDayPrice === undefined ? '' : String(product.nextDayPrice),
   stock: String(product.stock ?? 0),
   isAvailable: product.isAvailable,
   isPricedItem: product.isPricedItem,
@@ -114,6 +119,10 @@ const toFormState = (product: Product): ProductFormState => ({
     product.weightPricePerUnit === null || product.weightPricePerUnit === undefined
       ? ''
       : String(product.weightPricePerUnit),
+  nextDayWeightPricePerUnit:
+    product.nextDayWeightPricePerUnit === null || product.nextDayWeightPricePerUnit === undefined
+      ? ''
+      : String(product.nextDayWeightPricePerUnit),
   sortOrder: String(product.sortOrder ?? 0),
   options: product.options?.map(option => ({
     id: option.id,
@@ -163,6 +172,8 @@ export default function AdminProductsPage() {
   const [editorState, setEditorState] = useState<ProductFormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -279,7 +290,9 @@ export default function AdminProductsPage() {
       isAvailable: editorState.isAvailable,
       isPricedItem: editorState.isPricedItem,
       price: editorState.isPricedItem ? null : parseNumber(editorState.price),
+      nextDayPrice: editorState.isPricedItem ? null : parseNumber(editorState.nextDayPrice),
       weightPricePerUnit: editorState.isPricedItem ? parseNumber(editorState.weightPricePerUnit) : null,
+      nextDayWeightPricePerUnit: editorState.isPricedItem ? parseNumber(editorState.nextDayWeightPricePerUnit) : null,
       stock: parseRequiredNumber(editorState.stock, 0),
       sortOrder: parseRequiredNumber(editorState.sortOrder, 0),
       options: editorState.options
@@ -418,6 +431,52 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleSyncNextDayPrices = async () => {
+    if (!headers) {
+      setMessage('請先輸入有效的管理員 JWT Token');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      const response = await fetch(`${API_BASE}/admin/products/sync-next-day-prices`, {
+        method: 'POST',
+        headers
+      });
+      if (!response.ok) throw new Error('同步明日價格失敗');
+      const json = await response.json();
+      setMessage(json.message ?? '明日價格已同步');
+      await loadProducts();
+    } catch (error: any) {
+      setMessage(error?.message ?? '同步時發生錯誤');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleCheckPriceChanges = async () => {
+    if (!headers) {
+      setMessage('請先輸入有效的管理員 JWT Token');
+      return;
+    }
+
+    try {
+      setChecking(true);
+      const response = await fetch(`${API_BASE}/admin/products/check-price-changes`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threshold: 10 })
+      });
+      if (!response.ok) throw new Error('檢查價格變動失敗');
+      const json = await response.json();
+      setMessage(`已檢查完成，${json.ordersWithAlert} 筆訂單需要通知`);
+    } catch (error: any) {
+      setMessage(error?.message ?? '檢查時發生錯誤');
+    } finally {
+      setChecking(false);
+    }
+  };
+
   return (
     <Box p={{ xs: 2, md: 4 }} display="flex" flexDirection="column" gap={3}>
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
@@ -440,6 +499,73 @@ export default function AdminProductsPage() {
           <Button variant="contained" onClick={saveToken} startIcon={<Save />}>儲存 Token</Button>
         </Stack>
       </Stack>
+
+{/* 價格管理控制台 */}
+      <Card sx={{ bgcolor: '#F5F7FA', border: '2px solid #E0E4E8' }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: '#2C3E50' }}>
+            ⚡ 價格管理控制台
+          </Typography>
+
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  ☀️ 今日價格狀態
+                </Typography>
+                <Typography variant="body2">
+                  最後更新：{stats ? new Date().toLocaleString('zh-TW') : '—'}
+                </Typography>
+                <Typography variant="body2">
+                  已更新商品：{stats?.total ?? 0} 項
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  🌙 明日預估價狀態
+                </Typography>
+                <Typography variant="body2">
+                  已同步商品：{stats?.total ?? 0} 項
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  sx={{ mt: 1 }}
+                  onClick={handleSyncNextDayPrices}
+                  disabled={syncing}
+                >
+                  {syncing ? '同步中...' : '立即同步明日價格'}
+                </Button>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  🔔 預訂單價格檢查
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  待檢查預訂單：— 筆（配送日期：{new Date(Date.now() + 86400000).toLocaleDateString('zh-TW')}）
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    variant="contained"
+                    onClick={handleCheckPriceChanges}
+                    disabled={checking}
+                    sx={{ bgcolor: '#2C3E50' }}
+                  >
+                    {checking ? '檢查中...' : '檢查價格變動並通知'}
+                  </Button>
+                  <Button variant="outlined">查看預訂單清單</Button>
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
         <TextField
@@ -541,11 +667,23 @@ export default function AdminProductsPage() {
                   <TableCell>
                     {product.isPricedItem ? (
                       <Stack spacing={0.5}>
-                        <Typography>{formatCurrency(product.weightPricePerUnit ?? null)} / {product.unit}</Typography>
+                        <Typography variant="body2">
+                          今日：{formatCurrency(product.weightPricePerUnit ?? null)} / {product.unit}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          明日：{formatCurrency(product.nextDayWeightPricePerUnit ?? null)} / {product.unit}
+                        </Typography>
                         <Chip label="秤重" size="small" color="warning" />
                       </Stack>
                     ) : (
-                      formatCurrency(product.price)
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2">
+                          今日：{formatCurrency(product.price)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          明日：{formatCurrency(product.nextDayPrice)}
+                        </Typography>
+                      </Stack>
                     )}
                   </TableCell>
                   <TableCell>{product.stock}</TableCell>
@@ -647,7 +785,7 @@ export default function AdminProductsPage() {
                     minRows={3}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     label="庫存"
                     type="number"
@@ -656,26 +794,7 @@ export default function AdminProductsPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  {!editorState.isPricedItem ? (
-                    <TextField
-                      label="固定單價"
-                      type="number"
-                      value={editorState.price}
-                      onChange={event => updateEditorField('price', event.target.value)}
-                      fullWidth
-                    />
-                  ) : (
-                    <TextField
-                      label={`每${editorState.unit || '單位'}價格`}
-                      type="number"
-                      value={editorState.weightPricePerUnit}
-                      onChange={event => updateEditorField('weightPricePerUnit', event.target.value)}
-                      fullWidth
-                    />
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={4} display="flex" flexDirection="column" justifyContent="center">
+                <Grid item xs={12} sm={6} display="flex" flexDirection="column" justifyContent="center">
                   <Stack direction="row" spacing={2}>
                     <FormControlLabel
                       control={<Switch checked={editorState.isPricedItem} onChange={event => updateEditorField('isPricedItem', event.target.checked)} />}
@@ -686,6 +805,74 @@ export default function AdminProductsPage() {
                       label="上架中"
                     />
                   </Stack>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ color: '#2C3E50' }}>
+                    💰 價格設定
+                  </Typography>
+                  <Box sx={{ border: '1px solid #E0E4E8', borderRadius: 2, p: 2 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          ☀️ 今日價格（07:30-13:59 顯示）
+                        </Typography>
+                        {!editorState.isPricedItem ? (
+                          <TextField
+                            label="固定單價"
+                            type="number"
+                            value={editorState.price}
+                            onChange={event => updateEditorField('price', event.target.value)}
+                            fullWidth
+                          />
+                        ) : (
+                          <TextField
+                            label={`每${editorState.unit || '單位'}價格`}
+                            type="number"
+                            value={editorState.weightPricePerUnit}
+                            onChange={event => updateEditorField('weightPricePerUnit', event.target.value)}
+                            fullWidth
+                          />
+                        )}
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            🌙 明日預估價（14:00-23:59 顯示）
+                          </Typography>
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              if (!editorState.isPricedItem) {
+                                updateEditorField('nextDayPrice', editorState.price);
+                              } else {
+                                updateEditorField('nextDayWeightPricePerUnit', editorState.weightPricePerUnit);
+                              }
+                            }}
+                          >
+                            複製今日價
+                          </Button>
+                        </Stack>
+                        {!editorState.isPricedItem ? (
+                          <TextField
+                            label="固定單價"
+                            type="number"
+                            value={editorState.nextDayPrice}
+                            onChange={event => updateEditorField('nextDayPrice', event.target.value)}
+                            fullWidth
+                          />
+                        ) : (
+                          <TextField
+                            label={`每${editorState.unit || '單位'}價格`}
+                            type="number"
+                            value={editorState.nextDayWeightPricePerUnit}
+                            onChange={event => updateEditorField('nextDayWeightPricePerUnit', event.target.value)}
+                            fullWidth
+                          />
+                        )}
+                      </Grid>
+                    </Grid>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <Stack spacing={1.5}>
