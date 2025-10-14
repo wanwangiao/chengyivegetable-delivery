@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": [
+      "vitest/globals",
+      "react",
+      "react-native",
+      "react-native/types"
+    ],
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "noEmit": true
+  },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "eslint.config.mjs"
+  ]
+}

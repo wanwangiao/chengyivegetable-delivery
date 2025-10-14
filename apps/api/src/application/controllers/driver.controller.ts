@@ -1,8 +1,12 @@
 import type { Request, Response } from 'express';
 import { DriverService } from '../../domain/driver-service';
+import { DriverOrdersService } from '../../domain/driver-orders-service';
 
 export class DriverController {
-  constructor(private readonly driverService: DriverService) {}
+  constructor(
+    private readonly driverService: DriverService,
+    private readonly driverOrdersService: DriverOrdersService
+  ) {}
 
   profile = async (req: Request, res: Response) => {
     const user = (req as any).user as { sub: string; role: string } | undefined;
@@ -31,7 +35,7 @@ export class DriverController {
   };
 
   listAvailableOrders = async (_req: Request, res: Response) => {
-    const orders = await this.driverService.listAvailableOrders();
+    const orders = await this.driverOrdersService.listAvailableOrders();
     res.json({ data: orders });
   };
 

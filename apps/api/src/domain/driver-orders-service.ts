@@ -1,0 +1,113 @@
+import type { Order } from '@chengyi/domain';
+import type { OrderService } from './order-service';
+import type { OrderRepository } from '../infrastructure/prisma/order.repository';
+import type { DeliveryProofRepository } from '../infrastructure/prisma/delivery-proof.repository';
+import type { Express } from 'express';
+import { saveDeliveryProofImage } from '../infrastructure/storage/delivery-proof.storage';
+
+export class DriverOrdersService {
+  constructor(
+    private readonly dependencies: {
+      orderRepository: OrderRepository;
+      orderService: OrderService;
+      deliveryProofRepository: DeliveryProofRepository;
+    }
+  ) {}
+
+  async listActiveOrders(driverId: string): Promise<Order[]> {
+    return await this.dependencies.orderRepository.listByDriver(driverId, {
+      statuses: ['delivering']
+    });
+  }
+
+  async listAvailableOrders(): Promise<Order[]> {
+    return await this.dependencies.orderRepository.listByStatuses(['ready']);
+  }
+
+  async listCompletedOrders(driverId: string, limit = 20): Promise<Order[]> {
+    return await this.dependencies.orderRepository.listByDriver(driverId, {
+      statuses: ['delivered'],
+      limit
+    });
+  }
+
+  async listProblemOrders(driverId: string, limit = 20): Promise<Order[]> {
+    return await this.dependencies.orderRepository.listByDriver(driverId, {
+      statuses: ['problem'],
+      limit
+    });
+  }
+
+  async getOrderForDriver(driverId: string, orderId: string): Promise<Order> {
+    const order = await this.dependencies.orderRepository.findById(orderId);
+    if (!order) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+    if (order.driverId !== driverId) {
+      throw new Error('ORDER_NOT_ASSIGNED_TO_DRIVER');
+    }
+
+    return order;
+  }
+
+  async claimOrder(orderId: string, actor: { sub: string; role: string }): Promise<Order> {
+    return await this.dependencies.orderService.updateStatus(orderId, 'delivering', undefined, actor);
+  }
+
+  async markDelivered(orderId: string, actor: { sub: string; role: string }): Promise<Order> {
+    return await this.dependencies.orderService.updateStatus(orderId, 'delivered', undefined, actor);
+  }
+
+  async markProblem(
+    orderId: string,
+    reason: string,
+    actor: { sub: string; role: string }
+  ): Promise<Order> {
+    if (typeof reason !== 'string' || reason.trim().length === 0) {
+      throw new Error('REASON_REQUIRED');
+    }
+
+    const trimmed = reason.trim();
+    if (trimmed.length < 3) {
+      throw new Error('REASON_TOO_SHORT');
+    }
+    if (trimmed.length > 200) {
+      throw new Error('REASON_TOO_LONG');
+    }
+
+    return await this.dependencies.orderService.updateStatus(orderId, 'problem', trimmed, actor);
+  }
+
+  async saveDeliveryProof(
+    driverId: string,
+    orderId: string,
+    file: Express.Multer.File | undefined
+  ) {
+    if (!file) {
+      throw new Error('PROOF_FILE_REQUIRED');
+    }
+
+    const order = await this.dependencies.orderRepository.findById(orderId);
+    if (!order) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+    if (order.driverId !== driverId) {
+      throw new Error('ORDER_NOT_ASSIGNED_TO_DRIVER');
+    }
+
+    const saved = await saveDeliveryProofImage(file);
+    const record = await this.dependencies.deliveryProofRepository.create({
+      orderId,
+      driverId,
+      imageKey: saved.imageKey
+    });
+
+    return {
+      id: record.id,
+      orderId: record.orderId,
+      driverId: record.driverId,
+      imageUrl: saved.imageUrl,
+      createdAt: record.createdAt.toISOString()
+    };
+  }
+}

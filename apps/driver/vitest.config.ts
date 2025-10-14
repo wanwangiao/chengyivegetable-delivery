@@ -5,6 +5,11 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['tests/**/*.spec.tsx']
+    include: ['tests/**/*.spec.tsx'],
+    server: {
+      deps: {
+        inline: ['react-native', 'react-native-paper']
+      }
+    }
   }
 });

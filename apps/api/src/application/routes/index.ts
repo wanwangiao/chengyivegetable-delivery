@@ -3,6 +3,7 @@ import type { OrderController } from '../controllers/order.controller';
 import type { ProductController } from '../controllers/product.controller';
 import type { AuthController } from '../controllers/auth.controller';
 import type { DriverController } from '../controllers/driver.controller';
+import type { DriverOrdersController } from '../controllers/driver-orders.controller';
 import type { UserManagementController } from '../controllers/user-management.controller';
 import type { AdminOrdersController } from '../controllers/admin-orders.controller';
 import type { AdminProductsController } from '../controllers/admin-products.controller';
@@ -22,6 +23,7 @@ export interface RouteDependencies {
   productController: ProductController;
   authController: AuthController;
   driverController: DriverController;
+  driverOrdersController: DriverOrdersController;
   driverDeliveryController: DriverDeliveryController;
   userManagementController: UserManagementController;
   adminOrdersController: AdminOrdersController;
@@ -29,7 +31,7 @@ export interface RouteDependencies {
   adminDeliveryController: AdminDeliveryController;
 }
 
-export const createRoutes = ({ orderController, productController, authController, driverController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }: RouteDependencies): Router => {
+export const createRoutes = ({ orderController, productController, authController, driverController, driverOrdersController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }: RouteDependencies): Router => {
   const router = Router();
 
   router.get('/health', (_req, res) => {
@@ -39,7 +41,7 @@ export const createRoutes = ({ orderController, productController, authControlle
   router.use('/orders', createOrderRouter(orderController));
   router.use('/products', createProductRouter(productController));
   router.use('/auth', createAuthRouter(authController));
-  router.use('/drivers', createDriverRouter(driverController, driverDeliveryController));
+  router.use('/drivers', createDriverRouter(driverController, driverOrdersController, driverDeliveryController));
   router.use('/admin/users', createAdminUsersRouter(userManagementController));
   router.use('/admin/orders', createAdminOrdersRouter(adminOrdersController));
   router.use('/admin/products', createAdminProductsRouter(adminProductsController));

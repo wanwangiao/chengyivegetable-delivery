@@ -10,6 +10,17 @@ export interface DistanceMatrixElement {
   durationInSeconds: number;
 }
 
+export interface RouteInfo {
+  distance: number;
+  duration: number;
+  polyline: string;
+  steps: Array<{
+    instruction: string;
+    distance: number;
+    duration: number;
+  }>;
+}
+
 export class GoogleMapsService {
   private readonly client: Client;
 
@@ -66,5 +77,86 @@ export class GoogleMapsService {
         durationInSeconds: element.status === 'OK' ? element.duration?.value ?? Number.POSITIVE_INFINITY : Number.POSITIVE_INFINITY
       }))
     );
+  }
+
+  async getRoute(origin: LatLng, destination: LatLng): Promise<RouteInfo> {
+    const response = await this.client.directions({
+      params: {
+        key: this.apiKey,
+        origin: `${origin.lat},${origin.lng}`,
+        destination: `${destination.lat},${destination.lng}`,
+        language: 'zh-TW',
+        units: UnitSystem.metric
+      }
+    });
+
+    const route = response.data.routes?.[0];
+    if (!route) {
+      throw new Error('ROUTE_NOT_FOUND');
+    }
+
+    const leg = route.legs?.[0];
+    if (!leg) {
+      throw new Error('ROUTE_LEG_NOT_FOUND');
+    }
+
+    return {
+      distance: leg.distance?.value ?? 0,
+      duration: leg.duration?.value ?? 0,
+      polyline: route.overview_polyline?.points ?? '',
+      steps:
+        leg.steps?.map(step => ({
+          instruction: step.html_instructions ?? '',
+          distance: step.distance?.value ?? 0,
+          duration: step.duration?.value ?? 0
+        })) ?? []
+    };
+  }
+
+  async getOptimizedRoute(
+    origin: LatLng,
+    destination: LatLng,
+    waypoints: LatLng[]
+  ): Promise<RouteInfo> {
+    const response = await this.client.directions({
+      params: {
+        key: this.apiKey,
+        origin: `${origin.lat},${origin.lng}`,
+        destination: `${destination.lat},${destination.lng}`,
+        waypoints: waypoints.map(wp => `${wp.lat},${wp.lng}`),
+        optimize_waypoints: true,
+        language: 'zh-TW',
+        units: UnitSystem.metric
+      }
+    });
+
+    const route = response.data.routes?.[0];
+    if (!route) {
+      throw new Error('OPTIMIZED_ROUTE_NOT_FOUND');
+    }
+
+    let totalDistance = 0;
+    let totalDuration = 0;
+    const allSteps: Array<{ instruction: string; distance: number; duration: number }> = [];
+
+    route.legs?.forEach(leg => {
+      totalDistance += leg.distance?.value ?? 0;
+      totalDuration += leg.duration?.value ?? 0;
+
+      leg.steps?.forEach(step => {
+        allSteps.push({
+          instruction: step.html_instructions ?? '',
+          distance: step.distance?.value ?? 0,
+          duration: step.duration?.value ?? 0
+        });
+      });
+    });
+
+    return {
+      distance: totalDistance,
+      duration: totalDuration,
+      polyline: route.overview_polyline?.points ?? '',
+      steps: allSteps
+    };
   }
 }

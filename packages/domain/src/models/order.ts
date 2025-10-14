@@ -12,6 +12,16 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = typeof ORDER_STATUSES[number];
 
+export const DeliveryProofSchema = z.object({
+  id: z.string().uuid(),
+  orderId: z.string().uuid(),
+  driverId: z.string().uuid(),
+  imageUrl: z.string().min(1),
+  createdAt: z.union([z.string(), z.date()])
+});
+
+export type DeliveryProof = z.infer<typeof DeliveryProofSchema>;
+
 export const orderStatusFlow: Record<OrderStatus, OrderStatus[]> = {
   pending: ['preparing', 'cancelled'],
   preparing: ['ready', 'cancelled'],
@@ -48,7 +58,8 @@ export const OrderSchema = z.object({
   notes: z.string().optional(),
   driverId: z.string().uuid().optional(),
   createdAt: z.union([z.string(), z.date()]).optional(),
-  updatedAt: z.union([z.string(), z.date()]).optional()
+  updatedAt: z.union([z.string(), z.date()]).optional(),
+  deliveryProofs: z.array(DeliveryProofSchema).optional()
 });
 
 export type Order = z.infer<typeof OrderSchema>;

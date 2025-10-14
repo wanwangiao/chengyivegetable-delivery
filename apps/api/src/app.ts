@@ -31,6 +31,9 @@ import { AdminDeliveryController } from './application/controllers/admin-deliver
 import { DriverDeliveryController } from './application/controllers/driver-delivery.controller';
 import { prismaDeliveryRepository } from './infrastructure/prisma/delivery.repository';
 import { GoogleMapsService } from './infrastructure/maps/google-maps.service';
+import { DriverOrdersService } from './domain/driver-orders-service';
+import { DriverOrdersController } from './application/controllers/driver-orders.controller';
+import { prismaDeliveryProofRepository } from './infrastructure/prisma/delivery-proof.repository';
 
 export const createApp = (): Application => {
   const app = express();
@@ -51,6 +54,7 @@ export const createApp = (): Application => {
   const userRepository = prismaUserRepository;
   const driverRepository = prismaDriverRepository;
   const deliveryConfigRepository = prismaDeliveryRepository;
+  const deliveryProofRepository = prismaDeliveryProofRepository;
   const mapsService = env.GOOGLE_MAPS_API_KEY
     ? new GoogleMapsService(env.GOOGLE_MAPS_API_KEY)
     : undefined;
@@ -59,12 +63,18 @@ export const createApp = (): Application => {
   const productService = new ProductService(productRepository);
   const authService = new AuthService(userRepository);
   const driverService = new DriverService(driverRepository);
+  const driverOrdersService = new DriverOrdersService({
+    orderRepository,
+    orderService,
+    deliveryProofRepository
+  });
   const userManagementService = new UserManagementService(userRepository);
 
   const orderController = new OrderController(orderService);
   const productController = new ProductController(productService);
   const authController = new AuthController(authService);
-  const driverController = new DriverController(driverService);
+  const driverController = new DriverController(driverService, driverOrdersService);
+  const driverOrdersController = new DriverOrdersController(driverOrdersService);
   const userManagementController = new UserManagementController(userManagementService);
   const adminOrdersController = new AdminOrdersController(orderService);
   const adminProductsController = new AdminProductsController(productService);
@@ -79,7 +89,18 @@ export const createApp = (): Application => {
 
   initAuthMiddleware(authService);
 
-  app.use('/api/v1', createRoutes({ orderController, productController, authController, driverController, driverDeliveryController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController }));
+  app.use('/api/v1', createRoutes({
+    orderController,
+    productController,
+    authController,
+    driverController,
+    driverOrdersController,
+    driverDeliveryController,
+    userManagementController,
+    adminOrdersController,
+    adminProductsController,
+    adminDeliveryController
+  }));
 
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (err instanceof ZodError) {

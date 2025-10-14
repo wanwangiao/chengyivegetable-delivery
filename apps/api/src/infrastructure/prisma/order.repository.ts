@@ -21,7 +21,16 @@ export interface OrderRepository {
     id: string,
     coordinates: { latitude: number; longitude: number; geocodedAt?: Date }
   ): Promise<Order>;
+  listByDriver(
+    driverId: string,
+    options?: { statuses?: OrderStatus[]; limit?: number }
+  ): Promise<Order[]>;
 }
+
+const defaultOrderInclude = {
+  items: true,
+  deliveryProofs: true
+} as const;
 
 const mapDbOrderToDomain = (result: any): Order => ({
   id: result.id,
@@ -47,14 +56,24 @@ const mapDbOrderToDomain = (result: any): Order => ({
   notes: result.notes ?? undefined,
   driverId: result.driverId ?? undefined,
   createdAt: result.createdAt?.toISOString?.() ?? result.createdAt ?? undefined,
-  updatedAt: result.updatedAt?.toISOString?.() ?? result.updatedAt ?? undefined
+  updatedAt: result.updatedAt?.toISOString?.() ?? result.updatedAt ?? undefined,
+  deliveryProofs:
+    result.deliveryProofs && result.deliveryProofs.length > 0
+      ? result.deliveryProofs.map((proof: any) => ({
+          id: proof.id,
+          orderId: proof.orderId,
+          driverId: proof.driverId,
+          imageUrl: `/uploads/delivery-proofs/${proof.imageKey}`,
+          createdAt: proof.createdAt?.toISOString?.() ?? proof.createdAt ?? undefined
+        }))
+      : undefined
 });
 
 export const prismaOrderRepository: OrderRepository = {
   async findById(id) {
     const result = await prisma.order.findUnique({
       where: { id },
-      include: { items: true }
+      include: defaultOrderInclude
     });
 
     if (!result) return null;
@@ -65,7 +84,7 @@ export const prismaOrderRepository: OrderRepository = {
   async findByPhone(phone) {
     const results = await prisma.order.findMany({
       where: { contactPhone: phone },
-      include: { items: true },
+      include: defaultOrderInclude,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -156,7 +175,7 @@ export const prismaOrderRepository: OrderRepository = {
 
   async list() {
     const results = await prisma.order.findMany({
-      include: { items: true },
+      include: defaultOrderInclude,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -170,7 +189,7 @@ export const prismaOrderRepository: OrderRepository = {
           in: statuses
         }
       },
-      include: { items: true },
+      include: defaultOrderInclude,
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit !== undefined ? limit : undefined
     });
@@ -181,7 +200,7 @@ export const prismaOrderRepository: OrderRepository = {
   async listRecentByStatus(status, limit) {
     const results = await prisma.order.findMany({
       where: { status },
-      include: { items: true },
+      include: defaultOrderInclude,
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       take: limit
     });
@@ -200,7 +219,25 @@ export const prismaOrderRepository: OrderRepository = {
           in: ids
         }
       },
-      include: { items: true }
+      include: defaultOrderInclude
+    });
+
+    return results.map(mapDbOrderToDomain);
+  },
+
+  async listByDriver(driverId, options) {
+    const results = await prisma.order.findMany({
+      where: {
+        driverId,
+        status: options?.statuses
+          ? {
+              in: options.statuses
+            }
+          : undefined
+      },
+      include: defaultOrderInclude,
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      take: options?.limit
     });
 
     return results.map(mapDbOrderToDomain);

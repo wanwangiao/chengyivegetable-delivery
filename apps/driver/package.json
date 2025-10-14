@@ -2,34 +2,44 @@
   "name": "driver",
   "version": "0.1.0",
   "private": true,
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --web --non-interactive",
     "build": "node -e \"console.log('Driver app build handled at runtime')\"",
     "dev": "expo start --web",
-    "lint": "eslint 'src/**/*.tsx'",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "lint": "eslint 'app/**/*.tsx'",
+    "test": "tsx tests/app.smoke.ts",
+    "test:watch": "tsx watch tests/app.smoke.ts"
   },
   "dependencies": {
     "@chengyi/domain": "workspace:*",
     "@chengyi/lib": "workspace:*",
+    "@react-native-community/geolocation": "^3.3.0",
     "expo": "^51.0.0",
+    "expo-image-picker": "^17.0.8",
     "expo-router": "^3.5.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-native": "^0.75.2",
-    "react-native-web": "~0.19.10",
-    "react-native-paper": "^5.12.5"
+    "react-native-maps": "^1.14.0",
+    "react-native-paper": "^5.12.5",
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^12.5.3",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-react-native": "^5.0.0",
+    "jsdom": "^27.0.0",
+    "react-test-renderer": "18.3.1",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.3",
-    "vitest": "^1.5.3",
-    "@testing-library/react-native": "^12.5.3",
-    "@testing-library/jest-native": "^5.4.3",
-    "react-test-renderer": "18.3.1"
+    "vitest": "^1.5.3"
   }
 }
