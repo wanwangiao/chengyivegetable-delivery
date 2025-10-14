@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { DriverController } from '../controllers/driver.controller';
 import type { DriverOrdersController } from '../controllers/driver-orders.controller';
 import type { DriverDeliveryController } from '../controllers/driver-delivery.controller';
+import type { DriverRouteController } from '../controllers/driver-route.controller';
 import { authenticate } from '../../middleware/auth';
 import { deliveryProofUpload } from '../../middleware/upload';
 
@@ -9,6 +10,7 @@ export const createDriverRouter = (
   controller: DriverController,
   ordersController: DriverOrdersController,
   deliveryController: DriverDeliveryController,
+  routeController: DriverRouteController,
 ): Router => {
   const router = Router();
 
@@ -27,6 +29,8 @@ export const createDriverRouter = (
   router.post('/orders/:id/deliver', authenticate(['DRIVER']), ordersController.markDelivered);
   router.post('/orders/:id/problem', authenticate(['DRIVER']), ordersController.markProblem);
   router.post('/orders/:id/proof', authenticate(['DRIVER']), deliveryProofUpload, ordersController.uploadProof);
+  router.post('/routes/optimize', authenticate(['DRIVER']), routeController.getOptimizedRoute.bind(routeController));
+  router.post('/routes/batch-optimize', authenticate(['DRIVER']), routeController.getBatchOptimizedOrder.bind(routeController));
 
   return router;
 };

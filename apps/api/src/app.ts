@@ -33,6 +33,7 @@ import { prismaDeliveryRepository } from './infrastructure/prisma/delivery.repos
 import { GoogleMapsService } from './infrastructure/maps/google-maps.service';
 import { DriverOrdersService } from './domain/driver-orders-service';
 import { DriverOrdersController } from './application/controllers/driver-orders.controller';
+import { DriverRouteController } from './application/controllers/driver-route.controller';
 import { prismaDeliveryProofRepository } from './infrastructure/prisma/delivery-proof.repository';
 
 export const createApp = (): Application => {
@@ -86,6 +87,7 @@ export const createApp = (): Application => {
   });
   const adminDeliveryController = new AdminDeliveryController(deliveryService);
   const driverDeliveryController = new DriverDeliveryController(deliveryService);
+  const driverRouteController = new DriverRouteController(mapsService);
 
   initAuthMiddleware(authService);
 
@@ -96,6 +98,7 @@ export const createApp = (): Application => {
     driverController,
     driverOrdersController,
     driverDeliveryController,
+    driverRouteController,
     userManagementController,
     adminOrdersController,
     adminProductsController,
