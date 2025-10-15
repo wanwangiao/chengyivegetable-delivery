@@ -11,8 +11,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().optional().default('7d'),
 
-  // Redis
-  REDIS_URL: z.string().url('REDIS_URL must be a valid URL'),
+  // Redis - Optional (如果未設定，部分功能如通知排程將停用)
+  REDIS_URL: z.string().url('REDIS_URL must be a valid URL').optional(),
 
   // External Services - Optional
   LINE_CHANNEL_ID: z.string().min(1).optional(),
@@ -37,7 +37,7 @@ export function validateEnv(): Env {
     console.log(`   - NODE_ENV: ${validated.NODE_ENV}`);
     console.log(`   - PORT: ${validated.PORT}`);
     console.log(`   - DATABASE_URL: ${validated.DATABASE_URL ? '✓ Configured' : '✗ Missing'}`);
-    console.log(`   - REDIS_URL: ${validated.REDIS_URL ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`   - REDIS_URL: ${validated.REDIS_URL ? '✓ Configured' : '○ Not configured (optional)'}`);
     console.log(`   - SESSION_SECRET: ${validated.SESSION_SECRET.length >= 32 ? '✓ Valid' : '✗ Too short'}`);
     console.log(`   - JWT_SECRET: ${validated.JWT_SECRET.length >= 32 ? '✓ Valid' : '✗ Too short'}`);
     console.log(`   - JWT_EXPIRES_IN: ${validated.JWT_EXPIRES_IN}`);
