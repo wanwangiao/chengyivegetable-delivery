@@ -44,7 +44,7 @@ export class OrderController {
   create = async (req: Request, res: Response) => {
     try {
       const parsed = createOrderSchema.parse(req.body);
-      const order = await this.orderService.create(parsed);
+      const order = await this.orderService.createWithInventory(parsed);
       res.status(201).json({ data: order });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -52,6 +52,43 @@ export class OrderController {
           error: 'VALIDATION_ERROR',
           issues: error.flatten()
         });
+      }
+      if (error instanceof Error) {
+        // 處理價格驗證錯誤
+        if (error.message.startsWith('PRICE_MISMATCH:')) {
+          return res.status(400).json({
+            error: 'PRICE_MISMATCH',
+            message: error.message
+          });
+        }
+        // 處理運費驗證錯誤
+        if (error.message.startsWith('DELIVERY_FEE_MISMATCH:')) {
+          return res.status(400).json({
+            error: 'DELIVERY_FEE_MISMATCH',
+            message: error.message
+          });
+        }
+        // 處理總金額驗證錯誤
+        if (error.message.startsWith('TOTAL_AMOUNT_MISMATCH:')) {
+          return res.status(400).json({
+            error: 'TOTAL_AMOUNT_MISMATCH',
+            message: error.message
+          });
+        }
+        // 處理商品不存在錯誤
+        if (error.message.startsWith('PRODUCT_NOT_FOUND:')) {
+          return res.status(404).json({
+            error: 'PRODUCT_NOT_FOUND',
+            message: error.message
+          });
+        }
+        // 處理庫存不足錯誤
+        if (error.message.startsWith('INSUFFICIENT_STOCK:')) {
+          return res.status(409).json({
+            error: 'INSUFFICIENT_STOCK',
+            message: error.message
+          });
+        }
       }
       throw error;
     }

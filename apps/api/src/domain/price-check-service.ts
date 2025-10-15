@@ -35,20 +35,19 @@ export class PriceCheckService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     // 取得所有訂單
     const allOrders = await this.orderRepository.list();
 
-    // 篩選今日的預訂單且尚未發送價格通知
+    // 篩選今日配送的預訂單且尚未發送價格通知
     const preOrders = allOrders.filter(order => {
-      const deliveryDate = new Date(order.createdAt || '');
+      const deliveryDate = new Date(order.deliveryDate || '');
       deliveryDate.setHours(0, 0, 0, 0);
 
-      // 這裡需要根據實際需求調整篩選邏輯
-      // 暫時使用 createdAt 作為判斷依據
-      return deliveryDate >= today && deliveryDate < tomorrow;
+      return (
+        order.isPreOrder === true &&
+        deliveryDate.getTime() === today.getTime() &&
+        order.priceAlertSent === false
+      );
     });
 
     // 取得所有商品資訊
@@ -111,7 +110,7 @@ export class PriceCheckService {
           orderId: order.id,
           contactName: order.contactName,
           contactPhone: order.contactPhone,
-          deliveryDate: new Date(order.createdAt || ''),
+          deliveryDate: new Date(order.deliveryDate || ''),
           priceChanges,
           oldTotal,
           newTotal,

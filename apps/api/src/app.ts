@@ -41,6 +41,7 @@ import { prismaSystemConfigRepository } from './infrastructure/prisma/system-con
 import { PriceAlertAutoAcceptService } from './domain/price-alert-auto-accept-service';
 import { LineWebhookController } from './application/controllers/line-webhook.controller';
 import { createLineRouter } from './application/routes/line.routes';
+import { globalLimiter, loginLimiter, orderLimiter } from './middleware/rate-limit';
 
 export const createApp = (): Application => {
   const app = express();
@@ -52,6 +53,9 @@ export const createApp = (): Application => {
     credentials: true
   }));
   app.use(compression());
+
+  // 應用全域速率限制
+  app.use(globalLimiter);
 
   // LINE Webhook 路由必須在 express.json() 之前註冊，因為需要原始 body 來驗證簽章
   const lineWebhookController = new LineWebhookController();

@@ -1,6 +1,10 @@
+import { validateEnv } from './config/env-validator';
 import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from '@chengyi/lib';
+
+// Validate environment variables before starting the application
+validateEnv();
 
 const app = createApp();
 

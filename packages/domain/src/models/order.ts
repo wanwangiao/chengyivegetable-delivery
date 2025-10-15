@@ -41,6 +41,8 @@ export const OrderItemSchema = z.object({
   lineTotal: z.number().min(0)
 });
 
+export type OrderItem = z.infer<typeof OrderItemSchema>;
+
 export const OrderSchema = z.object({
   id: z.string().uuid(),
   contactName: z.string().min(1),
