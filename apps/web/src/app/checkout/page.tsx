@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useLiff } from '../../hooks/useLiff';
 
 type CartItem = {
   productId?: string;
@@ -33,6 +34,7 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
 };
 
 export default function CheckoutPage() {
+  const { profile } = useLiff();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState<CustomerData>({
     name: '',
@@ -111,6 +113,8 @@ export default function CheckoutPage() {
         deliveryFee,
         totalAmount,
         notes: customer.notes,
+        lineUserId: profile?.userId, // ✨ 新增：傳送 LINE User ID
+        lineDisplayName: profile?.displayName, // ✨ 新增：傳送 LINE 顯示名稱
         items: cartItems.map((item, index) => ({
           productId: String(item.productId ?? item.id ?? `item-${index}`),
           name: item.name,

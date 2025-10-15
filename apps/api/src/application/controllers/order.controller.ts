@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { z, ZodError } from 'zod';
 import type { OrderService } from '../../domain/order-service';
+import { prisma } from '../../infrastructure/prisma/client';
+import { logger } from '@chengyi/lib';
 
 const createOrderSchema = z.object({
   contactName: z.string().min(1),
@@ -21,7 +23,9 @@ const createOrderSchema = z.object({
     })
   ),
   notes: z.string().optional(),
-  driverId: z.string().uuid().optional()
+  driverId: z.string().uuid().optional(),
+  lineUserId: z.string().optional(), // ✨ 新增：LINE User ID
+  lineDisplayName: z.string().optional() // ✨ 新增：LINE 顯示名稱
 });
 
 const updateStatusSchema = z.object({
@@ -44,6 +48,29 @@ export class OrderController {
   create = async (req: Request, res: Response) => {
     try {
       const parsed = createOrderSchema.parse(req.body);
+
+      // ✨ 自動註冊或更新 LINE 使用者
+      if (parsed.lineUserId && parsed.contactPhone) {
+        try {
+          await prisma.lineUser.upsert({
+            where: { lineUserId: parsed.lineUserId },
+            update: {
+              phone: parsed.contactPhone,
+              displayName: parsed.lineDisplayName || parsed.contactName
+            },
+            create: {
+              lineUserId: parsed.lineUserId,
+              displayName: parsed.lineDisplayName || parsed.contactName,
+              phone: parsed.contactPhone
+            }
+          });
+          logger.info({ lineUserId: parsed.lineUserId, phone: parsed.contactPhone }, 'LINE user registered/updated');
+        } catch (lineUserError) {
+          // LINE 使用者註冊失敗不影響訂單建立
+          logger.error({ error: lineUserError }, 'Failed to register LINE user');
+        }
+      }
+
       const order = await this.orderService.createWithInventory(parsed);
       res.status(201).json({ data: order });
     } catch (error) {
