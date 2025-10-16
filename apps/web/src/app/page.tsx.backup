@@ -1,11 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { FloatingCartBar } from '../components/FloatingCartBar';
-import { CartDrawer } from '../components/CartDrawer';
-import { CheckoutDrawer } from '../components/CheckoutDrawer';
-import { useCart } from '../hooks/useCart';
 
 type Product = {
   id: string;
@@ -27,17 +22,11 @@ const categoryLabel = (category: string | undefined) => {
 };
 
 export default function HomePage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState('全部商品');
-
-  // Shopping cart state
-  const cart = useCart();
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
-  const [checkoutDrawerOpen, setCheckoutDrawerOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,84 +68,6 @@ export default function HomePage() {
       return matchesKeyword && matchesCategory;
     });
   }, [products, searchKeyword, activeCategory]);
-
-  // Cart handlers
-  const handleAddToCart = (product: Product) => {
-    cart.addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      unit: product.unit,
-      imageUrl: product.imageUrl
-    });
-    alert(`已加入購物車：${product.name}`);
-  };
-
-  const handleCheckout = () => {
-    setCartDrawerOpen(false);
-    setTimeout(() => {
-      setCheckoutDrawerOpen(true);
-    }, 300);
-  };
-
-  const handleBackToCart = () => {
-    setCheckoutDrawerOpen(false);
-    setTimeout(() => {
-      setCartDrawerOpen(true);
-    }, 300);
-  };
-
-  const handleSubmitOrder = async (formData: any) => {
-    try {
-      const orderPayload = {
-        contactName: formData.contactName,
-        contactPhone: formData.contactPhone,
-        address: formData.address,
-        paymentMethod: formData.paymentMethod,
-        items: cart.items.map(item => ({
-          productId: item.id,
-          productName: item.name,
-          quantity: item.quantity,
-          unitPrice: item.price,
-          unit: item.unit
-        })),
-        subtotal: cart.subtotal,
-        deliveryFee: cart.deliveryFee,
-        totalAmount: cart.totalAmount
-      };
-
-      const response = await fetch(`${API_BASE}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload)
-      });
-
-      if (!response.ok) {
-        throw new Error('訂單提交失敗');
-      }
-
-      const result = await response.json();
-
-      // Save customer data for next time
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastCustomerData', JSON.stringify({
-          contactName: formData.contactName,
-          contactPhone: formData.contactPhone,
-          address: formData.address
-        }));
-      }
-
-      // Clear cart and close drawer
-      cart.clearCart();
-      setCheckoutDrawerOpen(false);
-
-      // Redirect to order tracking
-      alert(`訂單已成功送出！訂單編號：${result.data?.id || '未知'}`);
-      router.push(`/order-tracking?phone=${encodeURIComponent(formData.contactPhone)}`);
-    } catch (err: any) {
-      alert(`訂單提交失敗：${err.message}`);
-    }
-  };
 
   return (
     <div className="legacy-home">
@@ -244,7 +155,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="product-actions">
-                  <button className="btn-primary" type="button" onClick={() => handleAddToCart(product)}>
+                  <button className="btn-primary" type="button">
                     加入購物車
                   </button>
                   <button className="btn-secondary" type="button">
@@ -275,36 +186,6 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-
-      {/* Shopping Cart Components */}
-      <FloatingCartBar
-        itemCount={cart.itemCount}
-        totalAmount={cart.totalAmount}
-        onClick={() => setCartDrawerOpen(true)}
-      />
-
-      <CartDrawer
-        open={cartDrawerOpen}
-        onClose={() => setCartDrawerOpen(false)}
-        items={cart.items}
-        subtotal={cart.subtotal}
-        deliveryFee={cart.deliveryFee}
-        totalAmount={cart.totalAmount}
-        onUpdateQuantity={cart.updateQuantity}
-        onRemoveItem={cart.removeItem}
-        onCheckout={handleCheckout}
-      />
-
-      <CheckoutDrawer
-        open={checkoutDrawerOpen}
-        onClose={() => setCheckoutDrawerOpen(false)}
-        onBack={handleBackToCart}
-        items={cart.items}
-        subtotal={cart.subtotal}
-        deliveryFee={cart.deliveryFee}
-        totalAmount={cart.totalAmount}
-        onSubmit={handleSubmitOrder}
-      />
     </div>
   );
 }

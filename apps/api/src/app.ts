@@ -26,6 +26,7 @@ import { DriverService } from './domain/driver-service';
 import { UserManagementService } from './domain/user-management-service';
 import './application/subscribers/order-events';
 import { logger } from '@chengyi/lib';
+import { initSentry, Sentry } from './config/sentry';
 import { DeliveryService } from './domain/delivery-service';
 import { AdminDeliveryController } from './application/controllers/admin-delivery.controller';
 import { DriverDeliveryController } from './application/controllers/driver-delivery.controller';
@@ -44,7 +45,12 @@ import { createLineRouter } from './application/routes/line.routes';
 import { globalLimiter, loginLimiter, orderLimiter } from './middleware/rate-limit';
 
 export const createApp = (): Application => {
+  // 初始化 Sentry (必須在其他中間件之前)
+  initSentry();
+
   const app = express();
+
+  // Sentry 會在 init() 時自動設定 Express 中間件
 
   app.set('trust proxy', 1);
   app.use(helmet());
@@ -123,6 +129,8 @@ export const createApp = (): Application => {
     adminSettingsController
   }));
 
+  // Sentry 錯誤處理器會在錯誤處理中間件中手動捕獲
+
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (err instanceof ZodError) {
       return res.status(400).json({
@@ -139,6 +147,12 @@ export const createApp = (): Application => {
     }
 
     logger.error(err, 'Unhandled error');
+
+    // 發送錯誤到 Sentry
+    if (process.env.SENTRY_DSN) {
+      Sentry.captureException(err);
+    }
+
     res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
   });
 

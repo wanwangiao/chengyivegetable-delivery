@@ -16,29 +16,47 @@ export function useLiff() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cachedProfile = window.localStorage.getItem('lineProfile');
+      if (cachedProfile) {
+        try {
+          const parsedProfile = JSON.parse(cachedProfile) as LiffProfile;
+          setProfile(parsedProfile);
+        } catch {
+          window.localStorage.removeItem('lineProfile');
+        }
+      }
+    }
+
     const initLiff = async () => {
       try {
-        await liff.init({ liffId: LIFF_ID });
+        await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
         setIsReady(true);
 
-        if (liff.isLoggedIn()) {
-          setIsLoggedIn(true);
-          const userProfile = await liff.getProfile();
-          const liffProfile: LiffProfile = {
-            userId: userProfile.userId,
-            displayName: userProfile.displayName,
-            pictureUrl: userProfile.pictureUrl
-          };
-          setProfile(liffProfile);
-
-          // 儲存到 localStorage 供其他頁面使用
+        if (!liff.isLoggedIn()) {
           if (typeof window !== 'undefined') {
-            localStorage.setItem('lineProfile', JSON.stringify(liffProfile));
+            liff.login({ redirectUri: window.location.href });
+          } else {
+            liff.login();
           }
+          return;
+        }
+
+        setIsLoggedIn(true);
+        const userProfile = await liff.getProfile();
+        const liffProfile: LiffProfile = {
+          userId: userProfile.userId,
+          displayName: userProfile.displayName,
+          pictureUrl: userProfile.pictureUrl
+        };
+        setProfile(liffProfile);
+
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('lineProfile', JSON.stringify(liffProfile));
         }
       } catch (err: any) {
         console.error('LIFF init failed:', err);
-        setError(err.message || 'LIFF 初始化失敗');
+        setError(err.message || 'LIFF initialization failed');
       }
     };
 
@@ -47,7 +65,11 @@ export function useLiff() {
 
   const login = () => {
     if (isReady && !isLoggedIn) {
-      liff.login();
+      if (typeof window !== 'undefined') {
+        liff.login({ redirectUri: window.location.href });
+      } else {
+        liff.login();
+      }
     }
   };
 
@@ -57,7 +79,7 @@ export function useLiff() {
       setIsLoggedIn(false);
       setProfile(null);
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('lineProfile');
+        window.localStorage.removeItem('lineProfile');
       }
     }
   };
