@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
@@ -8,15 +8,14 @@ import {
   Divider,
   Snackbar,
   Text,
-  TextInput,
-  Badge
+  TextInput
 } from 'react-native-paper';
 import { type Order } from '@chengyi/domain';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { getOfflineQueueService } from '../services/offline-queue';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
+const API_BASE = globalThis.process?.env?.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
 const TOKEN_STORAGE_KEY = 'chengyi_driver_token';
 
 interface DriverProfile {
@@ -41,7 +40,12 @@ const statusOptions: Array<{ label: string; value: string; description: string }
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
 
-type FetchOptions = RequestInit & { skipAuth?: boolean };
+type FetchOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: unknown;
+  skipAuth?: boolean;
+};
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -63,11 +67,11 @@ export default function DriverDashboard() {
   const authHeader = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const saveToken = useCallback((value: string | null) => {
-    if (typeof window !== 'undefined') {
+    if (typeof globalThis.window !== 'undefined') {
       if (value) {
-        window.localStorage.setItem(TOKEN_STORAGE_KEY, value);
+        globalThis.window.localStorage.setItem(TOKEN_STORAGE_KEY, value);
       } else {
-        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        globalThis.window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
     }
     setToken(value);
@@ -80,19 +84,25 @@ export default function DriverDashboard() {
         ...(!options.skipAuth ? (authHeader as Record<string, string>) : {})
       };
 
-      if (options.body && !(options.body instanceof FormData) && options.headers?.['Content-Type'] === undefined) {
+      const isFormDataBody =
+        typeof globalThis.FormData !== 'undefined' && options.body instanceof globalThis.FormData;
+
+      if (options.body && !isFormDataBody && options.headers?.['Content-Type'] === undefined) {
         headers['Content-Type'] = 'application/json';
       }
 
       // 檢查網路狀態
-      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      const isOnline = typeof globalThis.navigator !== 'undefined' ? globalThis.navigator.onLine : true;
 
       if (!isOnline && options.method && options.method !== 'GET') {
         // 離線時將非 GET 請求加入佇列
         offlineQueueService.enqueue({
           url: `${API_BASE}${path}`,
           method: options.method,
-          body: options.body && !(options.body instanceof FormData) ? JSON.parse(options.body as string) : undefined,
+          body:
+            options.body && !isFormDataBody && typeof options.body === 'string'
+              ? JSON.parse(options.body)
+              : options.body,
           headers
         });
         setQueueLength(offlineQueueService.getQueueLength());
@@ -100,7 +110,7 @@ export default function DriverDashboard() {
       }
 
       try {
-        const response = await fetch(`${API_BASE}${path}`, {
+        const response = await (globalThis.fetch as typeof fetch)(`${API_BASE}${path}`, {
           ...options,
           headers: {
             ...headers,
