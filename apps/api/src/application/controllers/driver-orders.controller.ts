@@ -8,6 +8,18 @@ const historyQuerySchema = z.object({
     .optional()
 });
 
+const reorderSchema = z.object({
+  orderIds: z.array(z.string().uuid()).min(1),
+  sequences: z
+    .array(
+      z.object({
+        orderId: z.string().uuid(),
+        sequence: z.number().int().min(1)
+      })
+    )
+    .optional()
+});
+
 export class DriverOrdersController {
   constructor(private readonly driverOrdersService: DriverOrdersService) {}
 
@@ -174,6 +186,34 @@ export class DriverOrdersController {
         }
       }
 
+      res.status(500).json({ error: 'UNEXPECTED_ERROR' });
+    }
+  };
+
+  reorder = async (req: Request, res: Response) => {
+    const user = this.requireDriver(req, res);
+    if (!user) return;
+
+    const parsed = reorderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'INVALID_PAYLOAD', issues: parsed.error.flatten() });
+    }
+
+    const sequences =
+      parsed.data.sequences ?? parsed.data.orderIds.map((orderId, index) => ({ orderId, sequence: index + 1 }));
+
+    try {
+      const orders = await this.driverOrdersService.reorderActiveOrders(user.sub, sequences);
+      res.json({ data: orders });
+    } catch (error: any) {
+      if (error instanceof Error) {
+        if (error.message === 'ORDER_NOT_FOUND') {
+          return res.status(404).json({ error: 'ORDER_NOT_FOUND' });
+        }
+        if (error.message === 'ORDER_NOT_ASSIGNED_TO_DRIVER') {
+          return res.status(403).json({ error: 'ORDER_NOT_ASSIGNED_TO_DRIVER' });
+        }
+      }
       res.status(500).json({ error: 'UNEXPECTED_ERROR' });
     }
   };

@@ -1,9 +1,8 @@
 import { useCallback, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Button, Card, Divider, IconButton, Text, Portal, Modal } from 'react-native-paper';
 import { type Order } from '@chengyi/domain';
 
-// 簡約配色
 const COLORS = {
   primary: '#2C3E50',
   secondary: '#546E7A',
@@ -33,15 +32,13 @@ export default function OrderSequenceModal({
   onSelectOrder
 }: OrderSequenceModalProps) {
   const [editingOrders, setEditingOrders] = useState<Order[]>(orders);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const handleMoveUp = useCallback(
     (index: number) => {
       if (index === 0) return;
-      const newOrders = [...editingOrders];
-      [newOrders[index - 1], newOrders[index]] = [newOrders[index], newOrders[index - 1]];
-      setEditingOrders(newOrders);
+      const updated = [...editingOrders];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      setEditingOrders(updated);
     },
     [editingOrders]
   );
@@ -49,9 +46,9 @@ export default function OrderSequenceModal({
   const handleMoveDown = useCallback(
     (index: number) => {
       if (index === editingOrders.length - 1) return;
-      const newOrders = [...editingOrders];
-      [newOrders[index], newOrders[index + 1]] = [newOrders[index + 1], newOrders[index]];
-      setEditingOrders(newOrders);
+      const updated = [...editingOrders];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      setEditingOrders(updated);
     },
     [editingOrders]
   );
@@ -75,11 +72,7 @@ export default function OrderSequenceModal({
 
   return (
     <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={onDismiss}
-        contentContainerStyle={styles.modalContainer}
-      >
+      <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text variant="titleLarge" style={styles.modalTitle}>
@@ -92,11 +85,7 @@ export default function OrderSequenceModal({
 
           <ScrollView style={styles.orderList} contentContainerStyle={styles.orderListContent}>
             {editingOrders.map((order, index) => (
-              <TouchableOpacity
-                key={order.id}
-                onPress={() => handleSelectOrder(index)}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity key={order.id} onPress={() => handleSelectOrder(index)} activeOpacity={0.7}>
                 <Card
                   style={[
                     styles.orderCard,
@@ -130,7 +119,7 @@ export default function OrderSequenceModal({
                         size={20}
                         disabled={index === 0}
                         onPress={() => handleMoveUp(index)}
-                        iconColor={index === 0 ? COLORS.secondary + '50' : COLORS.primary}
+                        iconColor={index === 0 ? `${COLORS.secondary}55` : COLORS.primary}
                       />
                       <IconButton
                         icon="arrow-down"
@@ -139,7 +128,7 @@ export default function OrderSequenceModal({
                         onPress={() => handleMoveDown(index)}
                         iconColor={
                           index === editingOrders.length - 1
-                            ? COLORS.secondary + '50'
+                            ? `${COLORS.secondary}55`
                             : COLORS.primary
                         }
                       />
@@ -199,61 +188,54 @@ const styles = StyleSheet.create({
     paddingBottom: 8
   },
   modalTitle: {
-    color: COLORS.primary,
-    fontWeight: '600'
+    color: COLORS.primary
   },
   divider: {
-    backgroundColor: COLORS.secondary + '30'
+    marginHorizontal: 16
   },
   orderList: {
-    flex: 1
+    flexGrow: 1
   },
   orderListContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     gap: 12
   },
   orderCard: {
-    backgroundColor: COLORS.white,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    marginBottom: 8
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12
   },
   currentOrderCard: {
-    borderWidth: 2,
-    borderColor: COLORS.info,
-    backgroundColor: COLORS.info + '10'
+    borderWidth: 1,
+    borderColor: COLORS.success,
+    backgroundColor: '#E8F7EE'
   },
   orderCardContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  orderInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12
   },
+  orderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1
+  },
   orderNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.secondary + '20',
-    justifyContent: 'center',
-    alignItems: 'center'
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   orderNumberText: {
-    color: COLORS.primary,
-    fontWeight: '700'
+    color: COLORS.white,
+    fontWeight: '600'
   },
   orderDetails: {
-    flex: 1,
-    gap: 2
+    flex: 1
   },
   orderName: {
     color: COLORS.primary,
@@ -263,8 +245,7 @@ const styles = StyleSheet.create({
     color: COLORS.secondary
   },
   orderPhone: {
-    color: COLORS.secondary,
-    fontSize: 11
+    color: COLORS.secondary
   },
   orderActions: {
     flexDirection: 'row',
@@ -272,9 +253,9 @@ const styles = StyleSheet.create({
     gap: 4
   },
   modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     gap: 12
   }
 });

@@ -110,4 +110,38 @@ export class DriverOrdersService {
       createdAt: record.createdAt.toISOString()
     };
   }
+
+  async reorderActiveOrders(
+    driverId: string,
+    sequences: Array<{ orderId: string; sequence: number }>
+  ): Promise<Order[]> {
+    if (sequences.length === 0) {
+      return await this.listActiveOrders(driverId);
+    }
+
+    const uniqueIds = Array.from(new Set(sequences.map(seq => seq.orderId)));
+    const orders = await this.dependencies.orderRepository.findManyByIds(uniqueIds);
+
+    if (orders.length !== uniqueIds.length) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+
+    const notAssigned = orders.find(order => order.driverId !== driverId);
+    if (notAssigned) {
+      throw new Error('ORDER_NOT_ASSIGNED_TO_DRIVER');
+    }
+
+    const normalized = sequences.map((seq, index) => ({
+      orderId: seq.orderId,
+      sequence: Number.isFinite(seq.sequence) ? seq.sequence : index + 1
+    }));
+
+    await this.dependencies.orderRepository.updateDriverSequences(driverId, normalized);
+
+    const updated = await this.listActiveOrders(driverId);
+    return updated.sort(
+      (a, b) =>
+        (a.driverSequence ?? Number.MAX_SAFE_INTEGER) - (b.driverSequence ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
 }

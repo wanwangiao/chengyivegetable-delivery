@@ -25,6 +25,7 @@ export const createDriverRouter = (
   router.get('/me/orders/history', authenticate(['DRIVER']), ordersController.listCompletedOrders);
   router.get('/me/orders/problem', authenticate(['DRIVER']), ordersController.listProblemOrders);
   router.get('/me/orders/:id', authenticate(['DRIVER']), ordersController.getOrder);
+  router.post('/me/orders/reorder', authenticate(['DRIVER']), ordersController.reorder);
   router.post('/orders/:id/claim', authenticate(['DRIVER']), ordersController.claimOrder);
   router.post('/orders/:id/deliver', authenticate(['DRIVER']), ordersController.markDelivered);
   router.post('/orders/:id/problem', authenticate(['DRIVER']), ordersController.markProblem);

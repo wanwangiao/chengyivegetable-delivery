@@ -305,7 +305,6 @@ export default function DriverDashboard() {
         };
         input.click();
         return;
-        return;
       }
 
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();

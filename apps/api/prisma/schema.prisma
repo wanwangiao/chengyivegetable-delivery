@@ -23,6 +23,7 @@ model Order {
   paymentMethod String
   notes         String?
   driverId      String?
+  driverSequence Int?
   deliveryDate  DateTime      @default(now())
   isPreOrder    Boolean       @default(false)
   priceAlertSent Boolean      @default(false)

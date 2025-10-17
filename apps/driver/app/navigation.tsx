@@ -23,6 +23,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { type Order } from '@chengyi/domain';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
+import { getOfflineQueueService } from '../services/offline-queue';
 import OrderSequenceModal from './order-sequence';
 
 const API_BASE = globalThis.process?.env?.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
@@ -46,14 +47,118 @@ interface NavigationParams {
 }
 
 interface RouteInfo {
-  distance: number;
-  duration: number;
+  distanceMeters: number;
+  durationSeconds: number;
   polyline: Array<{ latitude: number; longitude: number }>;
+  steps?: Array<{ instruction: string; distance: number; duration: number }>;
 }
 
 interface ApiResponse<T> {
   data: T;
 }
+
+type ApiRequestOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: unknown;
+};
+
+const isNetworkError = (message: string) =>
+  message.includes('Failed to fetch') ||
+  message.includes('NetworkError') ||
+  message.includes('Network request failed');
+
+const safeParseJson = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const decodePolyline = (encoded: string): Array<{ latitude: number; longitude: number }> => {
+  if (!encoded) return [];
+  const coordinates: Array<{ latitude: number; longitude: number }> = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < encoded.length) {
+    let result = 0;
+    let shift = 0;
+    let b: number;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    const deltaLat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+    lat += deltaLat;
+
+    result = 0;
+    shift = 0;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    const deltaLng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+    lng += deltaLng;
+
+    coordinates.push({
+      latitude: lat / 1e5,
+      longitude: lng / 1e5
+    });
+  }
+
+  return coordinates;
+};
+
+const formatDistance = (meters?: number): string => {
+  if (meters === undefined || Number.isNaN(meters)) {
+    return 'N/A';
+  }
+  if (meters < 1000) {
+    return `${meters.toFixed(0)} 公尺`;
+  }
+  return `${(meters / 1000).toFixed(1)} 公里`;
+};
+
+const formatDuration = (seconds?: number): string => {
+  if (seconds === undefined || Number.isNaN(seconds)) {
+    return 'N/A';
+  }
+  const totalMinutes = Math.round(seconds / 60);
+  if (totalMinutes < 60) {
+    return `${totalMinutes} 分`;
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours} 小時 ${minutes} 分`;
+};
+
+const calculateHaversineDistance = (
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number }
+): number => {
+  const R = 6371000;
+  const lat1 = (from.latitude * Math.PI) / 180;
+  const lat2 = (to.latitude * Math.PI) / 180;
+  const deltaLat = ((to.latitude - from.latitude) * Math.PI) / 180;
+  const deltaLng = ((to.longitude - from.longitude) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
 
 export default function NavigationPage() {
   const router = useRouter();
@@ -71,6 +176,7 @@ export default function NavigationPage() {
   const [submittingProblem, setSubmittingProblem] = useState(false);
   const mapRef = useRef<MapView>(null);
   const locationWatchId = useRef<number | null>(null);
+  const offlineQueue = useMemo(() => getOfflineQueueService(), []);
 
   const orderIds = useMemo(() => params.orderIds?.split(',') ?? [], [params.orderIds]);
   const token = params.token;
@@ -79,36 +185,99 @@ export default function NavigationPage() {
   const authHeader = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const apiRequest = useCallback(
-    async <T,>(path: string, options: RequestInit = {}): Promise<T> => {
-      const response = await (globalThis.fetch as typeof fetch)(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': options.body instanceof FormData ? undefined : 'application/json',
-          ...authHeader,
-          ...(options.headers as Record<string, string> | undefined)
-        }
-      });
+    async <T,>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
+      const method = options.method ?? 'GET';
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+        ...authHeader,
+        ...(options.headers ?? {})
+      };
 
-      if (!response.ok) {
-        let message = `請求失敗 (${response.status})`;
-        try {
-          const payload = await response.json();
-          if (payload?.message) message = payload.message;
-          if (payload?.error) message = payload.error;
-        } catch {
-          // ignore
-        }
-        throw new Error(message);
+      const isFormData =
+        typeof globalThis.FormData !== 'undefined' && options.body instanceof globalThis.FormData;
+
+      if (options.body && !isFormData && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
       }
 
-      if (response.status === 204) {
-        return undefined as T;
+      const isOnline =
+        typeof globalThis.navigator !== 'undefined' ? globalThis.navigator.onLine : true;
+
+      if (!isOnline && method !== 'GET') {
+        if (isFormData) {
+          throw new Error('目前離線，請稍後再上傳附件');
+        }
+        const queuedBody = options.body ? safeParseJson(options.body) : undefined;
+        offlineQueue.enqueue({
+          url: `${API_BASE}${path}`,
+          method,
+          body: queuedBody,
+          headers
+        });
+        throw new Error('網路中斷，請稍後再試');
       }
 
-      return (await response.json()) as T;
+      try {
+        const fetchFn = globalThis.fetch?.bind(globalThis);
+        if (!fetchFn) {
+          throw new Error('執行環境不支援網路請求');
+        }
+        const requestBody =
+          options.body === undefined
+            ? undefined
+            : isFormData || typeof options.body === 'string'
+            ? options.body
+            : JSON.stringify(options.body);
+        const response = await fetchFn(
+          `${API_BASE}${path}`,
+          {
+            method,
+            headers,
+            body: requestBody
+          } as Parameters<typeof fetchFn>[1]
+        );
+
+        if (!response.ok) {
+          let messageText = `請求失敗 (${response.status})`;
+          try {
+            const payload = await response.json();
+            if (payload?.error) messageText = payload.error;
+            if (payload?.message) messageText = payload.message;
+          } catch {
+            // ignore
+          }
+          throw new Error(messageText);
+        }
+
+        if (response.status === 204) {
+          return undefined as T;
+        }
+
+        return (await response.json()) as T;
+      } catch (err: unknown) {
+        const messageText =
+          typeof (err as { message?: string })?.message === 'string'
+            ? (err as { message: string }).message
+            : '請求失敗';
+
+        if (isNetworkError(messageText) && method !== 'GET') {
+          if (options.body instanceof globalThis.FormData) {
+            throw new Error('網路錯誤，附件未送出，請稍後再試');
+          }
+          const queuedBody = options.body ? safeParseJson(options.body) : undefined;
+          offlineQueue.enqueue({
+            url: `${API_BASE}${path}`,
+            method,
+            body: queuedBody,
+            headers
+          });
+          throw new Error('網路錯誤，請求已暫存，恢復後將自動補送');
+        }
+
+        throw err;
+      }
     },
-    [authHeader]
+    [authHeader, offlineQueue]
   );
 
   const fetchOrders = useCallback(async () => {
@@ -116,9 +285,14 @@ export default function NavigationPage() {
       setLoading(true);
       const result = await apiRequest<ApiResponse<Order[]>>('/api/v1/drivers/me/orders/active');
       const filtered = result.data.filter(order => orderIds.includes(order.id));
+      filtered.sort((a, b) => (a.driverSequence ?? 9999) - (b.driverSequence ?? 9999));
       setOrders(filtered);
-    } catch (err: any) {
-      setError(err?.message ?? '載入訂單失敗');
+    } catch (err: unknown) {
+      const messageText =
+        typeof (err as { message?: string })?.message === 'string'
+          ? (err as { message: string }).message
+          : '載入訂單失敗';
+      setError(messageText);
     } finally {
       setLoading(false);
     }
@@ -126,31 +300,72 @@ export default function NavigationPage() {
 
   const fetchRoute = useCallback(
     async (from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }) => {
+      if (!Number.isFinite(from.latitude) || !Number.isFinite(from.longitude) || !Number.isFinite(to.latitude) || !Number.isFinite(to.longitude)) {
+        return;
+      }
+
       try {
+        const response = await apiRequest<ApiResponse<{
+          distance: number;
+          duration: number;
+          polyline: string;
+          steps?: Array<{ instruction: string; distance: number; duration: number }>;
+        }>>('/api/v1/drivers/routes/optimize', {
+          method: 'POST',
+          body: {
+            origin: { lat: from.latitude, lng: from.longitude },
+            destination: { lat: to.latitude, lng: to.longitude }
+          }
+        });
+
+        const payload = response.data;
+        const polylinePoints = decodePolyline(payload.polyline);
         setRouteInfo({
-          distance: 0,
-          duration: 0,
+          distanceMeters: payload.distance ?? 0,
+          durationSeconds: payload.duration ?? 0,
+          polyline: polylinePoints.length > 0 ? polylinePoints : [from, to],
+          steps: payload.steps
+        });
+      } catch (err: unknown) {
+        const distanceMeters = calculateHaversineDistance(from, to);
+        setRouteInfo({
+          distanceMeters,
+          durationSeconds: distanceMeters / (30_000 / 60),
           polyline: [from, to]
         });
-      } catch (err) {
-        globalThis.console?.error?.('計算路線失敗:', err);
+
+        const messageText =
+          typeof (err as { message?: string })?.message === 'string'
+            ? (err as { message: string }).message
+            : undefined;
+
+        if (messageText && !isNetworkError(messageText) && !messageText.includes('MAPS_SERVICE_UNAVAILABLE')) {
+          setError(messageText);
+        }
       }
     },
-    []
+    [apiRequest]
   );
 
   const handleMarkDelivered = useCallback(async () => {
     if (!currentOrder) return;
 
     try {
-      await apiRequest(`/api/v1/drivers/orders/${currentOrder.id}/deliver`, { method: 'POST' });
+      await apiRequest(`/api/v1/drivers/orders/${currentOrder.id}/deliver`, {
+        method: 'POST'
+      });
+
       if (currentIndex < orders.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
         router.back();
       }
-    } catch (err: any) {
-      setError(err?.message ?? '標記已送達失敗');
+    } catch (err: unknown) {
+      const messageText =
+        typeof (err as { message?: string })?.message === 'string'
+          ? (err as { message: string }).message
+          : '標記已送達失敗';
+      setError(messageText);
     }
   }, [apiRequest, currentOrder, currentIndex, orders.length, router]);
 
@@ -162,7 +377,7 @@ export default function NavigationPage() {
 
   const handleCallCustomer = useCallback(() => {
     if (!currentOrder?.contactPhone) return;
-    Linking.openURL(`tel:${currentOrder.contactPhone}`).catch(() => setError('無法開啟電話程式'));
+    Linking.openURL(`tel:${currentOrder.contactPhone}`).catch(() => setError('無法啟動電話程式'));
   }, [currentOrder]);
 
   const handleOpenExternalMap = useCallback(() => {
@@ -189,9 +404,33 @@ export default function NavigationPage() {
     router.back();
   }, [router]);
 
-  const handleReorderOrders = useCallback((newOrders: Order[]) => {
-    setOrders(newOrders);
-  }, []);
+  const handleReorderOrders = useCallback(
+    async (newOrders: Order[]) => {
+      setOrders(newOrders);
+      try {
+        const sequences = newOrders.map((order, index) => ({
+          orderId: order.id,
+          sequence: index + 1
+        }));
+        const result = await apiRequest<ApiResponse<Order[]>>('/api/v1/drivers/me/orders/reorder', {
+          method: 'POST',
+          body: { sequences }
+        });
+        const updated = result.data ?? newOrders;
+        updated.sort((a, b) => (a.driverSequence ?? 9999) - (b.driverSequence ?? 9999));
+        setOrders(updated);
+        setCurrentIndex(prev => Math.min(prev, updated.length - 1));
+      } catch (err: unknown) {
+        const messageText =
+          typeof (err as { message?: string })?.message === 'string'
+            ? (err as { message: string }).message
+            : '同步順序時發生錯誤';
+        setError(messageText);
+        await fetchOrders();
+      }
+    },
+    [apiRequest, fetchOrders]
+  );
 
   const handleSelectOrder = useCallback((index: number) => {
     setPanelExpanded(false);
@@ -217,26 +456,25 @@ export default function NavigationPage() {
       setSubmittingProblem(true);
       await apiRequest(`/api/v1/drivers/orders/${currentOrder.id}/problem`, {
         method: 'POST',
-        body: JSON.stringify({ reason: problemReason.trim() })
+        body: { reason: problemReason.trim() }
       });
       setProblemDialogVisible(false);
       setProblemReason('');
       await fetchOrders();
-    } catch (err: any) {
-      setError(err?.message ?? '問題回報失敗');
+    } catch (err: unknown) {
+      const messageText =
+        typeof (err as { message?: string })?.message === 'string'
+          ? (err as { message: string }).message
+          : '問題回報失敗';
+      setError(messageText);
     } finally {
       setSubmittingProblem(false);
     }
   }, [apiRequest, currentOrder, fetchOrders, problemReason]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
-
-  useEffect(() => {
-    if (!currentOrder || !currentOrder.latitude || !currentOrder.longitude) return;
-    if (currentLocation) {
-      fetchRoute(currentLocation, { latitude: currentOrder.latitude, longitude: currentOrder.longitude });
+    if (!currentOrder?.latitude || !currentOrder?.longitude || !currentLocation) {
+      return;
     }
     if (mapRef.current) {
       mapRef.current.animateToRegion(
@@ -266,7 +504,7 @@ export default function NavigationPage() {
             }
           },
           err => globalThis.console?.error?.('定位失敗:', err),
-          { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+          { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 }
         );
       }
       return () => {
@@ -288,7 +526,7 @@ export default function NavigationPage() {
         }
       },
       err => globalThis.console?.error?.('定位失敗:', err),
-      { enableHighAccuracy: true, distanceFilter: 10, interval: 10000 }
+      { enableHighAccuracy: true, distanceFilter: 10, interval: 10_000 }
     );
 
     return () => {
@@ -298,7 +536,7 @@ export default function NavigationPage() {
     };
   }, [currentOrder, fetchRoute]);
 
-  if (loading) {
+  if (loading && orders.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
@@ -312,7 +550,7 @@ export default function NavigationPage() {
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>目前沒有配送中的訂單</Text>
         <Button mode="contained" onPress={handleGoBack} style={styles.errorButton}>
-          返回指派頁
+          返回列表
         </Button>
       </View>
     );
@@ -346,7 +584,7 @@ export default function NavigationPage() {
               />
             ) : null
           )}
-          {routeInfo?.polyline ? (
+          {routeInfo?.polyline && routeInfo.polyline.length > 1 ? (
             <Polyline coordinates={routeInfo.polyline} strokeColor={COLORS.routeLine} strokeWidth={4} />
           ) : null}
         </MapView>
@@ -385,16 +623,12 @@ export default function NavigationPage() {
                 <Chip icon="list-status" compact>
                   剩餘 {remainingCount} 單
                 </Chip>
-                {routeInfo?.distance ? (
-                  <Chip icon="map-marker-distance" compact>
-                    距離 {routeInfo.distance.toFixed(1)} km
-                  </Chip>
-                ) : null}
-                {currentOrder.contactPhone ? (
-                  <Chip icon="phone" compact>
-                    {currentOrder.contactPhone}
-                  </Chip>
-                ) : null}
+                <Chip icon="map-marker-distance" compact>
+                  {formatDistance(routeInfo?.distanceMeters)}
+                </Chip>
+                <Chip icon="clock-outline" compact>
+                  {formatDuration(routeInfo?.durationSeconds)}
+                </Chip>
               </View>
             </View>
 
@@ -558,7 +792,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.secondary + '55'
+    backgroundColor: `${COLORS.secondary}55`
   },
   panelContent: {
     flex: 1,

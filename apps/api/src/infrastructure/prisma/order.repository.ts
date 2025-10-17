@@ -25,6 +25,10 @@ export interface OrderRepository {
     driverId: string,
     options?: { statuses?: OrderStatus[]; limit?: number }
   ): Promise<Order[]>;
+  updateDriverSequences(
+    driverId: string,
+    sequences: Array<{ orderId: string; sequence: number }>
+  ): Promise<Order[]>;
 }
 
 const defaultOrderInclude = {
@@ -55,6 +59,7 @@ const mapDbOrderToDomain = (result: any): Order => ({
   paymentMethod: result.paymentMethod as Order['paymentMethod'],
   notes: result.notes ?? undefined,
   driverId: result.driverId ?? undefined,
+  driverSequence: result.driverSequence ?? undefined,
   deliveryDate: result.deliveryDate?.toISOString?.() ?? result.deliveryDate ?? undefined,
   isPreOrder: result.isPreOrder ?? false,
   priceAlertSent: result.priceAlertSent ?? false,
@@ -125,6 +130,7 @@ export const prismaOrderRepository: OrderRepository = {
               : order.geocodedAt
             : undefined,
         status: order.status,
+        driverSequence: order.driverSequence ?? undefined,
         subtotal: order.subtotal,
         deliveryFee: order.deliveryFee,
         totalAmount: order.totalAmount,
@@ -256,7 +262,11 @@ export const prismaOrderRepository: OrderRepository = {
           : undefined
       },
       include: defaultOrderInclude,
-      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { driverSequence: 'asc' },
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' }
+      ],
       take: options?.limit
     });
 
@@ -274,5 +284,36 @@ export const prismaOrderRepository: OrderRepository = {
     });
 
     return (await this.findById(id)) as Order;
+  },
+
+  async updateDriverSequences(driverId, sequences) {
+    if (sequences.length === 0) {
+      return this.listByDriver(driverId);
+    }
+
+    await prisma.$transaction(
+      sequences.map(seq =>
+        prisma.order.updateMany({
+          where: {
+            id: seq.orderId,
+            driverId
+          },
+          data: {
+            driverSequence: seq.sequence
+          }
+        })
+      )
+    );
+
+    const updated = await prisma.order.findMany({
+      where: {
+        id: {
+          in: sequences.map(seq => seq.orderId)
+        }
+      },
+      include: defaultOrderInclude
+    });
+
+    return updated.map(mapDbOrderToDomain);
   }
 };
