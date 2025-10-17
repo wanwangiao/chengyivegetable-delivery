@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.next
+.railway
+coverage
+pnpm-lock.yaml
+*.log
+.husky
+.vscode
+.git
+*.md
+*.backup

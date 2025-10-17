@@ -1,4 +1,14 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-pnpm lint-staged
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged
+echo "📝 Checking staged files..."
+npx lint-staged
+
+# Check TypeScript syntax
+echo "🔎 Checking TypeScript syntax..."
+pnpm run type-check || exit 1
+
+echo "✅ All checks passed!"

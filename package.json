@@ -8,7 +8,14 @@
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
     "lint": "pnpm -r --parallel run lint",
+    "lint:fix": "pnpm -r --parallel run lint:fix",
     "test": "pnpm -r run test",
+    "type-check": "pnpm -r run type-check",
+    "type-check:api": "cd apps/api && tsc --noEmit",
+    "type-check:web": "cd apps/web && tsc --noEmit",
+    "type-check:driver": "cd apps/driver && tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "start": "node src/server.js",
     "test:api": "pnpm --dir apps/api test",
     "test:web": "pnpm --dir apps/web test",
@@ -16,19 +23,25 @@
     "prisma:generate": "pnpm --filter api prisma generate",
     "storybook": "pnpm --filter web storybook",
     "deploy:api": "rm -rf .railway/api && pnpm --filter api build && pnpm --filter api deploy --prod .railway/api",
-    "deploy:web": "rm -rf .railway/web && pnpm --filter web build && pnpm --filter web deploy --prod .railway/web"
+    "deploy:web": "rm -rf .railway/web && pnpm --filter web build && pnpm --filter web deploy --prod .railway/web",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.4.0",
-    "@commitlint/config-conventional": "^19.4.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/minimatch": "^6.0.0",
-    "husky": "^9.1.4",
-    "lint-staged": "^15.2.9",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.6.2",
     "typescript": "^5.6.3"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "pnpm --filter api test"
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "*.{js,jsx,json,md}": [
+      "prettier --write"
     ]
   },
   "workspaces": [
