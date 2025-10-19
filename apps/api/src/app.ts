@@ -60,8 +60,10 @@ export const createApp = (): Application => {
   }));
   app.use(compression());
 
-  // 應用全域速率限制
-  app.use(globalLimiter);
+  // 應用全域速率限制 (開發環境跳過以利測試)
+  if (env.NODE_ENV !== 'development') {
+    app.use(globalLimiter);
+  }
 
   // LINE Webhook 路由必須在 express.json() 之前註冊，因為需要原始 body 來驗證簽章
   const lineWebhookController = new LineWebhookController();
