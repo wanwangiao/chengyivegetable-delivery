@@ -86,8 +86,7 @@ export default function HomePage() {
       id: product.id,
       name: product.name,
       price: product.price,
-      unit: product.unit,
-      imageUrl: product.imageUrl
+      unit: product.unit
     });
     alert(`已加入購物車：${product.name}`);
   };
