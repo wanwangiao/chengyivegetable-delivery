@@ -175,6 +175,27 @@ export class ProductService {
     return await this.repository.bulkUpsert(parsed);
   }
 
+  async reorder(items: Array<{ id: string; sortOrder: number }>) {
+    if (!items || items.length === 0) {
+      return [];
+    }
+
+    const reorderSchema = z.array(
+      z.object({
+        id: z.string().uuid('無效的商品 ID'),
+        sortOrder: z.number().int('排序值必須為整數').nonnegative('排序值不可為負數')
+      })
+    );
+
+    const parsed = reorderSchema.parse(items);
+    const updates = parsed.map(item => ({
+      id: item.id,
+      sortOrder: item.sortOrder
+    }));
+
+    return await this.repository.bulkUpdate(updates);
+  }
+
   async exportProductsCsv() {
     const { products } = await this.listWithStats();
 

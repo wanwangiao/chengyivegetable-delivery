@@ -7,7 +7,7 @@ export class AdminProductsController {
 
   list = async (_req: Request, res: Response) => {
     const { products, stats } = await this.productService.listWithStats();
-    res.json({ data: products, stats });
+    res.json({ data: { products, stats } });
   };
 
   update = async (req: Request, res: Response) => {
@@ -68,7 +68,12 @@ export class AdminProductsController {
   };
 
   bulkUpsert = async (req: Request, res: Response) => {
-    const items = Array.isArray(req.body?.products) ? req.body.products : [];
+    // Support both direct array and wrapped format
+    const items = Array.isArray(req.body)
+      ? req.body
+      : Array.isArray(req.body?.products)
+        ? req.body.products
+        : [];
     const products = await this.productService.bulkUpsert(items);
     res.json({ data: products, count: products.length });
   };
@@ -84,9 +89,7 @@ export class AdminProductsController {
       return res.status(400).json({ error: 'EMPTY_SORT_PAYLOAD', message: '請提供要更新的排序資料' });
     }
 
-    const products = await (this.productService as ProductService & {
-      reorder: (payload: unknown) => Promise<unknown[]>;
-    }).reorder(items);
+    const products = await this.productService.reorder(items);
     res.json({ data: products, count: products.length });
   };
 
@@ -95,7 +98,10 @@ export class AdminProductsController {
     res.json({
       success: true,
       message: `已同步 ${result.updated} 項商品的明日價格`,
-      data: result.products
+      data: {
+        updated: result.updated,
+        products: result.products
+      }
     });
   };
 

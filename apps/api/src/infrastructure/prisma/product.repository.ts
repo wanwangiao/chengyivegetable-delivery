@@ -361,7 +361,8 @@ export const prismaProductRepository: ProductRepository = {
   async bulkUpdate(updates) {
     if (updates.length === 0) return [];
 
-    const results = await Promise.all(
+    // Use transaction for better performance and atomicity
+    const results = await prisma.$transaction(
       updates.map(update => {
         const { id, ...data } = update;
         return prisma.product.update({
