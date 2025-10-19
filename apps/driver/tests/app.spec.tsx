@@ -6,6 +6,15 @@ import { describe, expect, it, vi } from 'vitest';
 const require = createRequire(import.meta.url);
 const { View, Text } = require('react-native');
 
+vi.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: vi.fn().mockResolvedValue(null),
+    setItem: vi.fn().mockResolvedValue(undefined),
+    removeItem: vi.fn().mockResolvedValue(undefined)
+  }
+}));
+
 vi.mock('react-native-paper', () => {
   const createComponent = (displayName) => {
     const Component = ({ children, ...props }) => React.createElement(View, props, children);
@@ -50,6 +59,11 @@ vi.mock('react-native-paper', () => {
   Card.Actions = CardActions;
   Card.Title = CardTitle;
 
+  const Dialog = createComponent('PaperDialog');
+  Dialog.Title = createComponent('PaperDialogTitle');
+  Dialog.Content = createComponent('PaperDialogContent');
+  Dialog.Actions = createComponent('PaperDialogActions');
+
   return {
     __esModule: true,
     PaperProvider: ({ children }) => React.createElement(React.Fragment, null, children),
@@ -60,7 +74,9 @@ vi.mock('react-native-paper', () => {
     TextInput,
     ActivityIndicator,
     Divider,
-    Snackbar
+    Snackbar,
+    Portal: ({ children }) => React.createElement(React.Fragment, null, children),
+    Dialog
   };
 });
 

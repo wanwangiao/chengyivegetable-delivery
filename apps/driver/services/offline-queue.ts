@@ -1,3 +1,5 @@
+import { removeItem, setItem, getItem } from './storage';
+
 const QUEUE_STORAGE_KEY = 'chengyi_offline_queue';
 const MAX_QUEUE_SIZE = 100;
 const MAX_RETRY_COUNT = 3;
@@ -18,18 +20,16 @@ export class OfflineQueueService {
   private onlineCallback?: () => void;
 
   constructor() {
-    this.loadQueue();
+    void this.loadQueue();
     this.setupOnlineListener();
   }
 
   /**
    * 載入儲存的佇列
    */
-  private loadQueue(): void {
-    if (typeof window === 'undefined') return;
-
+  private async loadQueue(): Promise<void> {
     try {
-      const stored = window.localStorage.getItem(QUEUE_STORAGE_KEY);
+      const stored = await getItem(QUEUE_STORAGE_KEY);
       if (stored) {
         this.queue = JSON.parse(stored);
       }
@@ -42,11 +42,13 @@ export class OfflineQueueService {
   /**
    * 儲存佇列到 localStorage
    */
-  private saveQueue(): void {
-    if (typeof window === 'undefined') return;
-
+  private async saveQueue(): Promise<void> {
     try {
-      window.localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
+      if (this.queue.length === 0) {
+        await removeItem(QUEUE_STORAGE_KEY);
+      } else {
+        await setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
+      }
     } catch (error) {
       console.error('儲存離線佇列失敗:', error);
     }
@@ -56,11 +58,13 @@ export class OfflineQueueService {
    * 監聽網路恢復事件
    */
   private setupOnlineListener(): void {
-    if (typeof window === 'undefined' || !navigator.onLine) return;
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+      return;
+    }
 
     window.addEventListener('online', () => {
       console.log('網路已恢復，開始處理離線佇列');
-      this.processQueue();
+      void this.processQueue();
       if (this.onlineCallback) {
         this.onlineCallback();
       }
@@ -91,7 +95,7 @@ export class OfflineQueueService {
     };
 
     this.queue.push(queuedRequest);
-    this.saveQueue();
+    void this.saveQueue();
 
     console.log(`請求已加入離線佇列: ${request.method} ${request.url}`);
   }
@@ -142,7 +146,7 @@ export class OfflineQueueService {
 
     // 將失敗的請求放回佇列
     this.queue = failedRequests;
-    this.saveQueue();
+    await this.saveQueue();
 
     this.isProcessing = false;
     console.log(`離線佇列處理完成，剩餘 ${this.queue.length} 個請求`);
@@ -160,7 +164,7 @@ export class OfflineQueueService {
    */
   public clearQueue(): void {
     this.queue = [];
-    this.saveQueue();
+    void this.saveQueue();
     console.log('離線佇列已清空');
   }
 

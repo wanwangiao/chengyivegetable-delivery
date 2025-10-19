@@ -5,7 +5,9 @@ import {
   Button,
   Card,
   Chip,
+  Dialog,
   Divider,
+  Portal,
   Snackbar,
   Text,
   TextInput
@@ -14,9 +16,10 @@ import { type Order } from '@chengyi/domain';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { getOfflineQueueService } from '../services/offline-queue';
+import { clearToken, loadToken, persistToken } from '../services/token-storage';
 
 const API_BASE = globalThis.process?.env?.EXPO_PUBLIC_API_BASE ?? 'http://localhost:3000';
-const TOKEN_STORAGE_KEY = 'chengyi_driver_token';
+const LOCATION_STALE_THRESHOLD_MS = 10 * 60 * 1000;
 
 interface DriverProfile {
   id: string;
@@ -31,14 +34,57 @@ interface ApiResponse<T> {
   data: T;
 }
 
-const statusOptions: Array<{ label: string; value: string; description: string }> = [
-  { label: '上線接單', value: 'available', description: '可接收新訂單' },
-  { label: '配送中', value: 'busy', description: '僅可處理現有訂單' },
-  { label: '離線', value: 'offline', description: '暫停接單' }
-];
+interface RoutePlanPickup {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
+interface RoutePlanStop {
+  orderId: string;
+  sequence: number;
+  address: string;
+  contactName: string;
+  latitude: number;
+  longitude: number;
+  estimatedDistanceMeters: number;
+  estimatedDurationSeconds: number;
+}
+
+interface BatchRecommendationOrderSummary {
+  id: string;
+  address: string;
+  contactName: string;
+  status: string;
+  totalAmount: number;
+  notes?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface BatchRecommendationPreview {
+  pickup: RoutePlanPickup;
+  stops: RoutePlanStop[];
+  totalDistanceMeters: number;
+  totalDurationSeconds: number;
+}
+
+interface BatchRecommendation {
+  id: string;
+  orderIds: string[];
+  orderCount: number;
+  totalAmount: number;
+  orders: BatchRecommendationOrderSummary[];
+  preview?: BatchRecommendationPreview;
+}
+
+interface BatchRecommendationResult {
+  generatedAt: string;
+  pickup: RoutePlanPickup;
+  batches: BatchRecommendation[];
+  leftovers: BatchRecommendationOrderSummary[];
+}
 
 type FetchOptions = {
   method?: string;
@@ -47,9 +93,69 @@ type FetchOptions = {
   skipAuth?: boolean;
 };
 
+type NativeUploadFile = {
+  uri: string;
+  name: string;
+  type: string;
+};
+
+const statusOptions: Array<{ label: string; value: string; description: string }> = [
+  { label: '上線可接單', value: 'available', description: '可以接收新的訂單' },
+  { label: '配送中', value: 'busy', description: '目前正在配送' },
+  { label: '下線休息', value: 'offline', description: '暫時不接訂單' }
+];
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(amount);
+
+const formatTimeLabel = (timestamp: number | null) => {
+  if (!timestamp) return '尚未回報位置';
+  return new Date(timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatDistanceLabel = (meters?: number) => {
+  if (!Number.isFinite(meters)) {
+    return '—';
+  }
+  const value = Number(meters);
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)} 公里`;
+  }
+  return `${value.toFixed(0)} 公尺`;
+};
+
+const formatDurationLabel = (seconds?: number) => {
+  if (!Number.isFinite(seconds)) {
+    return '—';
+  }
+  const value = Number(seconds);
+  const minutes = Math.round(value / 60);
+  if (minutes < 60) {
+    return `${minutes} 分鐘`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours} 小時 ${mins} 分`;
+};
+
+const safeParseJson = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const isNetworkError = (message: string) =>
+  message.includes('Failed to fetch') ||
+  message.includes('NetworkError') ||
+  message.includes('Network request failed');
+
 export default function DriverDashboard() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [profile, setProfile] = useState<DriverProfile | null>(null);
@@ -60,82 +166,112 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [queueLength, setQueueLength] = useState(0);
+  const [lastLocationSyncedAt, setLastLocationSyncedAt] = useState<number | null>(null);
+  const [locationStale, setLocationStale] = useState(false);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const [batchData, setBatchData] = useState<BatchRecommendationResult | null>(null);
+  const [claimingBatchId, setClaimingBatchId] = useState<string | null>(null);
+  const [problemDialogVisible, setProblemDialogVisible] = useState(false);
+  const [problemReason, setProblemReason] = useState('');
+  const [problemOrderId, setProblemOrderId] = useState<string | null>(null);
+  const [submittingProblem, setSubmittingProblem] = useState(false);
+  const batchRecommendations = batchData?.batches ?? [];
+  const batchLeftovers = batchData?.leftovers ?? [];
   const offlineQueueService = useMemo(() => getOfflineQueueService(), []);
 
   const authHeader = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const saveToken = useCallback((value: string | null) => {
-    if (typeof globalThis.window !== 'undefined') {
-      if (value) {
-        globalThis.window.localStorage.setItem(TOKEN_STORAGE_KEY, value);
-      } else {
-        globalThis.window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-      }
+    if (value) {
+      void persistToken(value);
+    } else {
+      void clearToken();
     }
     setToken(value);
   }, []);
 
   const apiRequest = useCallback(
     async <T,>(path: string, options: FetchOptions = {}): Promise<T> => {
+      const { skipAuth, method = 'GET', headers: extraHeaders, body } = options;
       const headers: Record<string, string> = {
         Accept: 'application/json',
-        ...(!options.skipAuth ? (authHeader as Record<string, string>) : {})
+        ...(skipAuth ? {} : authHeader),
+        ...(extraHeaders ?? {})
       };
 
-      const isFormDataBody =
-        typeof globalThis.FormData !== 'undefined' && options.body instanceof globalThis.FormData;
+      const isFormData =
+        typeof globalThis.FormData !== 'undefined' && body instanceof globalThis.FormData;
 
-      if (options.body && !isFormDataBody && options.headers?.['Content-Type'] === undefined) {
+      if (body && !isFormData && !headers['Content-Type']) {
         headers['Content-Type'] = 'application/json';
       }
 
-      // 檢查網路狀態
       const isOnline = typeof globalThis.navigator !== 'undefined' ? globalThis.navigator.onLine : true;
 
-      if (!isOnline && options.method && options.method !== 'GET') {
-        // 離線時將非 GET 請求加入佇列
+      if (!isOnline && method !== 'GET') {
+        if (isFormData) {
+          throw new Error('目前離線，請稍後再上傳附件');
+        }
         offlineQueueService.enqueue({
           url: `${API_BASE}${path}`,
-          method: options.method,
-          body:
-            options.body && !isFormDataBody && typeof options.body === 'string'
-              ? JSON.parse(options.body)
-              : options.body,
+          method,
+          body: safeParseJson(body),
           headers
         });
         setQueueLength(offlineQueueService.getQueueLength());
-        throw new Error('目前離線，請求已加入佇列，網路恢復後將自動重試');
+        throw new Error('網路中斷，請求已暫存，恢復後將自動補送');
       }
 
       try {
-        const response = await (globalThis.fetch as typeof fetch)(`${API_BASE}${path}`, {
-          ...options,
-          headers: {
-            ...headers,
-            ...(options.headers as Record<string, string> | undefined)
-          }
-        });
+        const fetchFn = globalThis.fetch?.bind(globalThis);
+        if (!fetchFn) {
+          throw new Error('執行環境不支援網路請求');
+        }
+        const requestBody =
+          body === undefined
+            ? undefined
+            : isFormData || typeof body === 'string'
+            ? body
+            : JSON.stringify(body);
 
-        if (response.status === 401 && !options.skipAuth) {
+        const response = await fetchFn(
+          `${API_BASE}${path}`,
+          {
+            method,
+            headers,
+            body: requestBody
+          } as Parameters<typeof fetchFn>[1]
+        );
+
+        if (response.status === 401 && !skipAuth) {
+          // Token 過期或無效，將請求加入離線佇列（如果適用）
+          // 這樣離線佇列補送失敗時不會直接清除 token
+          if (method !== 'GET' && !isFormData) {
+            offlineQueueService.enqueue({
+              url: `${API_BASE}${path}`,
+              method,
+              body: safeParseJson(body),
+              headers
+            });
+            setQueueLength(offlineQueueService.getQueueLength());
+          }
+
+          // 只在首次401時清除token（非佇列補送）
           saveToken(null);
           setProfile(null);
-          throw new Error('未授權或登入逾期，請重新登入');
+          throw new Error('登入憑證已過期，請重新登入後系統將自動補送離線請求');
         }
 
         if (!response.ok) {
-          let errorMessage = `操作失敗 (${response.status})`;
+          let errorMessage = `請求失敗 (${response.status})`;
           try {
             const payload = await response.json();
-            if (payload?.error) {
-              errorMessage = payload.error;
-            }
-            if (payload?.message) {
-              errorMessage = payload.message;
-            }
+            if (payload?.error) errorMessage = payload.error;
+            if (payload?.message) errorMessage = payload.message;
           } catch {
-            // ignore json parse error
+            // ignore
           }
           throw new Error(errorMessage);
         }
@@ -145,24 +281,30 @@ export default function DriverDashboard() {
         }
 
         return (await response.json()) as T;
-      } catch (error: any) {
-        // 網路錯誤時加入佇列（非 HTTP 錯誤）
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          if (options.method && options.method !== 'GET') {
-            offlineQueueService.enqueue({
-              url: `${API_BASE}${path}`,
-              method: options.method,
-              body: options.body && !(options.body instanceof FormData) ? JSON.parse(options.body as string) : undefined,
-              headers
-            });
-            setQueueLength(offlineQueueService.getQueueLength());
-            throw new Error('網路錯誤，請求已加入佇列，網路恢復後將自動重試');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '請求失敗';
+
+        if (isNetworkError(messageText) && method !== 'GET') {
+          if (body instanceof globalThis.FormData) {
+            throw new Error('網路錯誤，附件未送出，請稍後再試');
           }
+          offlineQueueService.enqueue({
+            url: `${API_BASE}${path}`,
+            method,
+            body: safeParseJson(body),
+            headers
+          });
+          setQueueLength(offlineQueueService.getQueueLength());
+          throw new Error('網路錯誤，請求已暫存，恢復後將自動補送');
         }
+
         throw error;
       }
     },
-    [authHeader, saveToken, offlineQueueService]
+    [authHeader, offlineQueueService, saveToken]
   );
 
   const fetchProfile = useCallback(async () => {
@@ -182,11 +324,15 @@ export default function DriverDashboard() {
         apiRequest<ApiResponse<Order[]>>('/api/v1/drivers/me/orders/problem?limit=10')
       ]);
       setAvailableOrders(available.data ?? []);
-      setActiveOrders(active.data ?? []);
+      setActiveOrders((active.data ?? []).sort((a, b) => (a.driverSequence ?? 9999) - (b.driverSequence ?? 9999)));
       setHistoryOrders(history.data ?? []);
       setProblemOrders(problem.data ?? []);
-    } catch (error: any) {
-      setMessage(error?.message ?? '取得訂單資料失敗');
+    } catch (error: unknown) {
+      const messageText =
+        typeof (error as { message?: string })?.message === 'string'
+          ? (error as { message: string }).message
+          : '載入訂單資料失敗';
+      setMessage(messageText);
     } finally {
       setLoading(false);
     }
@@ -197,20 +343,24 @@ export default function DriverDashboard() {
       setMessage('請輸入帳號與密碼');
       return;
     }
-    setSubmitting(true);
+    setLoading(true);
     try {
       const result = await apiRequest<{ accessToken: string }>('/api/v1/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: { email: email.trim(), password },
         skipAuth: true
       });
       saveToken(result.accessToken);
       setMessage('登入成功');
       setPassword('');
-    } catch (error: any) {
-      setMessage(error?.message ?? '登入失敗，請稍後再試');
+    } catch (error: unknown) {
+      const messageText =
+        typeof (error as { message?: string })?.message === 'string'
+          ? (error as { message: string }).message
+          : '登入失敗，請稍後再試';
+      setMessage(messageText);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   }, [apiRequest, email, password, saveToken]);
 
@@ -231,8 +381,12 @@ export default function DriverDashboard() {
         });
         setMessage('已成功接下訂單');
         await fetchOrders();
-      } catch (error: any) {
-        setMessage(error?.message ?? '接單失敗');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '接單失敗';
+        setMessage(messageText);
       }
     },
     [apiRequest, fetchOrders]
@@ -246,41 +400,69 @@ export default function DriverDashboard() {
         });
         setMessage('已標記為送達');
         await fetchOrders();
-      } catch (error: any) {
-        setMessage(error?.message ?? '操作失敗');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '標記送達失敗';
+        setMessage(messageText);
       }
     },
     [apiRequest, fetchOrders]
   );
 
-  const handleSubmitProblem = useCallback(
-    async (orderId: string) => {
-      if (!globalThis.prompt) {
-        setMessage('此裝置不支援即時輸入，請聯絡客服或於網頁版回報。');
-        return;
-      }
-      const reason = globalThis.prompt('請輸入問題描述（至少 3 個字）');
-      if (!reason) return;
-      try {
-        await apiRequest<ApiResponse<Order>>(`/api/v1/drivers/orders/${orderId}/problem`, {
-          method: 'POST',
-          body: JSON.stringify({ reason })
-        });
-        setMessage('已回報問題，請留意客服通知');
-        await fetchOrders();
-      } catch (error: any) {
-        setMessage(error?.message ?? '回報失敗');
-      }
-    },
-    [apiRequest, fetchOrders]
-  );
+  const openProblemDialog = useCallback((orderId: string) => {
+    setProblemOrderId(orderId);
+    setProblemReason('');
+    setProblemDialogVisible(true);
+  }, []);
+
+  const closeProblemDialog = useCallback(() => {
+    if (submittingProblem) return;
+    setProblemDialogVisible(false);
+    setProblemOrderId(null);
+    setProblemReason('');
+  }, [submittingProblem]);
+
+  const submitProblemReport = useCallback(async () => {
+    if (!problemOrderId) {
+      return;
+    }
+
+    const trimmed = problemReason.trim();
+    if (trimmed.length < 3) {
+      setMessage('請至少輸入 3 個字的問題描述');
+      return;
+    }
+
+    try {
+      setSubmittingProblem(true);
+      await apiRequest<ApiResponse<Order>>(`/api/v1/drivers/orders/${problemOrderId}/problem`, {
+        method: 'POST',
+        body: { reason: trimmed }
+      });
+      setMessage('已提交問題，客服將儘速聯繫');
+      setProblemDialogVisible(false);
+      setProblemOrderId(null);
+      setProblemReason('');
+      await fetchOrders();
+    } catch (error: unknown) {
+      const messageText =
+        typeof (error as { message?: string })?.message === 'string'
+          ? (error as { message: string }).message
+          : '回報問題失敗';
+      setMessage(messageText);
+    } finally {
+      setSubmittingProblem(false);
+    }
+  }, [apiRequest, fetchOrders, problemOrderId, problemReason]);
 
   const handleUploadProof = useCallback(
     async (orderId: string) => {
       if (Platform.OS === 'web') {
-        const doc = globalThis.document as Document | undefined;
+        const doc = globalThis.document;
         if (!doc) {
-          setMessage('瀏覽器環境異常，無法選擇檔案');
+          setMessage('瀏覽器環境異常，無法開啟上傳視窗');
           return;
         }
         const input = doc.createElement('input');
@@ -290,17 +472,21 @@ export default function DriverDashboard() {
         input.onchange = async () => {
           const file = input.files?.[0];
           if (!file) return;
-          const formData = new FormData();
+          const formData = new (globalThis.FormData ?? FormData)();
           formData.append('proof', file);
           try {
-            await apiRequest<ApiResponse<any>>(`/api/v1/drivers/orders/${orderId}/proof`, {
+            await apiRequest<ApiResponse<unknown>>(`/api/v1/drivers/orders/${orderId}/proof`, {
               method: 'POST',
               body: formData
             });
-            setMessage('已上傳送達照片');
+            setMessage('已成功送出交貨證明');
             await fetchOrders();
-          } catch (error: any) {
-            setMessage(error?.message ?? '上傳失敗');
+          } catch (error: unknown) {
+            const messageText =
+              typeof (error as { message?: string })?.message === 'string'
+                ? (error as { message: string }).message
+                : '上傳失敗';
+            setMessage(messageText);
           }
         };
         input.click();
@@ -309,13 +495,13 @@ export default function DriverDashboard() {
 
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
       if (!cameraPermission.granted) {
-        setMessage('需要相機權限才能拍攝送達照片');
+        setMessage('需要相機權限才能拍攝交貨照片');
         return;
       }
 
       const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!mediaPermission.granted) {
-        setMessage('需要媒體庫權限才能儲存照片');
+        setMessage('需要相簿權限才能存取照片');
         return;
       }
 
@@ -325,44 +511,122 @@ export default function DriverDashboard() {
       });
 
       if (capture.canceled || !capture.assets?.length) {
-        setMessage('已取消拍照');
+        setMessage('已取消上傳');
         return;
       }
 
       const asset = capture.assets[0];
-      const formData = new FormData();
+      const formData = new (globalThis.FormData ?? FormData)();
       formData.append('proof', {
         uri: asset.uri,
         name: asset.fileName ?? `proof-${Date.now()}.jpg`,
         type: asset.mimeType ?? 'image/jpeg'
-      } as any);
+      } as NativeUploadFile);
 
       try {
-        await apiRequest<ApiResponse<any>>(`/api/v1/drivers/orders/${orderId}/proof`, {
+        await apiRequest<ApiResponse<unknown>>(`/api/v1/drivers/orders/${orderId}/proof`, {
           method: 'POST',
           body: formData
         });
-        setMessage('已上傳送達照片');
+        setMessage('已成功送出交貨證明');
         await fetchOrders();
-      } catch (error: any) {
-        setMessage(error?.message ?? '上傳失敗');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '上傳失敗';
+        setMessage(messageText);
       }
     },
     [apiRequest, fetchOrders]
+  );
+
+  const fetchBatchRecommendations = useCallback(async () => {
+    setBatchLoading(true);
+    setBatchError(null);
+    try {
+      const result = await apiRequest<ApiResponse<BatchRecommendationResult>>(
+        '/api/v1/drivers/recommended-batches'
+      );
+      setBatchData(result.data);
+    } catch (error: unknown) {
+      const messageText =
+        typeof (error as { message?: string })?.message === 'string'
+          ? (error as { message: string }).message
+          : '載入推薦批次失敗';
+      setBatchError(messageText);
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [apiRequest]);
+
+  const handleClaimBatch = useCallback(
+    async (batch: BatchRecommendation) => {
+      if (claimingBatchId) return;
+      setBatchError(null);
+      setClaimingBatchId(batch.id);
+      try {
+        // 使用 Promise.allSettled 同時處理所有訂單，收集成功和失敗結果
+        const results = await Promise.allSettled(
+          batch.orderIds.map(orderId =>
+            apiRequest<ApiResponse<Order>>(`/api/v1/drivers/orders/${orderId}/claim`, {
+              method: 'POST'
+            })
+          )
+        );
+
+        // 統計成功和失敗數量
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+
+        if (failed === 0) {
+          // 全部成功
+          setMessage(`已領取批次，共 ${batch.orderCount} 筆訂單`);
+        } else if (succeeded === 0) {
+          // 全部失敗
+          const firstError = results.find(r => r.status === 'rejected') as PromiseRejectedResult;
+          const errorMsg =
+            typeof (firstError.reason as { message?: string })?.message === 'string'
+              ? (firstError.reason as { message: string }).message
+              : '領取批次失敗';
+          setMessage(`批次領取失敗：${errorMsg}`);
+          setBatchError(errorMsg);
+        } else {
+          // 部分成功
+          setMessage(`已領取 ${succeeded}/${batch.orderCount} 筆訂單，${failed} 筆失敗`);
+          setBatchError(`部分訂單領取失敗 (${failed} 筆)`);
+        }
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '領取批次時發生未預期錯誤';
+        setMessage(messageText);
+        setBatchError(messageText);
+      } finally {
+        await Promise.allSettled([fetchOrders(), fetchBatchRecommendations()]);
+        setClaimingBatchId(null);
+      }
+    },
+    [apiRequest, claimingBatchId, fetchBatchRecommendations, fetchOrders]
   );
 
   const handleStatusChange = useCallback(
     async (status: string) => {
       if (!profile) return;
       try {
-        await apiRequest<ApiResponse<any>>(`/api/v1/drivers/${profile.id}/status`, {
+        await apiRequest<ApiResponse<unknown>>(`/api/v1/drivers/${profile.id}/status`, {
           method: 'PATCH',
-          body: JSON.stringify({ status })
+          body: { status }
         });
         setProfile({ ...profile, status });
         setMessage('狀態已更新');
-      } catch (error: any) {
-        setMessage(error?.message ?? '狀態更新失敗');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '狀態更新失敗';
+        setMessage(messageText);
       }
     },
     [apiRequest, profile]
@@ -370,108 +634,155 @@ export default function DriverDashboard() {
 
   const handleStartNavigation = useCallback(() => {
     if (activeOrders.length === 0) {
-      setMessage('沒有配送中的訂單');
+      setMessage('目前沒有配送中的訂單');
       return;
     }
-
-    const orderIds = activeOrders.map(o => o.id).join(',');
-    router.push(`/navigation?orderIds=${orderIds}&token=${token}`);
+    const ids = activeOrders.map(order => order.id).join(',');
+    router.push(`/navigation?orderIds=${ids}&token=${token ?? ''}`);
   }, [activeOrders, router, token]);
 
-  useEffect(() => {
-    if (token) {
-      fetchProfile().catch(error => setMessage(error?.message ?? '取得外送員資料失敗'));
-      fetchOrders();
-    }
-  }, [token, fetchProfile, fetchOrders]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (stored) {
-      setToken(stored);
-    }
-
-    // 設定網路恢復回調
-    offlineQueueService.setOnlineCallback(() => {
-      setMessage('網路已恢復，正在同步離線資料...');
-      offlineQueueService.processQueue().then(() => {
-        setQueueLength(offlineQueueService.getQueueLength());
-        setMessage('離線資料同步完成');
-        fetchOrders();
-      });
-    });
-
-    // 初始佇列長度
-    setQueueLength(offlineQueueService.getQueueLength());
-
-    // 如果有待處理請求且現在線上，立即處理
-    if (navigator.onLine && offlineQueueService.hasPendingRequests()) {
-      offlineQueueService.processQueue().then(() => {
-        setQueueLength(offlineQueueService.getQueueLength());
-      });
-    }
-  }, [offlineQueueService]);
-
   const locationWatchId = useRef<number | null>(null);
-  const lastLocationSentAt = useRef<number>(0);
+  const lastTrackedAtRef = useRef<number>(0);
+  const batchFetchedRef = useRef(false);
 
   const sendLocation = useCallback(
     async (lat: number, lng: number) => {
       if (!profile) return;
       try {
-        await apiRequest<ApiResponse<any>>(`/api/v1/drivers/${profile.id}/location`, {
+        await apiRequest<ApiResponse<unknown>>(`/api/v1/drivers/${profile.id}/location`, {
           method: 'PATCH',
-          body: JSON.stringify({ lat, lng })
+          body: { lat, lng }
         });
+        setLastLocationSyncedAt(Date.now());
         setLocationError(null);
-      } catch (error: any) {
-        setLocationError(error?.message ?? '上傳位置失敗');
+      } catch (error: unknown) {
+        const messageText =
+          typeof (error as { message?: string })?.message === 'string'
+            ? (error as { message: string }).message
+            : '上傳位置失敗';
+        setLocationError(messageText);
       }
     },
     [apiRequest, profile]
   );
 
   useEffect(() => {
+    let mounted = true;
+
+    loadToken()
+      .then(stored => {
+        if (mounted && stored) {
+          setToken(stored);
+        }
+      })
+      .catch(error => {
+        console.error('讀取登入憑證失敗:', error);
+      })
+      .finally(() => {
+        if (mounted) {
+          setHydrated(true);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchProfile().catch(() => undefined);
+      fetchOrders().catch(() => undefined);
+    }
+  }, [token, fetchProfile, fetchOrders]);
+
+  useEffect(() => {
+    offlineQueueService.setOnlineCallback(() => {
+      setMessage('網路已恢復，正在同步離線請求…');
+      offlineQueueService.processQueue().then(() => {
+        setQueueLength(offlineQueueService.getQueueLength());
+        setMessage('離線請求同步完成');
+        fetchOrders().catch(() => undefined);
+      });
+    });
+
+    setQueueLength(offlineQueueService.getQueueLength());
+
+    const isOnline = typeof globalThis.navigator === 'undefined' || globalThis.navigator.onLine !== false;
+    if (isOnline && offlineQueueService.hasPendingRequests()) {
+      offlineQueueService.processQueue().then(() => {
+        setQueueLength(offlineQueueService.getQueueLength());
+      });
+    }
+  }, [fetchOrders, offlineQueueService]);
+
+  useEffect(() => {
+    if (token) {
+      if (!batchFetchedRef.current) {
+        batchFetchedRef.current = true;
+        fetchBatchRecommendations().catch(() => undefined);
+      }
+    } else {
+      batchFetchedRef.current = false;
+      setBatchData(null);
+    }
+  }, [fetchBatchRecommendations, token]);
+
+  useEffect(() => {
     if (!token || !profile) {
-      if (locationWatchId.current && typeof navigator !== 'undefined' && navigator.geolocation) {
-        navigator.geolocation.clearWatch(locationWatchId.current);
+      if (locationWatchId.current && globalThis.navigator?.geolocation) {
+        globalThis.navigator.geolocation.clearWatch(locationWatchId.current);
       }
       locationWatchId.current = null;
       return;
     }
 
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    if (!globalThis.navigator?.geolocation) {
       setLocationError('此裝置不支援定位功能');
       return;
     }
 
-    locationWatchId.current = navigator.geolocation.watchPosition(
+    locationWatchId.current = globalThis.navigator.geolocation.watchPosition(
       position => {
         const now = Date.now();
-        if (now - lastLocationSentAt.current < 300000) {
+        if (now - lastTrackedAtRef.current < LOCATION_STALE_THRESHOLD_MS / 2) {
           return;
         }
-        lastLocationSentAt.current = now;
+        lastTrackedAtRef.current = now;
         void sendLocation(position.coords.latitude, position.coords.longitude);
       },
       error => {
         setLocationError(error.message);
       },
-      { enableHighAccuracy: true, maximumAge: 60000, timeout: 30000 }
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 30_000 }
     );
 
     return () => {
-      if (locationWatchId.current && navigator.geolocation) {
-        navigator.geolocation.clearWatch(locationWatchId.current);
+      if (locationWatchId.current && globalThis.navigator?.geolocation) {
+        globalThis.navigator.geolocation.clearWatch(locationWatchId.current);
       }
       locationWatchId.current = null;
     };
   }, [profile, sendLocation, token]);
 
-  const renderOrderCard = (order: Order, actions?: React.ReactNode) => (
+  useEffect(() => {
+    if (!lastLocationSyncedAt) {
+      setLocationStale(false);
+      return;
+    }
+    const evaluate = () => {
+      setLocationStale(Date.now() - lastLocationSyncedAt > LOCATION_STALE_THRESHOLD_MS);
+    };
+    evaluate();
+    const timer = globalThis.setInterval(evaluate, 60_000);
+    return () => {
+      globalThis.clearInterval(timer);
+    };
+  }, [lastLocationSyncedAt]);
+
+  const renderOrderCard = (order: Order, actions?: ReactNode) => (
     <Card style={styles.card} key={order.id}>
-      <Card.Title title={order.contactName} subtitle={`電話：${order.contactPhone}`} />
+      <Card.Title title={order.contactName} subtitle={`聯絡電話 ${order.contactPhone}`} />
       <Card.Content>
         <Text style={styles.label}>配送地址</Text>
         <Text style={styles.value}>{order.address}</Text>
@@ -485,16 +796,31 @@ export default function DriverDashboard() {
             <Text style={styles.value}>{order.notes}</Text>
           </>
         ) : null}
+        {order.status === 'delivered' && (!order.deliveryProofs || order.deliveryProofs.length === 0) ? (
+          <>
+            <Divider style={styles.divider} />
+            <Text style={styles.warning}>尚未上傳交貨證明</Text>
+          </>
+        ) : null}
       </Card.Content>
       {actions ? <Card.Actions style={styles.actions}>{actions}</Card.Actions> : null}
     </Card>
   );
 
+  if (!hydrated) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingHint}>正在載入</Text>
+      </View>
+    );
+  }
+
   if (!token) {
     return (
       <View style={styles.container}>
         <Card style={styles.loginCard}>
-          <Card.Title title="外送員登入" subtitle="請輸入帳號密碼" />
+          <Card.Title title="外送員登入" subtitle="請輸入帳號與密碼" />
           <Card.Content>
             <TextInput
               label="Email"
@@ -511,7 +837,7 @@ export default function DriverDashboard() {
               onChangeText={setPassword}
               style={styles.input}
             />
-            <Button mode="contained" onPress={handleLogin} loading={submitting} disabled={submitting}>
+            <Button mode="contained" onPress={handleLogin} loading={loading} disabled={loading}>
               登入
             </Button>
           </Card.Content>
@@ -528,18 +854,21 @@ export default function DriverDashboard() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text variant="headlineSmall">嗨，{profile?.name ?? '外送員'} 👋</Text>
+            <Text variant="headlineSmall">您好，{profile?.name ?? '外送員'}！</Text>
             <Text variant="bodyMedium" style={styles.subtitle}>
-              狀態：{profile?.status === 'available' ? '可接單' : profile?.status === 'busy' ? '配送中' : '離線'}
+              隨時留意新的訂單與配送狀態
             </Text>
-            {locationError ? <Text style={styles.warning}>定位警告：{locationError}</Text> : null}
-            {queueLength > 0 && (
+            {locationStale ? (
+              <Text style={styles.warning}>
+                已 {formatTimeLabel(lastLocationSyncedAt)} 未回報位置，請檢查定位或上傳狀態
+              </Text>
+            ) : null}
+            {locationError ? <Text style={styles.warning}>{locationError}</Text> : null}
+            {queueLength > 0 ? (
               <View style={styles.queueBadge}>
-                <Text style={styles.queueText}>
-                  {queueLength} 個請求待同步
-                </Text>
+                <Text style={styles.queueText}>離線請求排程：{queueLength} 筆</Text>
               </View>
-            )}
+            ) : null}
           </View>
           <Button mode="outlined" onPress={handleLogout}>
             登出
@@ -560,16 +889,84 @@ export default function DriverDashboard() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text variant="titleMedium">待領訂單</Text>
+          <Text variant="titleMedium">推薦批次</Text>
+          <View style={styles.sectionHeaderActions}>
+            <Button
+              mode="text"
+              onPress={fetchBatchRecommendations}
+              disabled={batchLoading || claimingBatchId !== null}
+            >
+              {batchData ? '重新整理' : '取得推薦'}
+            </Button>
+          </View>
+        </View>
+        {batchError ? <Text style={styles.warning}>{batchError}</Text> : null}
+        {batchLoading ? (
+          <ActivityIndicator style={styles.loaderIndicator} />
+        ) : batchRecommendations.length === 0 ? (
+          <Text style={styles.empty}>尚未取得推薦批次</Text>
+        ) : (
+          batchRecommendations.map(batch => (
+            <Card style={styles.batchCard} key={batch.id}>
+              <Card.Content>
+                <View style={styles.batchHeader}>
+                  <Text variant="titleMedium" style={styles.batchTitle}>
+                    建議批次 · {batch.orderCount} 筆訂單
+                  </Text>
+                  <Chip mode="outlined" style={styles.batchChip}>
+                    {formatCurrency(batch.totalAmount)}
+                  </Chip>
+                </View>
+                {batch.preview ? (
+                  <View style={styles.batchMetaRow}>
+                    <Text style={styles.batchMeta}>
+                      預估距離 {formatDistanceLabel(batch.preview.totalDistanceMeters)}
+                    </Text>
+                    <Text style={styles.batchMeta}>
+                      預估時間 {formatDurationLabel(batch.preview.totalDurationSeconds)}
+                    </Text>
+                  </View>
+                ) : null}
+                <Divider style={styles.divider} />
+                <View style={styles.batchOrderList}>
+                  {batch.orders.map(order => (
+                    <View key={order.id} style={styles.batchOrderItem}>
+                      <Text style={styles.batchOrderName}>{order.contactName}</Text>
+                      <Text style={styles.batchOrderAddress} numberOfLines={1}>
+                        {order.address}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </Card.Content>
+              <Card.Actions style={styles.actions}>
+                <Button
+                  mode="contained"
+                  onPress={() => handleClaimBatch(batch)}
+                  loading={claimingBatchId === batch.id}
+                  disabled={claimingBatchId !== null && claimingBatchId !== batch.id}
+                >
+                  領取整批
+                </Button>
+              </Card.Actions>
+            </Card>
+          ))
+        )}
+        {batchLeftovers.length > 0 ? (
+          <Text style={styles.helperText}>尚有 {batchLeftovers.length} 筆訂單待湊成批次</Text>
+        ) : null}
+
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium">待接訂單</Text>
           <Button mode="text" onPress={fetchOrders} disabled={loading}>
             重新整理
           </Button>
         </View>
         {loading && availableOrders.length === 0 && activeOrders.length === 0 ? (
-          <ActivityIndicator style={{ marginVertical: 24 }} />
+          <ActivityIndicator style={styles.loaderIndicator} />
         ) : null}
         {availableOrders.length === 0 ? (
-          <Text style={styles.empty}>目前沒有待領訂單</Text>
+          <Text style={styles.empty}>目前沒有待接訂單</Text>
         ) : (
           availableOrders.map(order =>
             renderOrderCard(
@@ -584,13 +981,8 @@ export default function DriverDashboard() {
         <View style={styles.sectionHeader}>
           <Text variant="titleMedium">配送中訂單</Text>
           {activeOrders.length > 0 && (
-            <Button
-              mode="contained"
-              onPress={handleStartNavigation}
-              icon="navigation"
-              buttonColor="#2C3E50"
-            >
-              開始導航
+            <Button mode="contained" onPress={handleStartNavigation} icon="navigation" buttonColor="#2C3E50">
+              開啟導航
             </Button>
           )}
         </View>
@@ -605,9 +997,9 @@ export default function DriverDashboard() {
                   已送達
                 </Button>
                 <Button mode="outlined" onPress={() => handleUploadProof(order.id)}>
-                  上傳照片
+                  上傳證明
                 </Button>
-                <Button mode="text" onPress={() => handleSubmitProblem(order.id)}>
+                <Button mode="text" onPress={() => openProblemDialog(order.id)}>
                   回報問題
                 </Button>
               </View>
@@ -616,7 +1008,7 @@ export default function DriverDashboard() {
         )}
 
         <Text variant="titleMedium" style={styles.sectionTitle}>
-          最近完成訂單
+          最近完成
         </Text>
         {historyOrders.length === 0 ? (
           <Text style={styles.empty}>尚無完成紀錄</Text>
@@ -628,11 +1020,36 @@ export default function DriverDashboard() {
           問題待處理
         </Text>
         {problemOrders.length === 0 ? (
-          <Text style={styles.empty}>目前沒有回報中的訂單</Text>
+          <Text style={styles.empty}>目前沒有待處理的問題單</Text>
         ) : (
           problemOrders.map(order => renderOrderCard(order))
         )}
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={problemDialogVisible} onDismiss={closeProblemDialog}>
+          <Dialog.Title>回報配送問題</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="請描述問題細節"
+              value={problemReason}
+              onChangeText={setProblemReason}
+              multiline
+              numberOfLines={3}
+              mode="outlined"
+              style={styles.problemInput}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={closeProblemDialog} disabled={submittingProblem}>
+              取消
+            </Button>
+            <Button onPress={submitProblemReport} loading={submittingProblem}>
+              送出
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       <Snackbar visible={!!message} onDismiss={() => setMessage(null)} duration={4000}>
         {message}
@@ -642,97 +1059,176 @@ export default function DriverDashboard() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ECEFF1'
+  },
+  loadingHint: {
+    marginTop: 12,
+    color: '#546E7A'
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fb'
+    backgroundColor: '#F5F7FA'
   },
   scroll: {
-    padding: 16,
-    paddingBottom: 80
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    rowGap: 16,
+    gap: 16
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12
+    alignItems: 'center',
+    marginBottom: 16
   },
   headerText: {
     flex: 1,
-    marginRight: 12
+    rowGap: 6
   },
   subtitle: {
-    marginTop: 4,
-    color: '#5e6a7d'
+    color: '#546E7A'
   },
   warning: {
-    marginTop: 4,
-    color: '#d9534f'
+    marginTop: 6,
+    color: '#D84315',
+    fontSize: 12
   },
   queueBadge: {
-    marginTop: 6,
-    backgroundColor: '#FFA726',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start'
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8
   },
   queueText: {
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '600'
   },
   statusRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16
+    gap: 8
   },
   statusChip: {
-    backgroundColor: '#ffffff'
+    marginBottom: 8
   },
   sectionHeader: {
-    marginTop: 8,
-    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 8
+  },
+  sectionHeaderActions: {
+    flexDirection: 'row',
+    gap: 8
   },
   sectionTitle: {
     marginTop: 24,
-    marginBottom: 8
+    marginBottom: 8,
+    color: '#37474F',
+    fontWeight: '600'
   },
   card: {
+    borderRadius: 12,
     marginBottom: 12
   },
-  actions: {
-    justifyContent: 'flex-end'
-  },
-  activeActions: {
-    flexDirection: 'row',
-    columnGap: 8,
-    flexWrap: 'wrap'
-  },
-  label: {
-    fontSize: 12,
-    color: '#6c7a89'
-  },
-  value: {
-    fontSize: 16,
-    marginTop: 4,
-    marginBottom: 4
-  },
-  divider: {
-    marginVertical: 8
-  },
-  empty: {
-    color: '#8a96a3',
-    marginBottom: 8
-  },
   loginCard: {
-    width: '90%',
+    width: '100%',
     maxWidth: 420
   },
   input: {
+    marginBottom: 12,
+    backgroundColor: 'transparent'
+  },
+  label: {
+    color: '#546E7A',
+    fontSize: 12,
+    marginTop: 6
+  },
+  value: {
+    color: '#263238',
+    fontSize: 16,
+    marginTop: 4
+  },
+  divider: {
+    marginVertical: 12
+  },
+  actions: {
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12
+  },
+  empty: {
+    textAlign: 'center',
+    color: '#90A4AE',
+    marginVertical: 16
+  },
+  loaderIndicator: {
+    marginVertical: 16
+  },
+  activeActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  batchCard: {
+    borderRadius: 12,
     marginBottom: 12
+  },
+  batchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  batchTitle: {
+    flex: 1,
+    fontWeight: '600',
+    color: '#263238',
+    marginRight: 12
+  },
+  batchChip: {
+    alignSelf: 'flex-start'
+  },
+  batchMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 8
+  },
+  batchMeta: {
+    color: '#546E7A',
+    fontSize: 12
+  },
+  batchOrderList: {
+    rowGap: 8
+  },
+  batchOrderItem: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 8
+  },
+  batchOrderName: {
+    fontWeight: '600',
+    color: '#37474F'
+  },
+  batchOrderAddress: {
+    color: '#607D8B',
+    fontSize: 12,
+    marginTop: 2
+  },
+  helperText: {
+    marginTop: 4,
+    color: '#607D8B'
+  },
+  problemInput: {
+    marginTop: 8
   }
 });

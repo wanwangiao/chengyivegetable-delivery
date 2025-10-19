@@ -8,12 +8,13 @@
     "build": "node -e \"console.log('Driver app build handled at runtime')\"",
     "dev": "expo start --web",
     "lint": "eslint 'app/**/*.tsx'",
-    "test": "tsx tests/app.smoke.ts",
-    "test:watch": "tsx watch tests/app.smoke.ts"
+    "test": "node tests/run-smoke.cjs",
+    "test:watch": "node --watch tests/run-smoke.cjs"
   },
   "dependencies": {
     "@chengyi/domain": "workspace:*",
     "@chengyi/lib": "workspace:*",
+    "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-native-community/geolocation": "^3.3.0",
     "expo": "^51.0.0",
     "expo-image-picker": "^17.0.8",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
+    "esbuild-register": "^3.6.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^7.0.0",
