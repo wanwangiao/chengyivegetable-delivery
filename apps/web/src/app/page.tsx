@@ -289,6 +289,8 @@ export default function HomePage() {
         subtotal={cart.subtotal}
         deliveryFee={cart.deliveryFee}
         totalAmount={cart.totalAmount}
+        isFreeShipping={cart.isFreeShipping}
+        amountToFreeShipping={cart.amountToFreeShipping}
         onUpdateQuantity={cart.updateQuantity}
         onRemoveItem={cart.removeItem}
         onCheckout={handleCheckout}
