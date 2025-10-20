@@ -116,7 +116,7 @@ export default function HomePage() {
           productId: item.id,
           productName: item.name,
           quantity: item.quantity,
-          unitPrice: item.price,
+          unitPrice: item.unitPrice,
           unit: item.unit
         })),
         subtotal: cart.subtotal,
