@@ -423,16 +423,17 @@ button, .btn, .touch-target,
   }
 }
 
-/* 平板尺寸 */
+/* 平板尺寸 - 保持單欄顯示 */
 @media (min-width: 768px) {
   .header-content,
   .search-container,
   .products-list {
     max-width: 600px;
   }
-  
+
   .products-list {
-    grid-template-columns: 1fr 1fr;
+    /* 保持單欄佈局，不改變為多欄 */
+    grid-template-columns: 1fr;
     gap: var(--spacing-lg);
   }
 }

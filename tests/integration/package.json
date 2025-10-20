@@ -1,0 +1,12 @@
+{
+  "name": "integration-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Integration tests for Chengyi Vegetable Platform",
+  "scripts": {
+    "test": "node run-all-tests.js",
+    "test:product": "node product-management.test.js",
+    "test:order": "node order-management.test.js",
+    "test:e2e": "node e2e-flow.test.js"
+  }
+}
