@@ -206,3 +206,33 @@ model PriceChangeAlert {
 
   @@index([orderId])
 }
+
+model BusinessHours {
+  id                    String        @id @default(uuid())
+  regularClosedDays     Int[]         // [1, 4] for Monday (1), Thursday (4)
+  orderCutoffTime       String        @default("10:00")
+  preorderStartTime     String        @default("14:00")
+  currentOrderStartTime String        @default("07:30")
+  specialDates          SpecialDate[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model SpecialDate {
+  id              String        @id @default(uuid())
+  date            DateTime      // 特殊日期
+  type            DateType      // CLOSED 或 OPEN
+  reason          String?       // 原因說明，如「春節休假」「臨時營業」
+  businessHoursId String
+  businessHours   BusinessHours @relation(fields: [businessHoursId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([date])
+  @@index([businessHoursId])
+}
+
+enum DateType {
+  CLOSED  // 休息日
+  OPEN    // 營業日（覆蓋正常休息日）
+}

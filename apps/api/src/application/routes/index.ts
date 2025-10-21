@@ -11,6 +11,7 @@ import type { AdminProductsController } from '../controllers/admin-products.cont
 import type { AdminDeliveryController } from '../controllers/admin-delivery.controller';
 import type { DriverDeliveryController } from '../controllers/driver-delivery.controller';
 import type { AdminSettingsController } from '../controllers/admin-settings.controller';
+import type { BusinessHoursController } from '../controllers/business-hours.controller';
 import { createOrderRouter } from './order.routes';
 import { createProductRouter } from './product.routes';
 import { createAuthRouter } from './auth.routes';
@@ -20,6 +21,7 @@ import { createAdminOrdersRouter } from './admin_orders.routes';
 import { createAdminProductsRouter } from './admin_products.routes';
 import { createAdminDeliveryRouter } from './admin_delivery.routes';
 import { createAdminSettingsRouter } from './admin_settings.routes';
+import { createBusinessHoursRouter } from './business-hours.routes';
 
 export interface RouteDependencies {
   orderController: OrderController;
@@ -34,9 +36,10 @@ export interface RouteDependencies {
   adminProductsController: AdminProductsController;
   adminDeliveryController: AdminDeliveryController;
   adminSettingsController: AdminSettingsController;
+  businessHoursController: BusinessHoursController;
 }
 
-export const createRoutes = ({ orderController, productController, authController, driverController, driverOrdersController, driverDeliveryController, driverRouteController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController, adminSettingsController }: RouteDependencies): Router => {
+export const createRoutes = ({ orderController, productController, authController, driverController, driverOrdersController, driverDeliveryController, driverRouteController, userManagementController, adminOrdersController, adminProductsController, adminDeliveryController, adminSettingsController, businessHoursController }: RouteDependencies): Router => {
   const router = Router();
 
   router.get('/health', (_req, res) => {
@@ -52,6 +55,7 @@ export const createRoutes = ({ orderController, productController, authControlle
   router.use('/admin/products', createAdminProductsRouter(adminProductsController));
   router.use('/admin/delivery', createAdminDeliveryRouter(adminDeliveryController));
   router.use('/admin/settings', createAdminSettingsRouter(adminSettingsController));
+  router.use('/business-hours', createBusinessHoursRouter(businessHoursController));
 
   return router;
 };

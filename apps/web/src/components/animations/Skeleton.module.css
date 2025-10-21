@@ -1,0 +1,100 @@
+/* ============================================
+   骨架屏 (Skeleton Loading)
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--gray-200, #e0e0e0) 0%,
+    var(--gray-100, #f5f5f5) 50%,
+    var(--gray-200, #e0e0e0) 100%
+  );
+  background-size: 200% 100%;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Variants */
+.text {
+  border-radius: var(--radius-xs, 4px);
+  height: 1em;
+  width: 100%;
+}
+
+.circular {
+  border-radius: var(--radius-full, 9999px);
+}
+
+.rectangular {
+  border-radius: 0;
+}
+
+.rounded {
+  border-radius: var(--radius-md, 12px);
+}
+
+/* Animations */
+.pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.wave {
+  animation: skeleton-wave 1.5s linear infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes skeleton-wave {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Product Card Skeleton */
+.productCardSkeleton {
+  display: flex;
+  gap: var(--space-4, 16px);
+  padding: var(--space-4, 16px);
+  background: var(--surface-primary, #ffffff);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--border-light, #e0e0e0);
+}
+
+.productCardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  justify-content: center;
+}
+
+/* List Skeleton */
+.listSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* Accessibility: Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .pulse,
+  .wave {
+    animation: none;
+  }
+
+  .skeleton {
+    opacity: 0.7;
+  }
+}

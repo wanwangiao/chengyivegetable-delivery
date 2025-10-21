@@ -1,0 +1,227 @@
+/* ============================================
+   營業狀態橫幅 - Uber 風格
+   ============================================ */
+
+.banner {
+  position: relative;
+  width: 100%;
+  padding: var(--space-4, 16px) var(--space-5, 20px);
+  margin-bottom: var(--space-4, 16px);
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
+  transition: all var(--duration-normal, 300ms) var(--ease-out, ease-out);
+  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.06));
+}
+
+.banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left var(--duration-slow, 400ms) var(--ease-out, ease-out);
+}
+
+.banner:hover::before {
+  left: 100%;
+}
+
+/* Status-specific backgrounds */
+.banner.current-day {
+  background: linear-gradient(135deg, #00b14f 0%, #00d65b 100%);
+  color: var(--text-inverse, #ffffff);
+}
+
+.banner.next-day {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: var(--text-inverse, #ffffff);
+}
+
+.banner.preparation {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: var(--text-inverse, #ffffff);
+}
+
+.banner.closed {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+  color: var(--text-inverse, #ffffff);
+}
+
+/* Content Layout */
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 16px);
+}
+
+/* Icon */
+.iconWrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-full, 9999px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* Text Content */
+.textContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--font-bold, 700);
+  margin: 0 0 var(--space-1, 4px) 0;
+  line-height: var(--leading-tight, 1.2);
+  color: inherit;
+}
+
+.message {
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-medium, 500);
+  margin: 0;
+  line-height: var(--leading-normal, 1.5);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Action Button */
+.actionButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-md, 12px);
+  color: var(--text-inverse, #ffffff);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: var(--font-semibold, 600);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
+}
+
+.actionButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.actionButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .banner {
+    padding: var(--space-3, 12px) var(--space-4, 16px);
+  }
+
+  .iconWrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .icon {
+    font-size: 1.25rem;
+  }
+
+  .title {
+    font-size: var(--text-base, 1rem);
+  }
+
+  .message {
+    font-size: var(--text-xs, 0.75rem);
+  }
+
+  .actionButton {
+    display: none; /* Hide on mobile to save space */
+  }
+}
+
+@media (max-width: 360px) {
+  .content {
+    gap: var(--space-3, 12px);
+  }
+
+  .iconWrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .icon {
+    font-size: 1.125rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .banner,
+  .banner::before,
+  .actionButton {
+    transition: none;
+  }
+
+  .banner:hover::before {
+    left: -100%;
+  }
+
+  .actionButton:hover {
+    transform: none;
+  }
+}
+
+/* Touch Optimization */
+@media (hover: none) and (pointer: coarse) {
+  .banner::before {
+    display: none;
+  }
+
+  .actionButton:active {
+    background: rgba(255, 255, 255, 0.4);
+  }
+}
+
+/* Pulse animation for current-day status */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 0 rgba(0, 177, 79, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 8px rgba(0, 177, 79, 0);
+  }
+}
+
+.banner.current-day {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner.current-day {
+    animation: none;
+  }
+}

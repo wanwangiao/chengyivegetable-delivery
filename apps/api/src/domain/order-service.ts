@@ -8,11 +8,15 @@ import { SystemConfigService } from './system-config-service';
 import { prismaSystemConfigRepository } from '../infrastructure/prisma/system-config.repository';
 import { prisma } from '../infrastructure/prisma/client';
 import type { Prisma } from '@prisma/client';
+import type { BusinessHoursService } from './business-hours.service';
 
 export class OrderService {
   private systemConfigService: SystemConfigService;
 
-  constructor(private readonly repository: OrderRepository) {
+  constructor(
+    private readonly repository: OrderRepository,
+    private readonly businessHoursService?: BusinessHoursService
+  ) {
     this.systemConfigService = new SystemConfigService(prismaSystemConfigRepository);
   }
 
@@ -41,6 +45,38 @@ export class OrderService {
    * 建立訂單並扣減庫存（使用 transaction 確保原子性）
    */
   async createWithInventory(input: Omit<Order, 'id' | 'status'>): Promise<Order> {
+    // 0. 營業時間驗證（在 transaction 外執行）
+    let deliveryDate: Date;
+    let isPreOrder: boolean;
+
+    if (this.businessHoursService) {
+      // 使用新的營業時間系統
+      const validation = await this.businessHoursService.validateOrderTiming();
+
+      if (!validation.valid) {
+        throw new Error(`ORDER_TIME_INVALID: ${validation.message}`);
+      }
+
+      // 根據 orderWindow 計算配送日期
+      const now = new Date();
+      deliveryDate = new Date(now);
+      deliveryDate.setHours(0, 0, 0, 0);
+
+      if (validation.orderWindow === 'NEXT_DAY') {
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
+        isPreOrder = true;
+      } else if (validation.orderWindow === 'CURRENT_DAY') {
+        isPreOrder = false;
+      } else {
+        throw new Error(`ORDER_TIME_INVALID: ${validation.message}`);
+      }
+    } else {
+      // 向後兼容：使用舊的系統配置
+      const result = await this.systemConfigService.getDeliveryDate();
+      deliveryDate = result.deliveryDate;
+      isPreOrder = result.isPreOrder;
+    }
+
     // 使用 Prisma transaction 確保原子性
     const saved = await prisma.$transaction(async (tx) => {
       // 1. 價格驗證（使用 tx）
@@ -95,8 +131,8 @@ export class OrderService {
         });
       }
 
-      // 6. 取得配送日期
-      const { deliveryDate, isPreOrder } = await this.systemConfigService.getDeliveryDate();
+      // 6. 使用之前驗證得到的配送日期
+      // deliveryDate 和 isPreOrder 已在上面計算
 
       // 7. 建立訂單
       const order = OrderSchema.parse({

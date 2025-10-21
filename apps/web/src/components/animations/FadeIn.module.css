@@ -1,0 +1,61 @@
+/* ============================================
+   淡入動畫組件
+   ============================================ */
+
+.fadeIn {
+  opacity: 0;
+  transition: opacity var(--fade-duration, 600ms) var(--ease-out, ease-out) var(--fade-delay, 0ms),
+              transform var(--fade-duration, 600ms) var(--ease-out, ease-out) var(--fade-delay, 0ms);
+}
+
+.fadeIn.visible {
+  opacity: 1;
+}
+
+/* Slide Up */
+.slideUp {
+  transform: translateY(32px);
+}
+
+.slideUp.visible {
+  transform: translateY(0);
+}
+
+/* Slide Down */
+.slideDown {
+  transform: translateY(-32px);
+}
+
+.slideDown.visible {
+  transform: translateY(0);
+}
+
+/* Slide Left */
+.slideLeft {
+  transform: translateX(32px);
+}
+
+.slideLeft.visible {
+  transform: translateX(0);
+}
+
+/* Slide Right */
+.slideRight {
+  transform: translateX(-32px);
+}
+
+.slideRight.visible {
+  transform: translateX(0);
+}
+
+/* Accessibility: Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .fadeIn {
+    transition: opacity var(--fade-duration, 600ms) var(--ease-out, ease-out) var(--fade-delay, 0ms);
+    transform: none !important;
+  }
+
+  .fadeIn.visible {
+    transform: none !important;
+  }
+}

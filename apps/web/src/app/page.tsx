@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { FloatingCartBar } from '../components/FloatingCartBar';
 import { CartDrawer } from '../components/CartDrawer';
 import { CheckoutDrawer } from '../components/CheckoutDrawer';
+import { ProductCard } from '../components/ProductCard';
+import { ProductDetailModal } from '../components/ProductDetailModal';
+import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
+import { StaggerList } from '../components/animations/StaggerList';
+import { ListSkeleton } from '../components/animations/Skeleton';
 import { useCart } from '../hooks/useCart';
+import '../styles/theme.css';
 
 type Product = {
   id: string;
@@ -38,6 +44,10 @@ export default function HomePage() {
   const cart = useCart();
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [checkoutDrawerOpen, setCheckoutDrawerOpen] = useState(false);
+
+  // Product detail modal state
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productModalOpen, setProductModalOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -80,15 +90,27 @@ export default function HomePage() {
     });
   }, [products, searchKeyword, activeCategory]);
 
+  // Product detail handlers
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setProductModalOpen(true);
+  };
+
+  const handleCloseProductModal = () => {
+    setProductModalOpen(false);
+    setTimeout(() => setSelectedProduct(null), 300);
+  };
+
   // Cart handlers
-  const handleAddToCart = (product: Product) => {
-    cart.addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      unit: product.unit
-    });
-    alert(`已加入購物車：${product.name}`);
+  const handleAddToCart = (product: Product, quantity: number = 1) => {
+    for (let i = 0; i < quantity; i++) {
+      cart.addItem({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        unit: product.unit
+      });
+    }
   };
 
   const handleCheckout = () => {
@@ -176,6 +198,11 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Business Status Banner */}
+      <div style={{ padding: '0 1rem' }}>
+        <BusinessStatusBanner />
+      </div>
+
       <section className="category-nav">
         <div className="category-tabs">
           {categories.map(category => (
@@ -220,38 +247,31 @@ export default function HomePage() {
               {error}
             </div>
           )}
-          <div className="products-list mobile-layout">
+          <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 1rem' }}>
+            {loading && <ListSkeleton count={5} />}
+
             {!loading && filteredProducts.length === 0 && (
               <div id="no-results-message" style={{ padding: '2rem', textAlign: 'center' }}>
                 <strong>找不到符合條件的商品</strong>
                 <p>試試其他關鍵字或切換分類。</p>
               </div>
             )}
-            {filteredProducts.map(product => (
-              <article key={product.id} className="product-item mobile-item">
-                <div className="product-image-left">
-                  <div className="product-image-container">🥬</div>
-                </div>
-                <div className="product-info">
-                  <h3 className="product-title">{product.name}</h3>
-                  <div className="product-price">
-                    <span className="price-amount">NT${product.price.toLocaleString()}</span>
-                    <span className="price-unit"> / {product.unit}</span>
-                  </div>
-                  <div className="product-meta">
-                    <span className="stock-info">庫存：約 {Math.max(Math.round(product.stock), 0)} {product.unit}</span>
-                  </div>
-                </div>
-                <div className="product-actions">
-                  <button className="btn-primary" type="button" onClick={() => handleAddToCart(product)}>
-                    加入購物車
-                  </button>
-                  <button className="btn-secondary" type="button">
-                    查看詳情
-                  </button>
-                </div>
-              </article>
-            ))}
+
+            {!loading && filteredProducts.length > 0 && (
+              <StaggerList
+                staggerDelay={80}
+                duration={500}
+                direction="up"
+              >
+                {filteredProducts.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={() => handleProductClick(product)}
+                  />
+                ))}
+              </StaggerList>
+            )}
           </div>
         </section>
 
@@ -305,6 +325,14 @@ export default function HomePage() {
         deliveryFee={cart.deliveryFee}
         totalAmount={cart.totalAmount}
         onSubmit={handleSubmitOrder}
+      />
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        open={productModalOpen}
+        onClose={handleCloseProductModal}
+        onAddToCart={handleAddToCart}
       />
     </div>
   );

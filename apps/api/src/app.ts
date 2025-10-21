@@ -43,6 +43,10 @@ import { PriceAlertAutoAcceptService } from './domain/price-alert-auto-accept-se
 import { LineWebhookController } from './application/controllers/line-webhook.controller';
 import { createLineRouter } from './application/routes/line.routes';
 import { globalLimiter, loginLimiter, orderLimiter } from './middleware/rate-limit';
+import { BusinessHoursRepository } from './infrastructure/prisma/business-hours.repository';
+import { BusinessHoursService } from './domain/business-hours.service';
+import { BusinessHoursController } from './application/controllers/business-hours.controller';
+import { prisma } from './infrastructure/prisma/client';
 
 export const createApp = (): Application => {
   // 初始化 Sentry (必須在其他中間件之前)
@@ -83,7 +87,9 @@ export const createApp = (): Application => {
     ? new GoogleMapsService(env.GOOGLE_MAPS_API_KEY)
     : undefined;
 
-  const orderService = new OrderService(orderRepository);
+  const businessHoursRepository = new BusinessHoursRepository(prisma);
+  const businessHoursService = new BusinessHoursService(businessHoursRepository);
+  const orderService = new OrderService(orderRepository, businessHoursService);
   const productService = new ProductService(productRepository, orderRepository);
   const authService = new AuthService(userRepository);
   const driverService = new DriverService(driverRepository);
@@ -113,6 +119,7 @@ export const createApp = (): Application => {
   const driverDeliveryController = new DriverDeliveryController(deliveryService);
   const driverRouteController = new DriverRouteController(mapsService);
   const adminSettingsController = new AdminSettingsController(systemConfigService);
+  const businessHoursController = new BusinessHoursController(businessHoursService);
 
   initAuthMiddleware(authService);
 
@@ -128,7 +135,8 @@ export const createApp = (): Application => {
     adminOrdersController,
     adminProductsController,
     adminDeliveryController,
-    adminSettingsController
+    adminSettingsController,
+    businessHoursController
   }));
 
   // Sentry 錯誤處理器會在錯誤處理中間件中手動捕獲
