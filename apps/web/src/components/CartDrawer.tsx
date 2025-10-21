@@ -6,20 +6,24 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { type CartItem } from '../hooks/useCart';
+import { formatCurrency } from '../utils/currency';
 
 type CartDrawerProps = {
   open: boolean;
   onClose: () => void;
   items: CartItem[];
-  subtotal: number;
-  deliveryFee: number;
-  totalAmount: number;
+  subtotal: number | null | undefined;
+  deliveryFee: number | null | undefined;
+  totalAmount: number | null | undefined;
   isFreeShipping: boolean;
-  amountToFreeShipping: number;
+  amountToFreeShipping: number | null | undefined;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onCheckout: () => void;
 };
+
+const currency = (value: number | null | undefined, fallback = '0') =>
+  formatCurrency(value, { fallback });
 
 export function CartDrawer({
   open,
@@ -32,8 +36,11 @@ export function CartDrawer({
   amountToFreeShipping,
   onUpdateQuantity,
   onRemoveItem,
-  onCheckout,
+  onCheckout
 }: CartDrawerProps) {
+  const hasItems = items.length > 0;
+  const amountToFreeShippingLabel = currency(amountToFreeShipping, '0');
+
   return (
     <Drawer
       anchor="bottom"
@@ -45,14 +52,13 @@ export function CartDrawer({
           borderTopRightRadius: '16px',
           maxHeight: '70vh',
           '@media (min-width: 768px)': {
-            maxHeight: '80vh',
-          },
-        },
+            maxHeight: '80vh'
+          }
+        }
       }}
       PaperProps={{
         sx: {
           '@media (min-width: 768px)': {
-            // 桌面端改為右側
             position: 'fixed',
             right: 0,
             top: 0,
@@ -61,19 +67,18 @@ export function CartDrawer({
             width: '450px',
             borderTopLeftRadius: '16px',
             borderBottomLeftRadius: '16px',
-            borderTopRightRadius: 0,
-          },
-        },
+            borderTopRightRadius: 0
+          }
+        }
       }}
     >
-      {/* 標題列 */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           p: 2,
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid #e2e8f0'
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -84,8 +89,7 @@ export function CartDrawer({
         </IconButton>
       </Box>
 
-      {/* 免運提示 */}
-      {!isFreeShipping && amountToFreeShipping > 0 && (
+      {!isFreeShipping && amountToFreeShipping && amountToFreeShipping > 0 && (
         <Box
           sx={{
             bgcolor: '#fef3c7',
@@ -95,12 +99,12 @@ export function CartDrawer({
             fontSize: '14px',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
+            gap: 1
           }}
         >
           <span>💡</span>
           <span>
-            再買 <strong>NT${amountToFreeShipping}</strong> 即可免運費
+            再消費 <strong>NT${amountToFreeShippingLabel}</strong> 即可享免運
           </span>
         </Box>
       )}
@@ -115,7 +119,7 @@ export function CartDrawer({
             fontSize: '14px',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
+            gap: 1
           }}
         >
           <span>✅</span>
@@ -123,16 +127,8 @@ export function CartDrawer({
         </Box>
       )}
 
-      {/* 商品列表 */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {items.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 6, color: '#94a3b8' }}>
-            <Typography variant="h6" gutterBottom>
-              購物車是空的
-            </Typography>
-            <Typography variant="body2">快去選購喜歡的商品吧！</Typography>
-          </Box>
-        ) : (
+        {hasItems ? (
           items.map(item => (
             <Box
               key={item.id}
@@ -142,12 +138,11 @@ export function CartDrawer({
                 mb: 2,
                 pb: 2,
                 borderBottom: '1px solid #f1f5f9',
-                '&:last-child': {
-                  borderBottom: 'none',
-                },
+                '&:last-of-type': {
+                  borderBottom: 'none'
+                }
               }}
             >
-              {/* 商品圖示 */}
               <Box
                 sx={{
                   width: '64px',
@@ -157,14 +152,13 @@ export function CartDrawer({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '32px',
-                  flexShrink: 0,
+                  fontSize: '28px',
+                  flexShrink: 0
                 }}
               >
                 🥬
               </Box>
 
-              {/* 商品資訊 */}
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   variant="body1"
@@ -173,10 +167,9 @@ export function CartDrawer({
                   {item.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  NT${item.unitPrice} / {item.unit}
+                  NT${currency(item.unitPrice, '0')} / {item.unit}
                 </Typography>
 
-                {/* 數量控制 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <IconButton
                     size="small"
@@ -185,7 +178,7 @@ export function CartDrawer({
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
                       width: '32px',
-                      height: '32px',
+                      height: '32px'
                     }}
                   >
                     <RemoveIcon fontSize="small" />
@@ -196,7 +189,7 @@ export function CartDrawer({
                       minWidth: '40px',
                       textAlign: 'center',
                       fontWeight: 600,
-                      fontSize: '16px',
+                      fontSize: '16px'
                     }}
                   >
                     {item.quantity}
@@ -209,7 +202,7 @@ export function CartDrawer({
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px',
                       width: '32px',
-                      height: '32px',
+                      height: '32px'
                     }}
                   >
                     <AddIcon fontSize="small" />
@@ -225,33 +218,43 @@ export function CartDrawer({
                 </Box>
               </Box>
 
-              {/* 小計 */}
               <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
                 <Typography variant="body1" sx={{ fontWeight: 600, color: '#7cb342' }}>
-                  NT${item.lineTotal}
+                  NT${currency(item.lineTotal, '0')}
                 </Typography>
               </Box>
             </Box>
           ))
+        ) : (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 6,
+              color: '#94a3b8'
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              購物車是空的
+            </Typography>
+            <Typography variant="body2">快去挑選一些新鮮蔬果吧！</Typography>
+          </Box>
         )}
       </Box>
 
-      {/* 底部結帳區 */}
-      {items.length > 0 && (
+      {hasItems && (
         <Box
           sx={{
             borderTop: '1px solid #e2e8f0',
             p: 2,
-            bgcolor: '#f8fafc',
+            bgcolor: '#f8fafc'
           }}
         >
-          {/* 金額明細 */}
           <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 商品小計
               </Typography>
-              <Typography variant="body2">NT${subtotal.toLocaleString()}</Typography>
+              <Typography variant="body2">NT${currency(subtotal, '0')}</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="text.secondary">
@@ -260,12 +263,12 @@ export function CartDrawer({
               <Typography
                 variant="body2"
                 sx={{
-                  color: deliveryFee === 0 ? '#10b981' : 'text.primary',
-                  textDecoration: deliveryFee === 0 ? 'line-through' : 'none',
+                  color: deliveryFee === 0 ? '#10b981' : 'inherit',
+                  textDecoration: deliveryFee === 0 ? 'line-through' : 'none'
                 }}
               >
-                NT${deliveryFee}
-                {deliveryFee === 0 && ' (免運)'}
+                NT${currency(deliveryFee, '0')}
+                {deliveryFee === 0 && '（免運）'}
               </Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
@@ -274,12 +277,11 @@ export function CartDrawer({
                 總計
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: '#7cb342' }}>
-                NT${totalAmount.toLocaleString()}
+                NT${currency(totalAmount, '0')}
               </Typography>
             </Box>
           </Box>
 
-          {/* 按鈕群 */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="outlined" onClick={onClose} sx={{ flex: 1 }}>
               繼續購物
@@ -290,9 +292,7 @@ export function CartDrawer({
               sx={{
                 flex: 1,
                 bgcolor: '#7cb342',
-                '&:hover': {
-                  bgcolor: '#689f38',
-                },
+                '&:hover': { bgcolor: '#689f38' }
               }}
             >
               前往結帳

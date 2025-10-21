@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FloatingCartBar } from '../components/FloatingCartBar';
 import { CartDrawer } from '../components/CartDrawer';
-import { CheckoutDrawer } from '../components/CheckoutDrawer';
+import { CheckoutDrawer, type CheckoutFormData } from '../components/CheckoutDrawer';
 import { ProductCard } from '../components/ProductCard';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
@@ -17,60 +17,58 @@ type Product = {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price: number | null | undefined;
   unit: string;
   stock: number;
   imageUrl?: string;
+  description?: string;
+  isPricedItem?: boolean;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
 
-const FALLBACK_CATEGORIES = ['全部商品', '熱門精選', '本日推薦'];
+const FALLBACK_CATEGORIES = ['全部商品', '安心精選', '每日推薦'];
 
-const categoryLabel = (category: string | undefined) => {
-  if (!category) return '其他';
-  return category;
-};
+const categoryLabel = (category: string | undefined) => (category && category.trim().length > 0 ? category : '其他');
 
 export default function HomePage() {
   const router = useRouter();
+  const cart = useCart();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState('全部商品');
-
-  // Shopping cart state
-  const cart = useCart();
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [checkoutDrawerOpen, setCheckoutDrawerOpen] = useState(false);
-
-  // Product detail modal state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    const load = async () => {
+
+    const loadProducts = async () => {
       try {
         setLoading(true);
         const response = await fetch(`${API_BASE}/products?onlyAvailable=true`, {
           signal: controller.signal
         });
         if (!response.ok) {
-          throw new Error('載入商品失敗');
+          throw new Error('載入商品失敗，請稍後再試');
         }
         const json = await response.json();
-        setProducts(json.data ?? []);
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          setError(err.message ?? '未知錯誤');
+        setProducts(Array.isArray(json.data) ? json.data : []);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setError((err as Error).message ?? '發生未知錯誤');
         }
       } finally {
         setLoading(false);
       }
     };
-    load().catch(() => undefined);
+
+    loadProducts().catch(() => undefined);
     return () => controller.abort();
   }, []);
 
@@ -80,17 +78,21 @@ export default function HomePage() {
   }, [products]);
 
   const filteredProducts = useMemo(() => {
+    const keyword = searchKeyword.trim();
     return products.filter(product => {
-      const matchesKeyword = product.name.includes(searchKeyword) || categoryLabel(product.category).includes(searchKeyword);
+      const nameMatches = product.name.includes(keyword);
+      const categoryMatches = categoryLabel(product.category).includes(keyword);
+      const matchesKeyword = keyword.length === 0 || nameMatches || categoryMatches;
+      const productCategory = categoryLabel(product.category);
       const matchesCategory =
-        activeCategory === '全部商品' || categoryLabel(product.category) === activeCategory ||
-        (activeCategory === '熱門精選' && product.price >= 100) ||
-        (activeCategory === '本日推薦' && product.stock <= 20);
+        activeCategory === '全部商品' ||
+        productCategory === activeCategory ||
+        (activeCategory === '安心精選' && (product.price ?? 0) >= 100) ||
+        (activeCategory === '每日推薦' && product.stock <= 20);
       return matchesKeyword && matchesCategory;
     });
   }, [products, searchKeyword, activeCategory]);
 
-  // Product detail handlers
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
     setProductModalOpen(true);
@@ -98,12 +100,16 @@ export default function HomePage() {
 
   const handleCloseProductModal = () => {
     setProductModalOpen(false);
-    setTimeout(() => setSelectedProduct(null), 300);
+    setTimeout(() => setSelectedProduct(null), 200);
   };
 
-  // Cart handlers
   const handleAddToCart = (product: Product, quantity: number = 1) => {
-    for (let i = 0; i < quantity; i++) {
+    if (product.price === null || product.price === undefined) {
+      window.alert('此商品為秤重商品，請直接與客服聯繫。');
+      return;
+    }
+
+    for (let i = 0; i < quantity; i += 1) {
       cart.addItem({
         id: product.id,
         name: product.name,
@@ -114,94 +120,66 @@ export default function HomePage() {
   };
 
   const handleCheckout = () => {
+    if (cart.items.length === 0) {
+      window.alert('購物車為空，請先選購商品。');
+      return;
+    }
     setCartDrawerOpen(false);
-    setTimeout(() => {
-      setCheckoutDrawerOpen(true);
-    }, 300);
+    setTimeout(() => setCheckoutDrawerOpen(true), 250);
   };
 
   const handleBackToCart = () => {
     setCheckoutDrawerOpen(false);
-    setTimeout(() => {
-      setCartDrawerOpen(true);
-    }, 300);
+    setTimeout(() => setCartDrawerOpen(true), 250);
   };
 
-  const handleSubmitOrder = async (formData: any) => {
-    try {
-      const orderPayload = {
-        contactName: formData.contactName,
-        contactPhone: formData.contactPhone,
-        address: formData.address,
-        paymentMethod: formData.paymentMethod,
-        items: cart.items.map(item => ({
-          productId: item.id,
-          productName: item.name,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          unit: item.unit
-        })),
-        subtotal: cart.subtotal,
-        deliveryFee: cart.deliveryFee,
-        totalAmount: cart.totalAmount
-      };
-
-      const response = await fetch(`${API_BASE}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload)
-      });
-
-      if (!response.ok) {
-        throw new Error('訂單提交失敗');
-      }
-
-      const result = await response.json();
-
-      // Save customer data for next time
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastCustomerData', JSON.stringify({
-          contactName: formData.contactName,
-          contactPhone: formData.contactPhone,
-          address: formData.address
-        }));
-      }
-
-      // Clear cart and close drawer
-      cart.clearCart();
-      setCheckoutDrawerOpen(false);
-
-      // Redirect to order tracking
-      alert(`訂單已成功送出！訂單編號：${result.data?.id || '未知'}`);
-      router.push(`/order-tracking?phone=${encodeURIComponent(formData.contactPhone)}`);
-    } catch (err: any) {
-      alert(`訂單提交失敗：${err.message}`);
+  const handleSubmitOrder = async (formData: CheckoutFormData) => {
+    if (cart.items.length === 0) {
+      window.alert('購物車為空，請先選購商品。');
+      return;
     }
+
+    const payload = {
+      contactName: formData.contactName,
+      contactPhone: formData.contactPhone,
+      address: formData.address,
+      paymentMethod: formData.paymentMethod === 'linepay' ? 'line_pay' : formData.paymentMethod,
+      subtotal: cart.subtotal,
+      deliveryFee: cart.deliveryFee,
+      totalAmount: cart.totalAmount,
+      notes: formData.notes,
+      items: cart.items.map((item, index) => ({
+        productId: item.productId ?? item.id ?? `item-${index}`,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal
+      }))
+    };
+
+    const response = await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => '');
+      throw new Error(message || '訂單送出失敗，請稍後再試');
+    }
+
+    cart.clearCart();
+    setCheckoutDrawerOpen(false);
+    window.alert('訂單已送出，我們將盡快為您安排配送！');
+    router.push('/order-tracking');
   };
 
   return (
-    <div className="legacy-home">
-      <header className="main-header">
-        <div className="header-content">
-          <div className="store-info">
-            <h1 className="store-name">誠憶鮮蔬線上超市</h1>
-            <div className="store-stats">
-              <span className="store-badge">每日現採配送</span>
-              <span className="line-status">LINE 下單 24H 快速回覆</span>
-            </div>
-          </div>
-          <div className="store-pillars">
-            <div>新鮮蔬果</div>
-            <div>友善配送</div>
-            <div>產地直送</div>
-          </div>
-        </div>
-      </header>
-
-      {/* Business Status Banner */}
-      <div style={{ padding: '0 1rem' }}>
+    <div className="page">
+      <header className="page-header">
         <BusinessStatusBanner />
-      </div>
+      </header>
 
       <section className="category-nav">
         <div className="category-tabs">
@@ -209,7 +187,7 @@ export default function HomePage() {
             <button
               key={category}
               type="button"
-              className={`category-tab ${activeCategory === category ? 'active' : ''}`}
+              className={`category-tab ${category === activeCategory ? 'active' : ''}`}
               onClick={() => setActiveCategory(category)}
             >
               {category}
@@ -224,19 +202,19 @@ export default function HomePage() {
             <input
               id="product-search"
               className="search-input"
-              placeholder="搜尋蔬菜、食材或關鍵字"
+              placeholder="搜尋商品名稱或類別"
               value={searchKeyword}
               onChange={event => setSearchKeyword(event.target.value)}
             />
             {searchKeyword.length > 0 && (
               <button className="search-clear" type="button" onClick={() => setSearchKeyword('')}>
-                ×
+                清除
               </button>
             )}
           </div>
           <div className="search-results-info">
             <div className="search-result-text">
-              {loading ? '正在載入商品...' : `共 ${filteredProducts.length} 項商品符合條件`}
+              {loading ? '載入商品中...' : `共有 ${filteredProducts.length} 項商品符合條件`}
             </div>
           </div>
         </section>
@@ -252,17 +230,13 @@ export default function HomePage() {
 
             {!loading && filteredProducts.length === 0 && (
               <div id="no-results-message" style={{ padding: '2rem', textAlign: 'center' }}>
-                <strong>找不到符合條件的商品</strong>
-                <p>試試其他關鍵字或切換分類。</p>
+                <strong>尚未找到符合條件的商品</strong>
+                <p>請嘗試其他關鍵字或調整篩選條件。</p>
               </div>
             )}
 
             {!loading && filteredProducts.length > 0 && (
-              <StaggerList
-                staggerDelay={80}
-                duration={500}
-                direction="up"
-              >
+              <StaggerList staggerDelay={80} duration={500} direction="up">
                 {filteredProducts.map(product => (
                   <ProductCard
                     key={product.id}
@@ -276,18 +250,18 @@ export default function HomePage() {
         </section>
 
         <section className="service-announcement" style={{ marginTop: '1.5rem' }}>
-          <h3 className="announcement-title">配送提醒</h3>
+          <h3 className="announcement-title">配送說明</h3>
           <div className="announcement-content">
-            ・每日 12:00 前下單，當日新鮮出貨<br />
-            ・雨天配送改由保冷箱保存，確保品質<br />
-            ・如需大量訂購，歡迎透過 LINE 官方帳號聯繫客服
+            ・每日 12:00 前下單，當日新鮮出貨。<br />
+            ・雨天將採用保冷箱配送，確保蔬果品質。<br />
+            ・大量訂購歡迎透過 LINE 官方帳號與客服聯繫。
           </div>
         </section>
 
         <section className="cta-block" style={{ marginTop: '1.5rem' }}>
           <div className="cta-card">
-            <h3>想查詢訂單？</h3>
-            <p>輸入手機號碼即可查看配送進度與司機位置。</p>
+            <h3>訂單查詢</h3>
+            <p>輸入訂單編號即可查詢出貨進度與司機位置。</p>
             <a className="btn-primary" href="/order-tracking">
               前往訂單追蹤
             </a>
@@ -295,7 +269,6 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* Shopping Cart Components */}
       <FloatingCartBar
         itemCount={cart.itemCount}
         totalAmount={cart.totalAmount}
@@ -327,7 +300,6 @@ export default function HomePage() {
         onSubmit={handleSubmitOrder}
       />
 
-      {/* Product Detail Modal */}
       <ProductDetailModal
         product={selectedProduct}
         open={productModalOpen}

@@ -1,12 +1,13 @@
 'use client';
 
 import styles from './ProductCard.module.css';
+import { formatCurrency } from '../utils/currency';
 
 interface Product {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price: number | null | undefined;
   unit: string;
   stock: number;
   imageUrl?: string;
@@ -20,6 +21,10 @@ interface ProductCardProps {
 export function ProductCard({ product, onClick }: ProductCardProps) {
   const isLowStock = product.stock < 5;
   const isOutOfStock = product.stock <= 0;
+  const formattedPrice =
+    product.price === null || product.price === undefined
+      ? '待議價'
+      : formatCurrency(product.price, { fallback: '0' });
 
   return (
     <article
@@ -27,15 +32,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
           onClick();
         }
       }}
-      aria-label={`查看 ${product.name} 詳情`}
+      aria-label={`查看 ${product.name} 詳細資訊`}
     >
-      {/* Image Section */}
       <div className={styles.imageWrapper}>
         {product.imageUrl ? (
           <img
@@ -50,7 +54,6 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
         )}
 
-        {/* Status Badge */}
         {isOutOfStock && (
           <div className={styles.badge}>
             <span className={styles.badgeText}>售完</span>
@@ -58,29 +61,24 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         )}
         {!isOutOfStock && isLowStock && (
           <div className={`${styles.badge} ${styles.badgeWarning}`}>
-            <span className={styles.badgeText}>剩餘少量</span>
+            <span className={styles.badgeText}>數量有限</span>
           </div>
         )}
       </div>
 
-      {/* Content Section */}
       <div className={styles.content}>
-        {/* Category */}
         <div className={styles.category}>{product.category}</div>
 
-        {/* Product Name */}
         <h3 className={styles.title}>{product.name}</h3>
 
-        {/* Price Row */}
         <div className={styles.priceRow}>
           <div className={styles.priceWrapper}>
             <span className={styles.currency}>NT$</span>
-            <span className={styles.price}>{product.price.toLocaleString()}</span>
+            <span className={styles.price}>{formattedPrice}</span>
             <span className={styles.unit}>/ {product.unit}</span>
           </div>
         </div>
 
-        {/* Stock Info */}
         <div className={styles.stockInfo}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.stockIcon}>
             <path
@@ -96,7 +94,6 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </span>
         </div>
 
-        {/* Tap Indicator */}
         <div className={styles.tapIndicator}>
           <span className={styles.tapText}>點擊查看</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import styles from './ProductDetailModal.module.css';
+import { formatCurrency } from '../utils/currency';
 
 interface Product {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price: number | null | undefined;
   unit: string;
   stock: number;
   imageUrl?: string;
@@ -23,12 +24,11 @@ interface ProductDetailModalProps {
 
 export function ProductDetailModal({ product, open, onClose, onAddToCart }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setIsAnimating(true);
       document.body.style.overflow = 'hidden';
+      setQuantity(1);
     } else {
       document.body.style.overflow = '';
     }
@@ -38,13 +38,11 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
     };
   }, [open]);
 
-  useEffect(() => {
-    if (open) {
-      setQuantity(1);
-    }
-  }, [open, product]);
-
   if (!product) return null;
+
+  const isVariablePrice = product.price === null || product.price === undefined;
+  const unitPrice = isVariablePrice ? 0 : product.price ?? 0;
+  const totalPrice = unitPrice * quantity;
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
@@ -53,42 +51,33 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
 
   const increaseQuantity = () => {
     if (quantity < product.stock) {
-      setQuantity(q => q + 1);
+      setQuantity(prev => prev + 1);
     }
   };
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity(q => q - 1);
+      setQuantity(prev => prev - 1);
     }
   };
 
-  const totalPrice = product.price * quantity;
-
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`${styles.backdrop} ${open ? styles.backdropOpen : ''}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal */}
       <div
         className={`${styles.modal} ${open ? styles.modalOpen : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-modal-title"
       >
-        <div className={styles.modalContent}>
-          {/* Header */}
+        <div className={`${styles.modalContent} ${open ? styles.modalSlideIn : ''}`}>
           <div className={styles.modalHeader}>
-            <button
-              className={styles.closeButton}
-              onClick={onClose}
-              aria-label="關閉"
-            >
+            <button className={styles.closeButton} onClick={onClose} aria-label="關閉">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M18 6L6 18M6 6l12 12"
@@ -100,14 +89,9 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
             </button>
           </div>
 
-          {/* Product Image */}
           <div className={styles.imageSection}>
             {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className={styles.productImage}
-              />
+              <img src={product.imageUrl} alt={product.name} className={styles.productImage} />
             ) : (
               <div className={styles.imagePlaceholder}>
                 <span className={styles.placeholderIcon}>🥬</span>
@@ -115,7 +99,6 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
             )}
           </div>
 
-          {/* Product Info */}
           <div className={styles.infoSection}>
             <div className={styles.category}>{product.category}</div>
             <h2 id="product-modal-title" className={styles.title}>
@@ -129,19 +112,24 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
             <div className={styles.priceRow}>
               <div className={styles.priceLabel}>價格</div>
               <div className={styles.priceValue}>
-                NT$ {product.price.toLocaleString()} / {product.unit}
+                {isVariablePrice ? (
+                  '依秤重計價'
+                ) : (
+                  <>
+                    NT$ {formatCurrency(product.price, { fallback: '0' })} / {product.unit}
+                  </>
+                )}
               </div>
             </div>
 
             <div className={styles.stockRow}>
               <div className={styles.stockLabel}>庫存</div>
               <div className={styles.stockValue}>
-                約 {Math.max(Math.round(product.stock), 0)} {product.unit}
+                剩餘 {Math.max(Math.round(product.stock), 0)} {product.unit}
               </div>
             </div>
           </div>
 
-          {/* Quantity Selector */}
           <div className={styles.quantitySection}>
             <div className={styles.quantityLabel}>數量</div>
             <div className={styles.quantityControls}>
@@ -152,12 +140,7 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
                 aria-label="減少數量"
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M5 10h10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M5 10h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
               <div className={styles.quantityDisplay}>{quantity}</div>
@@ -179,18 +162,17 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
             </div>
           </div>
 
-          {/* Footer with Add to Cart */}
           <div className={styles.footer}>
             <div className={styles.totalSection}>
               <div className={styles.totalLabel}>小計</div>
               <div className={styles.totalPrice}>
-                NT$ {totalPrice.toLocaleString()}
+                {isVariablePrice ? '依實際秤重結算' : `NT$ ${formatCurrency(totalPrice, { fallback: '0' })}`}
               </div>
             </div>
             <button
               className={styles.addToCartButton}
               onClick={handleAddToCart}
-              disabled={quantity <= 0 || quantity > product.stock}
+              disabled={quantity <= 0 || quantity > product.stock || isVariablePrice}
             >
               <span>加入購物車</span>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">

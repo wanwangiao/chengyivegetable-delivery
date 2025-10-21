@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Drawer,
   IconButton,
@@ -14,22 +14,23 @@ import {
   FormControl,
   FormLabel,
   Collapse,
-  Divider,
+  Divider
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { type CartItem } from '../hooks/useCart';
+import { formatCurrency } from '../utils/currency';
 
 type CheckoutDrawerProps = {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
   items: CartItem[];
-  subtotal: number;
-  deliveryFee: number;
-  totalAmount: number;
+  subtotal: number | null | undefined;
+  deliveryFee: number | null | undefined;
+  totalAmount: number | null | undefined;
   onSubmit: (data: CheckoutFormData) => Promise<void>;
 };
 
@@ -41,12 +42,17 @@ export type CheckoutFormData = {
   paymentMethod: string;
 };
 
-const PAYMENT_METHODS = [
-  { value: 'cash', label: '💵 現金付款' },
-  { value: 'transfer', label: '🏦 銀行轉帳' },
-  { value: 'line_pay', label: '💳 LINE Pay' },
-  { value: 'credit', label: '💳 信用卡' },
+const PAYMENT_METHODS: Array<{ value: string; label: string }> = [
+  { value: 'cash', label: '現場付款' },
+  { value: 'transfer', label: '銀行轉帳' },
+  { value: 'line_pay', label: 'LINE Pay' },
+  { value: 'credit', label: '信用卡' }
 ];
+
+const CUSTOMER_DATA_KEY = 'customerData';
+
+const currency = (value: number | null | undefined, fallback = '0') =>
+  formatCurrency(value, { fallback });
 
 export function CheckoutDrawer({
   open,
@@ -56,46 +62,55 @@ export function CheckoutDrawer({
   subtotal,
   deliveryFee,
   totalAmount,
-  onSubmit,
+  onSubmit
 }: CheckoutDrawerProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     contactName: '',
     contactPhone: '',
     address: '',
     notes: '',
-    paymentMethod: 'cash',
+    paymentMethod: PAYMENT_METHODS[0]?.value ?? 'cash'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
-  // 載入已儲存的客戶資料
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = window.localStorage.getItem('customerData');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setFormData(prev => ({
-            ...prev,
-            contactName: parsed.name || prev.contactName,
-            contactPhone: parsed.phone || prev.contactPhone,
-            address: parsed.address || prev.address,
-            paymentMethod: parsed.paymentMethod || prev.paymentMethod,
-          }));
-        }
-      } catch (error) {
-        console.error('Failed to load saved customer data:', error);
-      }
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const saved = window.localStorage.getItem(CUSTOMER_DATA_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as Partial<CheckoutFormData>;
+
+      setFormData(prev => ({
+        contactName: parsed.contactName ?? parsed.name ?? prev.contactName,
+        contactPhone: parsed.contactPhone ?? parsed.phone ?? prev.contactPhone,
+        address: parsed.address ?? prev.address,
+        notes: parsed.notes ?? prev.notes,
+        paymentMethod: parsed.paymentMethod ?? prev.paymentMethod
+      }));
+    } catch (error) {
+      console.error('Failed to restore customer data:', error);
     }
-  });
+  }, []);
 
-  const handleChange = (field: keyof CheckoutFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
-  };
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-  const handleSubmit = async (event: React.FormEvent) => {
+    try {
+      window.localStorage.setItem(CUSTOMER_DATA_KEY, JSON.stringify(formData));
+    } catch (error) {
+      console.error('Failed to persist customer data:', error);
+    }
+  }, [formData]);
+
+  const handleChange =
+    (field: keyof CheckoutFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setFormData(prev => ({ ...prev, [field]: event.target.value }));
+    };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     try {
@@ -104,6 +119,10 @@ export function CheckoutDrawer({
       setIsSubmitting(false);
     }
   };
+
+  const subtotalValue = subtotal ?? 0;
+  const deliveryFeeValue = deliveryFee ?? 0;
+  const totalValue = totalAmount ?? subtotalValue + deliveryFeeValue;
 
   return (
     <Drawer
@@ -116,213 +135,204 @@ export function CheckoutDrawer({
           borderTopRightRadius: '16px',
           maxHeight: '70vh',
           '@media (min-width: 768px)': {
-            maxHeight: '80vh',
-          },
-        },
+            maxHeight: '80vh'
+          }
+        }
       }}
       PaperProps={{
+        component: 'form',
+        onSubmit: handleSubmit,
         sx: {
+          display: 'flex',
+          flexDirection: 'column',
           '@media (min-width: 768px)': {
-            // 桌面端右側 - 與購物車相同
             position: 'fixed',
             right: 0,
             top: 0,
             bottom: 0,
             maxHeight: '100vh',
-            width: '450px',
+            width: '520px',
             borderTopLeftRadius: '16px',
             borderBottomLeftRadius: '16px',
-            borderTopRightRadius: 0,
-          },
-        },
+            borderTopRightRadius: 0
+          }
+        }
       }}
     >
-      {/* 標題列 */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           p: 2,
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid #e2e8f0'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={onBack} size="small">
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            結帳
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onBack}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          填寫送貨資料
+        </Typography>
+        <IconButton onClick={onClose}>
           <CloseIcon />
         </IconButton>
       </Box>
 
-      {/* 表單內容 - 可滾動 */}
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          flex: 1,
-          overflow: 'auto',
-          p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-        }}
-      >
-        {/* 配送資訊 */}
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-            📋 配送資訊
+      <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+            聯絡資訊
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'grid', gap: 2 }}>
             <TextField
-              label="收件人姓名"
-              required
+              label="聯絡人姓名"
               value={formData.contactName}
               onChange={handleChange('contactName')}
-              fullWidth
-              size="small"
+              required
             />
             <TextField
               label="聯絡電話"
-              required
-              type="tel"
               value={formData.contactPhone}
               onChange={handleChange('contactPhone')}
-              placeholder="09xxxxxxxx"
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="配送地址"
               required
-              value={formData.address}
-              onChange={handleChange('address')}
-              fullWidth
-              size="small"
-              multiline
-              rows={2}
-            />
-            <TextField
-              label="訂單備註"
-              value={formData.notes}
-              onChange={handleChange('notes')}
-              fullWidth
-              size="small"
-              multiline
-              rows={2}
-              placeholder="例如：請放管理室、不需要塑膠袋等"
+              inputProps={{ pattern: '09[0-9]{8}', inputMode: 'tel', maxLength: 10 }}
+              helperText="格式：09xxxxxxxx"
             />
           </Box>
         </Box>
 
-        {/* 付款方式 */}
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-            💳 付款方式
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+            送貨地址
           </Typography>
-          <RadioGroup value={formData.paymentMethod} onChange={handleChange('paymentMethod')}>
+          <TextField
+            label="送貨地址"
+            value={formData.address}
+            onChange={handleChange('address')}
+            required
+            multiline
+            minRows={2}
+          />
+        </Box>
+
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+            訂單備註
+          </Typography>
+          <TextField
+            label="備註"
+            value={formData.notes ?? ''}
+            onChange={handleChange('notes')}
+            multiline
+            minRows={3}
+            placeholder="例如：請 17:00 前送達，門口有狗狗請注意"
+          />
+        </Box>
+
+        <FormControl component="fieldset" sx={{ mb: 3 }}>
+          <FormLabel component="legend">付款方式</FormLabel>
+          <RadioGroup
+            value={formData.paymentMethod}
+            onChange={handleChange('paymentMethod')}
+            row
+          >
             {PAYMENT_METHODS.map(method => (
               <FormControlLabel
                 key={method.value}
                 value={method.value}
                 control={<Radio />}
                 label={method.label}
-                sx={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  mb: 1,
-                  mx: 0,
-                  px: 1.5,
-                  py: 0.5,
-                }}
               />
             ))}
           </RadioGroup>
+        </FormControl>
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 1
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            訂單總覽 ({items.length} 項)
+          </Typography>
+          <IconButton size="small" onClick={() => setShowSummary(value => !value)}>
+            {showSummary ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
         </Box>
 
-        {/* 訂單摘要 - 可折疊 */}
-        <Box>
+        <Collapse in={showSummary}>
           <Box
-            onClick={() => setShowSummary(!showSummary)}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              py: 1,
+              bgcolor: '#f8fafc',
+              borderRadius: '8px',
+              p: 2,
+              mt: 1
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              📦 訂單摘要 ({items.length} 件)
-            </Typography>
-            <IconButton size="small">
-              {showSummary ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Box>
-
-          <Collapse in={showSummary}>
-            <Box sx={{ bgcolor: '#f8fafc', borderRadius: '8px', p: 2, mt: 1 }}>
-              {items.map(item => (
-                <Box
-                  key={item.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mb: 1,
-                    fontSize: '14px',
-                  }}
-                >
-                  <Typography variant="body2">
-                    {item.name} × {item.quantity}
-                  </Typography>
-                  <Typography variant="body2">NT${item.lineTotal}</Typography>
-                </Box>
-              ))}
-              <Divider sx={{ my: 1 }} />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  商品小計
-                </Typography>
-                <Typography variant="body2">NT${subtotal}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  運費
+            {items.map(item => (
+              <Box
+                key={item.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                  fontSize: '14px'
+                }}
+              >
+                <Typography variant="body2">
+                  {item.name} × {item.quantity}
                 </Typography>
                 <Typography variant="body2">
-                  NT${deliveryFee}
-                  {deliveryFee === 0 && ' (免運)'}
+                  NT$ {currency(item.lineTotal, '0')}
                 </Typography>
               </Box>
+            ))}
+            <Divider sx={{ my: 1 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                商品小計
+              </Typography>
+              <Typography variant="body2">NT$ {currency(subtotalValue, '0')}</Typography>
             </Box>
-          </Collapse>
-
-          {/* 總計 - 始終顯示 */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              mt: 2,
-              p: 2,
-              bgcolor: '#f0f9ff',
-              borderRadius: '8px',
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              總計
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#7cb342' }}>
-              NT${totalAmount.toLocaleString()}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                運費
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: deliveryFeeValue === 0 ? '#10b981' : 'inherit',
+                  textDecoration: deliveryFeeValue === 0 ? 'line-through' : 'none'
+                }}
+              >
+                NT$ {currency(deliveryFeeValue, '0')}
+              </Typography>
+            </Box>
           </Box>
+        </Collapse>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mt: 2,
+            p: 2,
+            bgcolor: '#f0f9ff',
+            borderRadius: '8px'
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            總計
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#7cb342' }}>
+            NT$ {currency(totalValue, '0')}
+          </Typography>
         </Box>
 
-        {/* 配送提醒 */}
         <Box
           sx={{
             bgcolor: '#fef3c7',
@@ -330,26 +340,26 @@ export function CheckoutDrawer({
             p: 1.5,
             borderRadius: '8px',
             fontSize: '13px',
+            mt: 2
           }}
         >
           <Typography variant="caption" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
-            ⏰ 配送提醒
+            送貨須知
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • 每日 12:00 前下單，當日新鮮出貨
+            每日 12:00 前下單，當日新鮮配送。運送過程全程冷藏保鮮。
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
-            • 訂單確認後將透過 LINE 通知配送進度
+            訂單成立後會以 LINE 通知物流進度，請保持手機暢通。
           </Typography>
         </Box>
       </Box>
 
-      {/* 底部送出按鈕 */}
       <Box
         sx={{
           borderTop: '1px solid #e2e8f0',
           p: 2,
-          bgcolor: '#fff',
+          bgcolor: '#fff'
         }}
       >
         <Button
@@ -358,17 +368,14 @@ export function CheckoutDrawer({
           fullWidth
           size="large"
           disabled={isSubmitting}
-          onClick={handleSubmit}
           sx={{
             bgcolor: '#7cb342',
-            '&:hover': {
-              bgcolor: '#689f38',
-            },
+            '&:hover': { bgcolor: '#689f38' },
             py: 1.5,
-            fontWeight: 600,
+            fontWeight: 600
           }}
         >
-          {isSubmitting ? '送出中...' : '確認送出訂單'}
+          {isSubmitting ? '送出中…' : '確認送出訂單'}
         </Button>
       </Box>
     </Drawer>
