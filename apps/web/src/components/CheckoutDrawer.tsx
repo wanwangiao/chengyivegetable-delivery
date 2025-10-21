@@ -42,6 +42,11 @@ export type CheckoutFormData = {
   paymentMethod: string;
 };
 
+type LegacyCustomerData = {
+  name?: string;
+  phone?: string;
+};
+
 const PAYMENT_METHODS: Array<{ value: string; label: string }> = [
   { value: 'cash', label: '現場付款' },
   { value: 'transfer', label: '銀行轉帳' },
@@ -80,7 +85,7 @@ export function CheckoutDrawer({
     try {
       const saved = window.localStorage.getItem(CUSTOMER_DATA_KEY);
       if (!saved) return;
-      const parsed = JSON.parse(saved) as Partial<CheckoutFormData>;
+      const parsed = JSON.parse(saved) as Partial<CheckoutFormData & LegacyCustomerData>;
 
       setFormData(prev => ({
         contactName: parsed.contactName ?? parsed.name ?? prev.contactName,
@@ -172,7 +177,7 @@ export function CheckoutDrawer({
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          填寫送貨資料
+          填寫配送資料
         </Typography>
         <IconButton onClick={onClose}>
           <CloseIcon />
@@ -344,7 +349,7 @@ export function CheckoutDrawer({
           }}
         >
           <Typography variant="caption" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
-            送貨須知
+            配送說明
           </Typography>
           <Typography variant="caption" sx={{ display: 'block' }}>
             每日 12:00 前下單，當日新鮮配送。運送過程全程冷藏保鮮。
