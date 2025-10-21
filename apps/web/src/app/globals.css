@@ -81,20 +81,6 @@ body {
   box-shadow: 0 10px 32px rgba(45, 90, 61, 0.12);
 }
 
-.legacy-home .product-item {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  padding: 1.2rem 1.4rem;
-  border-bottom: 1px solid rgba(240, 240, 240, 0.8);
-}
-
-.legacy-home .product-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
 .legacy-home .btn-primary,
 .legacy-home .btn-secondary {
   border: none;
