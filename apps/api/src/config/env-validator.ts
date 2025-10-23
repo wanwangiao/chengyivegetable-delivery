@@ -23,6 +23,11 @@ const envSchema = z.object({
   // Storage & URLs
   FILE_STORAGE_PATH: z.string().optional().default('./uploads'),
   PUBLIC_APP_URL: z.string().url().optional(),
+
+  // Cloudinary - Optional (如果未設定，圖片將存儲在本地檔案系統)
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -44,6 +49,7 @@ export function validateEnv(): Env {
     console.log(`   - LINE Integration: ${validated.LINE_CHANNEL_ACCESS_TOKEN ? '✓ Enabled' : '○ Disabled'}`);
     console.log(`   - Google Maps API: ${validated.GOOGLE_MAPS_API_KEY ? '✓ Enabled' : '○ Disabled'}`);
     console.log(`   - FILE_STORAGE_PATH: ${validated.FILE_STORAGE_PATH}`);
+    console.log(`   - Cloudinary: ${validated.CLOUDINARY_CLOUD_NAME ? '✓ Enabled' : '○ Disabled (using local storage)'}`);
     console.log('');
 
     return validated;
