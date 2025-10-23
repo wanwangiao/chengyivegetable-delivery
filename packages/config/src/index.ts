@@ -14,7 +14,10 @@ const envSchema = z.object({
   LINE_CHANNEL_ACCESS_TOKEN: z.string().optional(),
   FILE_STORAGE_PATH: z.string().optional(),
   PUBLIC_APP_URL: z.string().url().optional(),
-  GOOGLE_MAPS_API_KEY: z.string().optional()
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional()
 });
 
 export type AppEnvironment = z.infer<typeof envSchema>;
