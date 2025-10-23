@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const { execSync } = require('node:child_process');
+const { existsSync } = require('node:fs');
+const { join } = require('node:path');
 
 const target = process.env.RAILWAY_BUILD_TARGET || 'api';
 
@@ -15,6 +17,13 @@ const run = (cmd, options = {}) => {
   };
   execSync(cmd, mergedOptions);
 };
+
+// 確保依賴已安裝
+const nodeModulesPath = join(process.cwd(), 'node_modules');
+if (!existsSync(nodeModulesPath) || !existsSync(join(nodeModulesPath, 'cloudinary'))) {
+  console.log('Dependencies not found or incomplete, installing...');
+  run('pnpm install --frozen-lockfile');
+}
 
 const buildSharedPackages = () => {
   ['config', 'domain', 'lib'].forEach(pkg => {
