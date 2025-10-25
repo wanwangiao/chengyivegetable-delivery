@@ -210,7 +210,7 @@ DATABASE_URL="..." npx tsx create-admin.ts
 
 | 服務 | URL | 說明 |
 |------|-----|------|
-| **Web** | https://chengyivegetable-production.up.railway.app/ | 客戶商城 + 管理後台 |
+| **Web** | https://chengyivegetable-production-7b4a.up.railway.app/ | 客戶商城 + 管理後台 |
 | **API** | https://chengyivegetable-api-production.up.railway.app/ | REST API + LINE Bot |
 | **Driver** | https://chengyivegetable-driver-production.up.railway.app/ | 外送員 App (PWA) |
 
