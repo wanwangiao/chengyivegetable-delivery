@@ -48,7 +48,12 @@ if (target === 'api') {
   // Start Expo development server for web
   const port = process.env.PORT ?? '8081';
   console.log(`Starting Expo dev server on port ${port}...`);
-  run(`pnpm --filter driver exec expo start --web --non-interactive --host 0.0.0.0 --port ${port}`);
+  run(`pnpm --filter driver exec expo start --web --port ${port}`, {
+    env: {
+      CI: '1', // Use CI=1 instead of --non-interactive
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: '0.0.0.0',
+    },
+  });
 } else {
   throw new Error(`Unsupported RAILWAY_BUILD_TARGET: ${target}`);
 }
