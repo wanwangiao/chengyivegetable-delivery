@@ -1,0 +1,304 @@
+/**
+ * 後台管理佈局樣式 - 響應式側邊欄
+ */
+
+/* ========================================
+   主容器
+   ======================================== */
+
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+  font-family: 'Segoe UI', 'Noto Sans TC', sans-serif;
+  position: relative;
+}
+
+/* ========================================
+   側邊欄
+   ======================================== */
+
+.adminSidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #2d5a3d, #1e3d2a);
+  color: #fff;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  padding-bottom: 2rem;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebarLogo {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebarLogo h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.sidebarLogo p {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.sidebarNav {
+  padding: 1rem 0;
+}
+
+.navItem {
+  margin-bottom: 0.25rem;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.875rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 0.9375rem;
+  border-left: 3px solid transparent;
+}
+
+.navLink:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: #fff;
+  border-left-color: rgba(139, 195, 74, 0.3);
+}
+
+.navLink.active {
+  background: rgba(124, 179, 66, 0.25);
+  color: #fff;
+  border-left-color: #8bc34a;
+  font-weight: 600;
+}
+
+.navIcon {
+  margin-right: 0.75rem;
+  font-size: 0.5rem;
+}
+
+/* ========================================
+   主內容區
+   ======================================== */
+
+.adminContent {
+  margin-left: 280px;
+  flex: 1;
+  padding: 2.5rem;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.adminTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2d4a3a;
+  margin-bottom: 0.25rem;
+}
+
+.adminSubtitle {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  background: #28a745;
+  color: white;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.adminMainSection {
+  background: #fff;
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
+}
+
+/* ========================================
+   漢堡選單按鈕 (手機版)
+   ======================================== */
+
+.menuButton {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1100;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2d5a3d, #1e3d2a);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(45, 90, 61, 0.3);
+  transition: all 0.3s ease;
+}
+
+.menuButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(45, 90, 61, 0.4);
+}
+
+.menuButton:active {
+  transform: scale(0.95);
+}
+
+.menuIcon {
+  width: 24px;
+  height: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.menuIcon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+/* 漢堡選單打開時的動畫 */
+.menuButton.open .menuIcon span:nth-child(1) {
+  transform: rotate(45deg) translateY(9px);
+}
+
+.menuButton.open .menuIcon span:nth-child(2) {
+  opacity: 0;
+}
+
+.menuButton.open .menuIcon span:nth-child(3) {
+  transform: rotate(-45deg) translateY(-9px);
+}
+
+/* 遮罩層 (手機版) */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.visible {
+  opacity: 1;
+}
+
+/* ========================================
+   響應式設計 - 手機版
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* 顯示漢堡選單按鈕 */
+  .menuButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 側邊欄默認隱藏 */
+  .adminSidebar {
+    transform: translateX(-100%);
+  }
+
+  /* 側邊欄打開狀態 */
+  .adminSidebar.open {
+    transform: translateX(0);
+  }
+
+  /* 主內容區佔滿螢幕 */
+  .adminContent {
+    margin-left: 0;
+    padding: 5rem 1rem 2rem;
+  }
+
+  /* 遮罩層顯示 */
+  .overlay {
+    display: block;
+  }
+
+  .adminHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .adminTitle {
+    font-size: 1.5rem;
+  }
+
+  .adminMainSection {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .adminContent {
+    padding: 4.5rem 0.75rem 1.5rem;
+  }
+
+  .adminMainSection {
+    padding: 1.25rem;
+  }
+
+  .adminTitle {
+    font-size: 1.25rem;
+  }
+
+  .sidebarLogo h2 {
+    font-size: 1.25rem;
+  }
+
+  .navLink {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ========================================
+   平板版
+   ======================================== */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .adminSidebar {
+    width: 240px;
+  }
+
+  .adminContent {
+    margin-left: 240px;
+    padding: 2rem;
+  }
+}

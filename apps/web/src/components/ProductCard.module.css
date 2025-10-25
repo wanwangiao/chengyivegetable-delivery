@@ -89,9 +89,10 @@
   top: var(--space-2, 8px);
   right: var(--space-2, 8px);
   padding: var(--space-1, 4px) var(--space-2, 8px);
-  background: rgba(0, 0, 0, 0.75);
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
   backdrop-filter: blur(8px);
   border-radius: var(--radius-sm, 8px);
+  box-shadow: 0 2px 8px rgba(124, 179, 66, 0.3);
 }
 
 .badgeWarning {

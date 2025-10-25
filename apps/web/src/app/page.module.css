@@ -1,0 +1,296 @@
+/**
+ * 前台首頁樣式 - 溫暖明亮的蔬果配色
+ */
+
+/* ========================================
+   頁面容器
+   ======================================== */
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
+  padding-bottom: 120px; /* 為購物車預留空間 */
+}
+
+/* ========================================
+   頁首橫幅
+   ======================================== */
+
+.pageHeader {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+  box-shadow: 0 2px 8px rgba(45, 90, 61, 0.08);
+}
+
+/* ========================================
+   分類導航 - 固定在頂部
+   ======================================== */
+
+.categoryNav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(124, 179, 66, 0.15);
+  box-shadow: 0 2px 12px rgba(45, 90, 61, 0.1);
+  padding: 12px 0;
+}
+
+.categoryTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.categoryTabs::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.categoryTab {
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(124, 179, 66, 0.3);
+  background: #ffffff;
+  color: #2d5a3d;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.categoryTab:hover {
+  background: rgba(124, 179, 66, 0.08);
+  border-color: rgba(124, 179, 66, 0.5);
+  transform: translateY(-1px);
+}
+
+.categoryTab.active {
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  color: #ffffff;
+  border-color: #7cb342;
+  box-shadow: 0 4px 12px rgba(124, 179, 66, 0.3);
+  font-weight: 600;
+}
+
+/* ========================================
+   主要內容區
+   ======================================== */
+
+.mainContent {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* ========================================
+   搜尋區域
+   ======================================== */
+
+.searchArea {
+  margin-bottom: 24px;
+}
+
+.searchBox {
+  position: relative;
+  width: 100%;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 14px 50px 14px 18px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(124, 179, 66, 0.25);
+  background: #ffffff;
+  font-size: 1rem; /* 16px */
+  color: #2d4a3a;
+  box-shadow: 0 4px 16px rgba(45, 90, 61, 0.06);
+  transition: all 0.25s ease;
+}
+
+.searchInput::placeholder {
+  color: rgba(45, 74, 58, 0.5);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #7cb342;
+  box-shadow: 0 6px 20px rgba(124, 179, 66, 0.15),
+              0 0 0 3px rgba(124, 179, 66, 0.1);
+}
+
+.searchClear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(124, 179, 66, 0.15);
+  color: #2d5a3d;
+  font-size: 0.875rem; /* 14px */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchClear:hover {
+  background: rgba(124, 179, 66, 0.25);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.searchResultsInfo {
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+.searchResultText {
+  font-size: 0.875rem; /* 14px */
+  color: rgba(45, 74, 58, 0.7);
+  font-weight: 500;
+}
+
+/* ========================================
+   商品區域
+   ======================================== */
+
+.productsSection {
+  margin-bottom: 24px;
+}
+
+/* ========================================
+   服務公告
+   ======================================== */
+
+.serviceAnnouncement {
+  background: linear-gradient(135deg, rgba(124, 179, 66, 0.08), rgba(139, 195, 74, 0.03));
+  border: 1px solid rgba(124, 179, 66, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.announcementTitle {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 700;
+  color: #2d5a3d;
+  margin-bottom: 12px;
+}
+
+.announcementContent {
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.8;
+  color: rgba(45, 74, 58, 0.85);
+}
+
+/* ========================================
+   CTA 區塊
+   ======================================== */
+
+.ctaBlock {
+  margin-bottom: 24px;
+}
+
+.ctaCard {
+  background: linear-gradient(135deg, #ffffff, rgba(139, 195, 74, 0.05));
+  border: 1.5px solid rgba(124, 179, 66, 0.2);
+  border-radius: 18px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(45, 90, 61, 0.08);
+  transition: all 0.3s ease;
+}
+
+.ctaCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(45, 90, 61, 0.12);
+}
+
+.ctaCard h3 {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  color: #2d5a3d;
+  margin-bottom: 8px;
+}
+
+.ctaCard p {
+  font-size: 0.9375rem; /* 15px */
+  color: rgba(45, 74, 58, 0.75);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.btnPrimary {
+  display: inline-block;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  color: #ffffff;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  border-radius: 24px;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(124, 179, 66, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 179, 66, 0.4);
+}
+
+.btnPrimary:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   錯誤訊息
+   ======================================== */
+
+.errorMessage {
+  padding: 16px;
+  text-align: center;
+  color: #c53030;
+  background: rgba(197, 48, 48, 0.05);
+  border: 1px solid rgba(197, 48, 48, 0.2);
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* ========================================
+   響應式設計
+   ======================================== */
+
+@media (min-width: 768px) {
+  .main-content {
+    padding: 32px 24px;
+  }
+
+  .category-tabs {
+    padding: 0 24px;
+    gap: 12px;
+  }
+
+  .category-tab {
+    padding: 11px 24px;
+    font-size: 1rem; /* 16px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-bottom: 80px;
+  }
+
+  .category-nav {
+    /* 桌面版分類導航可以取消固定 */
+    position: relative;
+    top: auto;
+  }
+}

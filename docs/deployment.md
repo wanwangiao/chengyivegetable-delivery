@@ -1,90 +1,380 @@
-# 部署指南
+# 部署與運維指南
 
-## 最新部署狀態（2025-10-13）
-- **API**：使用根目錄 `Dockerfile` 建置。部署流程會依序建置 `config`、`domain`、`lib` 套件，執行 `pnpm --filter api prisma generate`，最後以 `pnpm --filter api exec tsx --tsconfig tsconfig.build.json src/index.ts` 啟動。容器已安裝 `openssl`，並將 Prisma `binaryTargets` 設為 `debian-openssl-3.0.x`，解決 `libssl` 缺失。
-- **Web**：`RAILWAY_BUILD_TARGET=web` 搭配 `pnpm run start`，請清空 Build 頁面 `Custom Build Command`，讓建置完全依賴 Dockerfile 內的 `pnpm install` 與 Next.js build。
-- **Driver**：Expo Web 服務可啟動，仍需補齊正式 UI 並依 Expo 建議調整 React/TypeScript 版本。
+> 完整的 Railway 部署流程與系統維護指南
+>
+> **最後更新**: 2025-10-23
 
-## 1. 環境需求
-- Node.js 20（若使用 pnpm on-host 部署）。
-- PostgreSQL 16 與 Redis 7。
-- Linux 環境需安裝 `libvips` 以支援 `sharp`。
-- 上傳目錄：預設 `/var/app/uploads`，可於 `.env` 透過 `FILE_STORAGE_PATH` 覆寫。
+## 📋 目錄
 
-## 2. 推薦架構
-- **API**：獨立 Node container，提供 REST / WebSocket。
-- **Web**：Next.js container（可切換 SSR 或靜態輸出）。
-- **Database**：託管 PostgreSQL（Railway、Neon、RDS……）。
-- **Redis**：快取／排程佇列。
-- **檔案儲存**：本地磁碟或 S3 兼容儲存服務。
-
-## 3. 環境變數
-- 參考 `infra/environments/staging.env.example` 與 `production.env.example` 建置。
-- 部署前務必設定：
-  - `SESSION_SECRET`、`JWT_SECRET` → 至少 32 字元亂數。
-  - `LINE_CHANNEL_*` → 置於秘密管理系統。
-  - `PUBLIC_APP_URL`、`EXPO_PUBLIC_API_BASE` → 對應實際網域。
-
-## 4. 建置流程
-### 4.1 Docker 映像
-```bash
-# API
-docker build -f infra/dockerfiles/api.Dockerfile -t chengyi-api:latest .
-
-# Web
-docker build -f infra/dockerfiles/web.Dockerfile -t chengyi-web:latest .
-```
-
-### 4.2 Compose（單機或本地）
-```bash
-cp infra/environments/production.env.example .env
-docker compose -f infra/docker-compose.yml up --build -d
-```
-
-> 若在雲端單機使用 compose，建議改用託管的 PostgreSQL / Redis，並調整 compose 服務。
-
-## 5. 部署腳本
-- `package.json` 新增 `pnpm test:api` / `test:web` / `test:driver` 便於分別驗證。
-- 資料庫遷移：`pnpm --filter api prisma migrate deploy`。
-- 建議 CI 流程：安裝依賴 → 執行測試 → 構建 Docker → 推送 Registry → 觸發平台部署。
-
-## 6. GitHub Actions Secrets & Variables
-- Secrets 建議至少設定：
-  - `DATABASE_URL`：Production 資料庫連線字串（供 Prisma migrate deploy 使用）。
-  - `RAILWAY_TOKEN`（或其他平台 Token）：部署時使用。
-- Repository / Environment variables（可選）：
-  - `K6_ENABLED`（`true/false`）：是否執行 k6 煙霧測試。
-  - `K6_API_BASE_URL`：k6 指向的 API URL。
-  - `PLAYWRIGHT_SKIP_TEST` 等自訂開關。
-
-## 7. 資料庫遷移
-```bash
-pnpm --filter api prisma migrate deploy
-# 或容器環境
-docker exec <api-container> pnpm --filter api prisma migrate deploy
-```
-
-## 8. 健康檢查與監控
-- 健康檢查：`/api/v1/health`。
-- 推薦整合：Sentry（錯誤）、Grafana/Prometheus（指標）、ELK/OpenSearch（日誌）。
-
-## 9. 更新流程
-1. 建立功能分支並通過 CI。
-2. 合併 main 後觸發部署工作流程。
-3. 部署腳本：
-   - 執行測試 (`pnpm test:api`, `pnpm test:driver`, `pnpm --filter web test:e2e`)。
-   - `pnpm --filter api prisma migrate deploy`。
-   - 滾動更新服務（Railway、Fly.io 或 K8s）。
-4. 部署完成後監控指標並確認通知。
-
-## 10. 後續待辦
-- Terraform 模組尚未建立，可依最終平台補齊。
-- 撰寫備援 / 備份策略（資料庫快照、檔案備份）。
-- 針對 LINE 通知設定網域白名單與 webhook。
-- Driver Web 端尚未完成 UI 與 API 串接；完成後需更新 Expo/React 依賴版本以符合官方建議。
-- 確認 Web / Driver 服務均設定 `API_BASE_URL`、`SESSION_SECRET`、`JWT_SECRET` 等核心環境變數，保持與 API 一致。
-- 將 Prisma 遷移 (`pnpm --filter api prisma migrate deploy`) 納入部署流程並加上健康檢查腳本。
-- 規劃 Driver 端需求（登入、接單列表、配送流程、導航／簽收、定位回報），補齊 Expo Router UI 與 API 串接，並設定 `API_BASE_URL` 等環境變數。
+- [生產環境概覽](#生產環境概覽)
+- [Railway 部署](#railway-部署)
+- [環境變數配置](#環境變數配置)
+- [資料庫管理](#資料庫管理)
+- [Cloudinary 圖片管理](#cloudinary-圖片管理)
+- [部署流程](#部署流程)
+- [故障排除](#故障排除)
 
 ---
-若導入 GitHub Actions，可於 `.github/workflows/deploy.yml` 中新增實際部署指令（Docker login、推送、平台 CLI 部署等），再搭配上方流程完成自動化。
+
+## 🌐 生產環境概覽
+
+### 服務架構
+
+| 服務 | 平台 | URL | 用途 |
+|------|------|-----|------|
+| **API** | Railway | https://chengyivegetable-api-production.up.railway.app | REST API + LINE Bot |
+| **Web** | Railway | https://chengyivegetable-production.up.railway.app | 客戶商城 + 管理後台 |
+| **Driver** | Railway | https://chengyivegetable-driver-production.up.railway.app | 外送員 App (PWA) |
+| **Database** | Railway (Managed) | 內部連線 | PostgreSQL 16 |
+| **Images** | Cloudinary | Cloud Service | 商品圖片存儲 |
+
+---
+
+## 🚂 Railway 部署
+
+### 1. 建置流程
+
+Railway 使用 `src/server.js` 作為統一入口點，透過 `RAILWAY_BUILD_TARGET` 決定啟動哪個服務。
+
+**關鍵文件**:
+- `src/server.js` - Railway 啟動腳本  
+- `nixpacks.toml` - Nixpacks 建置配置
+- `package.json` - pnpm workspace 配置
+
+**server.js 工作流程**:
+1. 檢查 node_modules 是否存在
+2. 如不存在，執行 `pnpm install --frozen-lockfile`
+3. 根據 `RAILWAY_BUILD_TARGET` 建置共享套件 (config, domain, lib)
+4. 執行 `prisma generate` (API only)
+5. 啟動對應服務
+
+### 2. 服務配置
+
+#### API 服務
+
+**Environment Variables**:
+\`\`\`bash
+RAILWAY_BUILD_TARGET=api
+NODE_ENV=production
+DATABASE_URL=postgresql://...
+SESSION_SECRET=<32-char-secret>
+JWT_SECRET=<32-char-secret>
+LINE_CHANNEL_ID=<line-channel-id>
+LINE_CHANNEL_SECRET=<line-secret>
+LINE_CHANNEL_ACCESS_TOKEN=<line-token>
+CLOUDINARY_CLOUD_NAME=<cloud-name>
+CLOUDINARY_API_KEY=<api-key>
+CLOUDINARY_API_SECRET=<api-secret>
+\`\`\`
+
+**Start Command**: `pnpm run start`
+
+#### Web 服務
+
+**Environment Variables**:
+\`\`\`bash
+RAILWAY_BUILD_TARGET=web
+NODE_ENV=production
+NEXT_PUBLIC_API_URL=https://chengyivegetable-api-production.up.railway.app
+DATABASE_URL=postgresql://...
+SESSION_SECRET=<32-char-secret>
+JWT_SECRET=<32-char-secret>
+\`\`\`
+
+#### Driver 服務
+
+**Environment Variables**:
+\`\`\`bash
+RAILWAY_BUILD_TARGET=driver
+NODE_ENV=production
+EXPO_PUBLIC_API_BASE=https://chengyivegetable-api-production.up.railway.app
+PORT=3000
+\`\`\`
+
+---
+
+## ⚙️ 環境變數配置
+
+### 核心環境變數
+
+| 變數名稱 | 必要性 | 說明 | 範例 |
+|---------|--------|------|------|
+| `RAILWAY_BUILD_TARGET` | ✅ | 指定要建置的服務 | `api`, `web`, `driver` |
+| `NODE_ENV` | ✅ | 執行環境 | `production` |
+| `DATABASE_URL` | ✅ | PostgreSQL 連線字串 | `postgresql://user:pass@host:5432/db` |
+| `SESSION_SECRET` | ✅ | Session 加密金鑰 | 至少 32 字元隨機字串 |
+| `JWT_SECRET` | ✅ | JWT 簽署金鑰 | 至少 32 字元隨機字串 |
+
+### 生成安全密鑰
+
+\`\`\`bash
+# 生成 32 字元隨機密鑰
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# 或使用 openssl
+openssl rand -hex 32
+\`\`\`
+
+---
+
+## 🗄️ 資料庫管理
+
+### Prisma 遷移
+
+#### 開發環境
+
+\`\`\`bash
+# 創建新遷移
+pnpm --filter api prisma migrate dev --name <migration-name>
+
+# 生成 Prisma Client
+pnpm --filter api prisma generate
+
+# 重置資料庫 (慎用！)
+pnpm --filter api prisma migrate reset
+\`\`\`
+
+#### 生產環境
+
+\`\`\`bash
+# 部署遷移到生產環境
+DATABASE_URL="..." pnpm --filter api prisma migrate deploy
+
+# 查看遷移狀態
+DATABASE_URL="..." pnpm --filter api prisma migrate status
+\`\`\`
+
+### Prisma Studio
+
+\`\`\`bash
+# 開啟資料庫視覺化介面
+DATABASE_URL="..." pnpm --filter api prisma studio
+\`\`\`
+
+---
+
+## 🖼️ Cloudinary 圖片管理
+
+### 帳號資訊
+
+- **Cloud Name**: `dpxsgwvmf`
+- **Dashboard**: https://cloudinary.com/console
+
+### 圖片配置
+
+目前使用的圖片設定:
+
+\`\`\`javascript
+{
+  folder: 'chengyi-vegetables/products',
+  transformation: [
+    { width: 1200, height: 1200, crop: 'limit' },  // 不裁切，保持比例
+    { quality: 'auto:best' },                      // 最佳品質
+    { fetch_format: 'auto' }                       // 自動 WebP
+  ]
+}
+\`\`\`
+
+**特點**:
+- ✅ 最大解析度: 1200x1200px
+- ✅ 保持原始比例 (不強制裁切為正方形)
+- ✅ 自動轉換為 WebP (節省頻寬)
+- ✅ 最佳品質壓縮
+
+### 圖片遷移腳本
+
+**位置**: `migrate-images-to-cloudinary.ts`
+
+\`\`\`bash
+# 執行圖片遷移
+DATABASE_URL="..." \
+CLOUDINARY_CLOUD_NAME="..." \
+CLOUDINARY_API_KEY="..." \
+CLOUDINARY_API_SECRET="..." \
+npx tsx migrate-images-to-cloudinary.ts
+\`\`\`
+
+---
+
+## 🚀 部署流程
+
+### 完整部署步驟
+
+#### 1. 本地測試
+
+\`\`\`bash
+# 1. 確保所有測試通過
+pnpm test
+
+# 2. 類型檢查
+pnpm type-check
+
+# 3. Lint 檢查
+pnpm lint
+
+# 4. 本地建置測試
+pnpm build
+\`\`\`
+
+#### 2. 資料庫遷移 (如有變更)
+
+\`\`\`bash
+# 創建遷移
+pnpm --filter api prisma migrate dev --name <migration-name>
+
+# 部署到生產環境
+DATABASE_URL="<production-url>" pnpm --filter api prisma migrate deploy
+\`\`\`
+
+#### 3. 提交代碼
+
+\`\`\`bash
+# 提交變更
+git add .
+git commit -m "feat: <description>"
+
+# 推送到 GitHub
+git push origin main
+\`\`\`
+
+#### 4. Railway 自動部署
+
+Railway 會自動:
+1. 檢測到 Git Push
+2. 觸發建置流程
+3. 安裝依賴
+4. 建置應用
+5. 重啟服務
+
+#### 5. 驗證部署
+
+\`\`\`bash
+# 檢查 API 健康狀態
+curl https://chengyivegetable-api-production.up.railway.app/api/v1/health
+
+# 預期回應
+{
+  "status": "ok",
+  "timestamp": "2025-10-23T...",
+  "service": "api"
+}
+\`\`\`
+
+---
+
+## 🔧 故障排除
+
+### 常見問題
+
+#### 1. 部署失敗: "Cannot find package 'cloudinary'"
+
+**原因**: Railway 跳過了 build 階段，dependencies 未安裝
+
+**解決方案**: `src/server.js` 已加入自動檢查機制，會在啟動時自動安裝缺失的依賴
+
+#### 2. 資料庫連線失敗
+
+**檢查項目**:
+- ✅ `DATABASE_URL` 環境變數是否正確
+- ✅ Railway PostgreSQL 服務是否正常運行
+- ✅ 網路連線是否正常
+
+**測試連線**:
+\`\`\`bash
+DATABASE_URL="..." pnpm --filter api prisma db execute --stdin <<< "SELECT 1"
+\`\`\`
+
+#### 3. LINE Webhook 無回應
+
+**檢查項目**:
+- ✅ LINE Channel 設定的 Webhook URL 是否正確
+- ✅ LINE_CHANNEL_* 環境變數是否設定
+- ✅ API 服務是否正常運行
+
+**測試 Webhook**:
+\`\`\`bash
+curl -X POST https://chengyivegetable-api-production.up.railway.app/api/v1/line/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-line-signature: test" \
+  -d '{"events": []}'
+\`\`\`
+
+#### 4. 圖片無法顯示
+
+**檢查項目**:
+- ✅ Cloudinary 環境變數是否正確
+- ✅ 圖片 URL 是否有效
+- ✅ CORS 設定是否正確
+
+#### 5. 502 Bad Gateway
+
+**可能原因**:
+- 應用啟動超時
+- 記憶體不足 (OOM)
+- Port 配置錯誤
+
+**解決方案**:
+1. 檢查 Railway Logs
+2. 增加服務記憶體配額
+3. 確認 `PORT` 環境變數設定
+
+---
+
+## 📊 監控與維護
+
+### 健康檢查
+
+**API Health Check**:
+\`\`\`bash
+curl https://chengyivegetable-api-production.up.railway.app/api/v1/health
+\`\`\`
+
+### 定期維護
+
+#### 每週
+
+- [ ] 檢查 Railway Logs 是否有異常
+- [ ] 檢查 API 回應時間
+- [ ] 檢查資料庫連線數
+
+#### 每月
+
+- [ ] 檢查 Cloudinary 使用量
+- [ ] 資料庫備份
+- [ ] 更新依賴套件
+
+#### 每季
+
+- [ ] 檢查安全性更新
+- [ ] 效能優化
+- [ ] 資料庫維護 (VACUUM, ANALYZE)
+
+---
+
+## ✅ 部署檢查清單
+
+### 首次部署
+
+- [ ] 設定所有必要環境變數
+- [ ] 執行資料庫遷移
+- [ ] 設定 LINE Webhook URL
+- [ ] 測試 API 端點
+- [ ] 測試 Web 應用
+- [ ] 測試圖片上傳
+- [ ] 建立管理員帳號
+- [ ] 匯入商品資料
+
+### 日常部署
+
+- [ ] 本地測試通過
+- [ ] 代碼審查完成
+- [ ] 執行資料庫遷移 (如需要)
+- [ ] 推送代碼到 GitHub
+- [ ] 驗證 Railway 部署狀態
+- [ ] 檢查 Health Check
+- [ ] 監控應用 Logs
+
+---
+
+**文檔版本**: 1.0.0  
+**最後更新**: 2025-10-23

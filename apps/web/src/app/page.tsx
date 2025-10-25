@@ -12,6 +12,7 @@ import { StaggerList } from '../components/animations/StaggerList';
 import { ListSkeleton } from '../components/animations/Skeleton';
 import { useCart } from '../hooks/useCart';
 import '../styles/theme.css';
+import styles from './page.module.css';
 
 type Product = {
   id: string;
@@ -176,18 +177,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="page">
-      <header className="page-header">
+    <div className={styles.page}>
+      <header className={styles.pageHeader}>
         <BusinessStatusBanner />
       </header>
 
-      <section className="category-nav">
-        <div className="category-tabs">
+      <section className={styles.categoryNav}>
+        <div className={styles.categoryTabs}>
           {categories.map(category => (
             <button
               key={category}
               type="button"
-              className={`category-tab ${category === activeCategory ? 'active' : ''}`}
+              className={`${styles.categoryTab} ${category === activeCategory ? styles.active : ''}`}
               onClick={() => setActiveCategory(category)}
             >
               {category}
@@ -196,36 +197,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      <main className="main-content">
-        <section className="search-area">
-          <div className="search-box">
+      <main className={styles.mainContent}>
+        <section className={styles.searchArea}>
+          <div className={styles.searchBox}>
             <input
               id="product-search"
-              className="search-input"
+              className={styles.searchInput}
               placeholder="搜尋商品名稱或類別"
               value={searchKeyword}
               onChange={event => setSearchKeyword(event.target.value)}
             />
             {searchKeyword.length > 0 && (
-              <button className="search-clear" type="button" onClick={() => setSearchKeyword('')}>
-                清除
+              <button className={styles.searchClear} type="button" onClick={() => setSearchKeyword('')}>
+                ✕
               </button>
             )}
           </div>
-          <div className="search-results-info">
-            <div className="search-result-text">
+          <div className={styles.searchResultsInfo}>
+            <div className={styles.searchResultText}>
               {loading ? '載入商品中...' : `共有 ${filteredProducts.length} 項商品符合條件`}
             </div>
           </div>
         </section>
 
-        <section className="products-section">
+        <section className={styles.productsSection}>
           {error && (
-            <div className="error-message" style={{ padding: '1rem', textAlign: 'center', color: '#c53030' }}>
+            <div className={styles.errorMessage}>
               {error}
             </div>
           )}
-          <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 1rem' }}>
+          <div>
             {loading && <ListSkeleton count={5} />}
 
             {!loading && filteredProducts.length === 0 && (
@@ -249,20 +250,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="service-announcement" style={{ marginTop: '1.5rem' }}>
-          <h3 className="announcement-title">配送說明</h3>
-          <div className="announcement-content">
+        <section className={styles.serviceAnnouncement}>
+          <h3 className={styles.announcementTitle}>配送說明</h3>
+          <div className={styles.announcementContent}>
             ・每日 12:00 前下單，當日新鮮出貨。<br />
             ・雨天將採用保冷箱配送，確保蔬果品質。<br />
             ・大量訂購歡迎透過 LINE 官方帳號與客服聯繫。
           </div>
         </section>
 
-        <section className="cta-block" style={{ marginTop: '1.5rem' }}>
-          <div className="cta-card">
+        <section className={styles.ctaBlock}>
+          <div className={styles.ctaCard}>
             <h3>訂單查詢</h3>
             <p>輸入訂單編號即可查詢出貨進度與司機位置。</p>
-            <a className="btn-primary" href="/order-tracking">
+            <a className={styles.btnPrimary} href="/order-tracking">
               前往訂單追蹤
             </a>
           </div>
