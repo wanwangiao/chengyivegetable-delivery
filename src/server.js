@@ -45,14 +45,15 @@ if (target === 'api') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
 
-  // Build the Expo web app
-  console.log('Building Expo app for web...');
-  run('pnpm --filter driver build');
-
-  // Serve the built static files
-  const port = process.env.PORT ?? '3000';
-  console.log(`Serving static files on port ${port}...`);
-  run(`pnpm --filter driver exec npx serve dist -p ${port} -s`);
+  // Start Expo development server for web
+  const port = process.env.PORT ?? '8081';
+  console.log(`Starting Expo dev server on port ${port}...`);
+  run('pnpm --filter driver start', {
+    env: {
+      PORT: port,
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: '0.0.0.0',
+    },
+  });
 } else {
   throw new Error(`Unsupported RAILWAY_BUILD_TARGET: ${target}`);
 }

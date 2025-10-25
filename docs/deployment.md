@@ -23,7 +23,7 @@
 | 服務 | 平台 | URL | 用途 |
 |------|------|-----|------|
 | **API** | Railway | https://chengyivegetable-api-production.up.railway.app | REST API + LINE Bot |
-| **Web** | Railway | https://chengyivegetable-production.up.railway.app | 客戶商城 + 管理後台 |
+| **Web** | Railway | https://chengyivegetable-production-7b4a.up.railway.app | 客戶商城 + 管理後台 |
 | **Driver** | Railway | https://chengyivegetable-driver-production.up.railway.app | 外送員 App (PWA) |
 | **Database** | Railway (Managed) | 內部連線 | PostgreSQL 16 |
 | **Images** | Cloudinary | Cloud Service | 商品圖片存儲 |
