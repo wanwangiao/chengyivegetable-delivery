@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'chengyi-driver',
   web: {
     bundler: 'metro',
-    output: 'single'
+    output: 'static'
   },
   extra: {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE || 'http://localhost:3000'

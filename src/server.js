@@ -45,13 +45,16 @@ if (target === 'api') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
 
-  // Start Expo development server for web
+  // Start Expo development server for web with proper configuration
   const port = process.env.PORT ?? '8081';
-  console.log(`Starting Expo dev server on port ${port}...`);
+  console.log(`Starting Expo web server on port ${port}...`);
+
   run(`pnpm --filter driver exec expo start --web --port ${port}`, {
     env: {
-      CI: '1', // Use CI=1 instead of --non-interactive
+      NODE_ENV: 'production',
+      CI: '1',
       EXPO_DEVTOOLS_LISTEN_ADDRESS: '0.0.0.0',
+      EXPO_NO_DOTENV: '1',
     },
   });
 } else {
