@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start --web --non-interactive",
+    "start": "expo start --web --non-interactive --host 0.0.0.0",
     "dev": "expo start --web",
     "lint": "eslint \"app/**/*.tsx\"",
     "test": "node tests/run-smoke.cjs",
