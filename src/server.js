@@ -45,16 +45,20 @@ if (target === 'api') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
 
-  // Start Expo development server for web with proper configuration
+  // Serve static files from dist directory
   const port = process.env.PORT ?? '8081';
-  console.log(`Starting Expo web server on port ${port}...`);
+  console.log(`Serving Driver app static files on port ${port}...`);
 
-  run(`pnpm --filter driver exec expo start --web --port ${port}`, {
+  // Check if dist directory exists
+  const distPath = join(process.cwd(), 'apps/driver/dist');
+  if (!existsSync(distPath)) {
+    console.log('Creating dist directory...');
+    require('fs').mkdirSync(distPath, { recursive: true });
+  }
+
+  run(`pnpm --filter driver exec npx serve dist -l tcp://0.0.0.0:${port} --no-port-switching --no-clipboard --cors`, {
     env: {
       NODE_ENV: 'production',
-      CI: '1',
-      EXPO_DEVTOOLS_LISTEN_ADDRESS: '0.0.0.0',
-      EXPO_NO_DOTENV: '1',
     },
   });
 } else {
