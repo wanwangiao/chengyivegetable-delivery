@@ -5,11 +5,12 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --web --non-interactive",
-    "build": "node -e \"console.log('Driver app build handled at runtime')\"",
+    "build": "expo export --platform web",
     "dev": "expo start --web",
     "lint": "eslint \"app/**/*.tsx\"",
     "test": "node tests/run-smoke.cjs",
-    "test:watch": "node --watch tests/run-smoke.cjs"
+    "test:watch": "node --watch tests/run-smoke.cjs",
+    "serve": "npx serve dist"
   },
   "dependencies": {
     "@chengyi/domain": "workspace:*",
@@ -24,7 +25,8 @@
     "react-native": "0.74.5",
     "react-native-maps": "1.14.0",
     "react-native-paper": "^5.12.5",
-    "react-native-web": "~0.19.10"
+    "react-native-web": "~0.19.10",
+    "serve": "^14.2.1"
   },
   "devDependencies": {
     "@testing-library/jest-native": "^5.4.3",
