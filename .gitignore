@@ -27,3 +27,6 @@ pnpm-debug.log*
 # Prisma
 prisma/migrations/
 apps/api/prisma/dev.db
+
+# Allow driver app dist for static deployment
+!apps/driver/dist
