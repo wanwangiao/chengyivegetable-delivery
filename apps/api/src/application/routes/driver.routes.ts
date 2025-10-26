@@ -14,6 +14,10 @@ export const createDriverRouter = (
 ): Router => {
   const router = Router();
 
+  // Public routes (no authentication)
+  router.post('/login', controller.login);
+
+  // Protected routes (require authentication)
   router.get('/', authenticate(['ADMIN']), controller.listDrivers);
   router.get('/me', authenticate(['DRIVER']), controller.profile);
   router.get('/stats', authenticate(['ADMIN']), controller.stats);

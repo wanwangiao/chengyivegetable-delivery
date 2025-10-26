@@ -17,8 +17,19 @@ export const driverStatus = {
   BUSY: 'busy'
 } as const;
 
+export interface DriverWithUser extends Driver {
+  user?: {
+    id: string;
+    email: string;
+    password: string;
+    role: string;
+    isActive: boolean;
+  };
+}
+
 export interface DriverRepository {
   findById(id: string): Promise<Driver | null>;
+  findByPhone(phone: string): Promise<DriverWithUser | null>;
   list(): Promise<Driver[]>;
   updateStatus(driverId: string, status: string): Promise<Driver>;
   updateLocation(driverId: string, lat: number, lng: number): Promise<Driver>;
@@ -41,6 +52,20 @@ export const prismaDriverRepository: DriverRepository = {
   async findById(id) {
     const driver = await prisma.driver.findUnique({ where: { id } });
     return driver ? mapDriver(driver) : null;
+  },
+
+  async findByPhone(phone) {
+    const driver = await prisma.driver.findFirst({
+      where: { phone },
+      include: { user: true }
+    });
+
+    if (!driver) return null;
+
+    return {
+      ...mapDriver(driver),
+      user: driver.user
+    };
   },
 
   async list() {

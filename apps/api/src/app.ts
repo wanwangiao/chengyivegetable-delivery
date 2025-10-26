@@ -92,7 +92,7 @@ export const createApp = (): Application => {
   const orderService = new OrderService(orderRepository, businessHoursService);
   const productService = new ProductService(productRepository, orderRepository);
   const authService = new AuthService(userRepository);
-  const driverService = new DriverService(driverRepository);
+  const driverService = new DriverService(driverRepository, authService);
   const driverOrdersService = new DriverOrdersService({
     orderRepository,
     orderService,
@@ -104,7 +104,7 @@ export const createApp = (): Application => {
   const orderController = new OrderController(orderService);
   const productController = new ProductController(productService);
   const authController = new AuthController(authService);
-  const driverController = new DriverController(driverService, driverOrdersService);
+  const driverController = new DriverController(driverService, driverOrdersService, authService);
   const driverOrdersController = new DriverOrdersController(driverOrdersService);
   const userManagementController = new UserManagementController(userManagementService);
   const adminOrdersController = new AdminOrdersController(orderService);

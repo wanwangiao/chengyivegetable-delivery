@@ -1,12 +1,23 @@
 import type { Request, Response } from 'express';
 import { DriverService } from '../../domain/driver-service';
 import { DriverOrdersService } from '../../domain/driver-orders-service';
+import { AuthService } from '../../domain/auth-service';
 
 export class DriverController {
   constructor(
     private readonly driverService: DriverService,
-    private readonly driverOrdersService: DriverOrdersService
+    private readonly driverOrdersService: DriverOrdersService,
+    private readonly authService: AuthService
   ) {}
+
+  login = async (req: Request, res: Response) => {
+    try {
+      const tokens = await this.driverService.login(req.body);
+      res.json({ data: tokens });
+    } catch (error: any) {
+      res.status(401).json({ error: error.message ?? 'INVALID_CREDENTIALS' });
+    }
+  };
 
   profile = async (req: Request, res: Response) => {
     const user = (req as any).user as { sub: string; role: string } | undefined;

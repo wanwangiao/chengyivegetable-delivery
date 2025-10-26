@@ -53,7 +53,7 @@ export class AuthService {
     return this.generateTokens(user.id, user.role);
   }
 
-  private generateTokens(userId: string, role: string) {
+  generateTokens(userId: string, role: string) {
     const secret = env.JWT_SECRET as Secret;
     const options: SignOptions = {
       expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn']
