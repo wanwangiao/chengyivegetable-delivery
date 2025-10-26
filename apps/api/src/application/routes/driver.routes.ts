@@ -30,8 +30,10 @@ export const createDriverRouter = (
   router.get('/orders/history', authenticate(['DRIVER']), ordersController.listCompletedOrders);
   router.get('/orders/problem', authenticate(['DRIVER']), ordersController.listProblemOrders);
   router.get('/orders/batch-recommendations', authenticate(['DRIVER']), deliveryController.recommendedBatches);
+  router.get('/orders/nearby-recommendations', authenticate(['DRIVER']), deliveryController.recommendedNearbyOrders);
   router.get('/orders/:id', authenticate(['DRIVER']), ordersController.getOrder);
   router.post('/orders/:id/claim', authenticate(['DRIVER']), ordersController.claimOrder);
+  router.post('/orders/batch-claim', authenticate(['DRIVER']), ordersController.claimBatch);
   router.post('/orders/:id/complete', authenticate(['DRIVER']), ordersController.markDelivered);
   router.post('/orders/:id/problem', authenticate(['DRIVER']), ordersController.markProblem);
   router.post('/orders/:id/proof', authenticate(['DRIVER']), deliveryProofUpload, ordersController.uploadProof);

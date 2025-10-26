@@ -54,6 +54,30 @@ export class DriverOrdersService {
     return await this.dependencies.orderService.updateStatus(orderId, 'delivering', undefined, actor);
   }
 
+  async claimBatch(orderIds: string[], actor: { sub: string; role: string }): Promise<Order[]> {
+    // Claim all orders in the batch
+    const results = await Promise.allSettled(
+      orderIds.map(orderId => this.dependencies.orderService.updateStatus(orderId, 'delivering', undefined, actor))
+    );
+
+    const claimed: Order[] = [];
+    const errors: string[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        claimed.push(result.value);
+      } else {
+        errors.push(`Order ${orderIds[index]}: ${result.reason?.message ?? 'Unknown error'}`);
+      }
+    });
+
+    if (claimed.length === 0) {
+      throw new Error('BATCH_CLAIM_FAILED: ' + errors.join(', '));
+    }
+
+    return claimed;
+  }
+
   async markDelivered(orderId: string, actor: { sub: string; role: string }): Promise<Order> {
     return await this.dependencies.orderService.updateStatus(orderId, 'delivered', undefined, actor);
   }

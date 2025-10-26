@@ -265,6 +265,80 @@ export class DeliveryService {
     };
   }
 
+  async recommendNearbyOrders(driverId: string, options?: { maxDistanceMeters?: number; limit?: number }): Promise<RecommendedOrderSummary[]> {
+    const maxDistance = options?.maxDistanceMeters ?? 2000; // 預設 2 公里內
+    const limit = options?.limit ?? 5; // 預設最多 5 筆
+
+    // 獲取外送員目前配送中的訂單
+    const activeOrders = await this.dependencies.orderRepository.listByDriver(driverId, {
+      statuses: ['delivering']
+    });
+
+    if (activeOrders.length === 0) {
+      return [];
+    }
+
+    // 獲取所有可用訂單（ready 狀態）
+    const availableOrders = await this.dependencies.orderRepository.listByStatuses(['ready']);
+
+    if (availableOrders.length === 0) {
+      return [];
+    }
+
+    // 確保所有訂單都有座標
+    const enrichedActive = await Promise.all(
+      activeOrders.map(async order => this.ensureCoordinates(order))
+    );
+
+    const enrichedAvailable = await Promise.all(
+      availableOrders.map(async order => {
+        try {
+          return await this.ensureCoordinates(order);
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const validAvailable = enrichedAvailable.filter(
+      (order): order is typeof activeOrders[0] => order !== null && order.latitude !== undefined && order.longitude !== undefined
+    );
+
+    // 計算每個可用訂單到路線的最短距離
+    const orderDistances = await Promise.all(
+      validAvailable.map(async (availableOrder) => {
+        let minDistance = Number.POSITIVE_INFINITY;
+
+        // 計算到每個配送中訂單的距離
+        for (const activeOrder of enrichedActive) {
+          if (activeOrder.latitude && activeOrder.longitude && availableOrder.latitude && availableOrder.longitude) {
+            const { distance } = await this.estimateLeg(
+              { lat: activeOrder.latitude, lng: activeOrder.longitude },
+              { lat: availableOrder.latitude, lng: availableOrder.longitude }
+            );
+            if (distance < minDistance) {
+              minDistance = distance;
+            }
+          }
+        }
+
+        return {
+          order: availableOrder,
+          distance: minDistance
+        };
+      })
+    );
+
+    // 過濾出在距離範圍內的訂單，並按距離排序
+    const nearbyOrders = orderDistances
+      .filter(({ distance }) => distance <= maxDistance)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ order }) => this.summariseOrder(order));
+
+    return nearbyOrders;
+  }
+
   async recommendBatches(options?: { limit?: number }): Promise<BatchRecommendationResult> {
     const settings = await this.dependencies.deliveryConfigRepository.getConfig();
     if (

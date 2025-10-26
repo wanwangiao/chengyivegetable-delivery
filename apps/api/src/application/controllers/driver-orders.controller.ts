@@ -112,6 +112,33 @@ export class DriverOrdersController {
     }
   };
 
+  claimBatch = async (req: Request, res: Response) => {
+    const user = this.requireDriver(req, res);
+    if (!user) return;
+
+    const orderIds = req.body?.orderIds;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ error: 'INVALID_PAYLOAD', message: 'orderIds must be a non-empty array' });
+    }
+
+    try {
+      const orders = await this.driverOrdersService.claimBatch(orderIds, user);
+      res.json({ data: orders });
+    } catch (error: any) {
+      if (error instanceof Error) {
+        const message = error.message;
+        if (message.startsWith('BATCH_CLAIM_FAILED')) {
+          return res.status(400).json({ error: 'BATCH_CLAIM_FAILED', message });
+        }
+        if (message === 'ORDER_NOT_FOUND') {
+          return res.status(404).json({ error: 'ORDER_NOT_FOUND' });
+        }
+      }
+
+      res.status(500).json({ error: 'UNEXPECTED_ERROR' });
+    }
+  };
+
   markDelivered = async (req: Request, res: Response) => {
     const user = this.requireDriver(req, res);
     if (!user) return;

@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { type Order } from '@chengyi/domain';
 import { getOfflineQueueService } from './services/offline-queue';
 import { clearToken, loadToken, persistToken } from './services/token-storage';
+import NavigationView from './components/NavigationView';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://chengyivegetable-api-production.up.railway.app';
@@ -157,6 +158,12 @@ export default function App() {
   const [problemOrderId, setProblemOrderId] = useState<string | null>(null);
   const [submittingProblem, setSubmittingProblem] = useState(false);
   const [activeTab, setActiveTab] = useState<'available' | 'active' | 'history' | 'problem'>('available');
+  const [showNavigationView, setShowNavigationView] = useState(false);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [expandedBatch, setExpandedBatch] = useState(false);
+  const [nearbyOrders, setNearbyOrders] = useState<BatchRecommendationOrderSummary[]>([]);
+  const [showNearbyDialog, setShowNearbyDialog] = useState(false);
+  const [claimingNearbyId, setClaimingNearbyId] = useState<string | null>(null);
 
   const batchRecommendations = batchData?.batches ?? [];
   const batchLeftovers = batchData?.leftovers ?? [];
@@ -552,9 +559,16 @@ export default function App() {
   const handleClaimBatch = async (batchId: string) => {
     setClaimingBatchId(batchId);
     try {
+      // Find the batch by ID
+      const batch = batchData?.batches.find(b => b.id === batchId);
+      if (!batch) {
+        throw new Error('批次不存在');
+      }
+
+      // Claim all orders in the batch
       await apiRequest(`/api/v1/drivers/orders/batch-claim`, {
         method: 'POST',
-        body: { batchId }
+        body: { orderIds: batch.orderIds }
       });
       setMessage('批次領取成功');
 
@@ -566,12 +580,84 @@ export default function App() {
       setAvailableOrders(available);
       setActiveOrders(active);
       setBatchData(null);
+      setCurrentBatchIndex(0);
+
+      // 獲取額外順路訂單推薦
+      try {
+        const nearby = await apiRequest<BatchRecommendationOrderSummary[]>('/api/v1/drivers/orders/nearby-recommendations');
+        if (nearby.length > 0) {
+          setNearbyOrders(nearby);
+          setShowNearbyDialog(true);
+        }
+      } catch (nearbyError) {
+        console.error('獲取額外推薦失敗:', nearbyError);
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       setMessage(`批次領取失敗: ${msg}`);
     } finally {
       setClaimingBatchId(null);
     }
+  };
+
+  const handleRejectBatch = () => {
+    setMessage('已拒絕此批次');
+    handleNextBatch();
+  };
+
+  const handleNextBatch = () => {
+    if (!batchData || batchRecommendations.length === 0) return;
+
+    if (currentBatchIndex < batchRecommendations.length - 1) {
+      setCurrentBatchIndex(prev => prev + 1);
+      setExpandedBatch(false);
+    } else {
+      setMessage('已經是最後一個批次了');
+    }
+  };
+
+  const handlePreviousBatch = () => {
+    if (currentBatchIndex > 0) {
+      setCurrentBatchIndex(prev => prev - 1);
+      setExpandedBatch(false);
+    }
+  };
+
+  const handleClaimNearbyOrder = async (orderId: string) => {
+    setClaimingNearbyId(orderId);
+    try {
+      await apiRequest(`/api/v1/drivers/orders/${orderId}/claim`, {
+        method: 'POST'
+      });
+      setMessage('額外訂單領取成功');
+
+      // 從推薦列表中移除
+      setNearbyOrders(prev => prev.filter(order => order.id !== orderId));
+
+      // Refresh orders
+      const [available, active] = await Promise.all([
+        apiRequest<Order[]>('/api/v1/drivers/orders/available'),
+        apiRequest<Order[]>('/api/v1/drivers/orders/active')
+      ]);
+      setAvailableOrders(available);
+      setActiveOrders(active);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setMessage(`領取訂單失敗: ${msg}`);
+    } finally {
+      setClaimingNearbyId(null);
+    }
+  };
+
+  const handleRejectNearbyOrder = (orderId: string) => {
+    setNearbyOrders(prev => prev.filter(order => order.id !== orderId));
+    setMessage('已忽略此訂單');
+  };
+
+  const handleSkipNearbyRecommendations = () => {
+    setShowNearbyDialog(false);
+    setNearbyOrders([]);
+    setMessage('開始配送');
   };
 
   const openInMaps = (latitude: number, longitude: number, address: string) => {
@@ -628,6 +714,23 @@ export default function App() {
           {message && <div className="message">{message}</div>}
         </div>
       </div>
+    );
+  }
+
+  // 如果進入配送執行模式，顯示 NavigationView
+  if (showNavigationView && activeOrders.length > 0 && token) {
+    return (
+      <NavigationView
+        orders={activeOrders}
+        token={token}
+        onBack={() => setShowNavigationView(false)}
+        onOrderComplete={() => {
+          // 刷新訂單列表
+          void apiRequest<Order[]>('/api/v1/drivers/orders/active')
+            .then((data) => setActiveOrders(data))
+            .catch(() => {});
+        }}
+      />
     );
   }
 
@@ -727,34 +830,114 @@ export default function App() {
 
             {batchError && <div className="error-message">{batchError}</div>}
 
-            {batchData && (
+            {batchData && batchRecommendations.length > 0 && (
               <div className="batch-recommendations">
-                <h3>批次配送建議</h3>
-                {batchRecommendations.map((batch) => (
-                  <div key={batch.id} className="batch-card">
-                    <div className="batch-header">
-                      <span>批次 {batch.id.slice(0, 8)}</span>
-                      <span>{batch.orderCount} 筆訂單</span>
-                      <span>{formatCurrency(batch.totalAmount)}</span>
-                    </div>
-                    {batch.preview && (
-                      <div className="batch-preview">
-                        <p>總距離: {formatDistanceLabel(batch.preview.totalDistanceMeters)}</p>
-                        <p>預估時間: {formatDurationLabel(batch.preview.totalDurationSeconds)}</p>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => void handleClaimBatch(batch.id)}
-                      disabled={claimingBatchId === batch.id}
-                      className="btn-primary"
-                    >
-                      {claimingBatchId === batch.id ? '領取中...' : '領取批次'}
-                    </button>
+                <div className="batch-navigation-header">
+                  <h3>批次配送建議</h3>
+                  <div className="batch-counter">
+                    {currentBatchIndex + 1} / {batchRecommendations.length}
                   </div>
-                ))}
+                </div>
+
+                {(() => {
+                  const batch = batchRecommendations[currentBatchIndex];
+                  if (!batch) return null;
+
+                  return (
+                    <div className="batch-card featured">
+                      <div className="batch-header">
+                        <div className="batch-info">
+                          <h4>批次 #{currentBatchIndex + 1}</h4>
+                          <div className="batch-meta">
+                            <span className="chip">{batch.orderCount} 筆訂單</span>
+                            <span className="chip">{formatCurrency(batch.totalAmount)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {batch.preview && (
+                        <div className="batch-preview">
+                          <div className="preview-stats">
+                            <div className="stat">
+                              <span className="stat-label">總距離</span>
+                              <span className="stat-value">{formatDistanceLabel(batch.preview.totalDistanceMeters)}</span>
+                            </div>
+                            <div className="stat">
+                              <span className="stat-label">預估時間</span>
+                              <span className="stat-value">{formatDurationLabel(batch.preview.totalDurationSeconds)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="batch-orders">
+                        <button
+                          className="expand-toggle"
+                          onClick={() => setExpandedBatch(!expandedBatch)}
+                        >
+                          {expandedBatch ? '▼' : '▶'} 訂單詳情 ({batch.orderCount} 筆)
+                        </button>
+
+                        {expandedBatch && (
+                          <div className="orders-list-mini">
+                            {batch.orders.map((order, index) => (
+                              <div key={order.id} className="order-item-mini">
+                                <span className="order-number">{index + 1}</span>
+                                <div className="order-info">
+                                  <strong>{order.contactName}</strong>
+                                  <span>{order.address}</span>
+                                  {order.notes && <span className="notes">備註: {order.notes}</span>}
+                                </div>
+                                <span className="order-amount">{formatCurrency(order.totalAmount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="batch-actions">
+                        <button
+                          onClick={() => void handleClaimBatch(batch.id)}
+                          disabled={claimingBatchId === batch.id}
+                          className="btn-primary btn-large"
+                        >
+                          {claimingBatchId === batch.id ? '領取中...' : '✓ 接受批次'}
+                        </button>
+                        <div className="secondary-actions">
+                          <button
+                            onClick={handleRejectBatch}
+                            className="btn-secondary"
+                            disabled={claimingBatchId === batch.id}
+                          >
+                            ✗ 拒絕
+                          </button>
+                          {currentBatchIndex < batchRecommendations.length - 1 && (
+                            <button
+                              onClick={handleNextBatch}
+                              className="btn-secondary"
+                              disabled={claimingBatchId === batch.id}
+                            >
+                              下一個 →
+                            </button>
+                          )}
+                          {currentBatchIndex > 0 && (
+                            <button
+                              onClick={handlePreviousBatch}
+                              className="btn-secondary"
+                              disabled={claimingBatchId === batch.id}
+                            >
+                              ← 上一個
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {batchLeftovers.length > 0 && (
-                  <div className="leftovers">
-                    <h4>未分組訂單 ({batchLeftovers.length})</h4>
+                  <div className="leftovers-info">
+                    <p>另有 {batchLeftovers.length} 筆未分組訂單</p>
                   </div>
                 )}
               </div>
@@ -797,7 +980,14 @@ export default function App() {
         {/* Active Orders Tab */}
         {activeTab === 'active' && (
           <div className="tab-content">
-            <h2>配送中的訂單</h2>
+            <div className="tab-header">
+              <h2>配送中的訂單</h2>
+              {activeOrders.length > 0 && (
+                <button onClick={() => setShowNavigationView(true)} className="btn-primary">
+                  🚚 開始配送
+                </button>
+              )}
+            </div>
             <div className="orders-list">
               {activeOrders.map((order) => (
                 <div key={order.id} className="order-card">
@@ -904,6 +1094,57 @@ export default function App() {
               </button>
               <button onClick={handleSubmitProblem} disabled={submittingProblem || !problemReason.trim()} className="btn-primary">
                 {submittingProblem ? '提交中...' : '提交'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nearby Orders Recommendations Dialog */}
+      {showNearbyDialog && nearbyOrders.length > 0 && (
+        <div className="dialog-overlay" onClick={() => setShowNearbyDialog(false)}>
+          <div className="dialog nearby-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>🎯 額外順路訂單推薦</h3>
+            <p className="nearby-description">
+              我們找到 {nearbyOrders.length} 筆順路訂單，您可以選擇性接受：
+            </p>
+
+            <div className="nearby-orders-list">
+              {nearbyOrders.map((order) => (
+                <div key={order.id} className="nearby-order-card">
+                  <div className="nearby-order-info">
+                    <strong>{order.contactName}</strong>
+                    <span className="nearby-address">{order.address}</span>
+                    <span className="nearby-amount">{formatCurrency(order.totalAmount)}</span>
+                    {order.notes && <span className="nearby-notes">備註: {order.notes}</span>}
+                  </div>
+                  <div className="nearby-order-actions">
+                    <button
+                      onClick={() => void handleClaimNearbyOrder(order.id)}
+                      disabled={claimingNearbyId === order.id}
+                      className="btn-success btn-sm"
+                    >
+                      {claimingNearbyId === order.id ? '領取中...' : '✓ 接受'}
+                    </button>
+                    <button
+                      onClick={() => handleRejectNearbyOrder(order.id)}
+                      disabled={claimingNearbyId !== null}
+                      className="btn-secondary btn-sm"
+                    >
+                      ✗ 忽略
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="dialog-actions">
+              <button
+                onClick={handleSkipNearbyRecommendations}
+                disabled={claimingNearbyId !== null}
+                className="btn-primary"
+              >
+                完成選擇
               </button>
             </div>
           </div>
