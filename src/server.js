@@ -45,16 +45,13 @@ if (target === 'api') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
 
+  // Build Driver app with Vite
+  console.log('Building Driver app with Vite...');
+  run('pnpm --filter driver build');
+
   // Serve static files from dist directory
   const port = process.env.PORT ?? '8081';
   console.log(`Serving Driver app static files on port ${port}...`);
-
-  // Check if dist directory exists
-  const distPath = join(process.cwd(), 'apps/driver/dist');
-  if (!existsSync(distPath)) {
-    console.log('Creating dist directory...');
-    require('fs').mkdirSync(distPath, { recursive: true });
-  }
 
   run(`pnpm --filter driver exec npx serve dist -l tcp://0.0.0.0:${port} --no-port-switching --no-clipboard --cors`, {
     env: {
