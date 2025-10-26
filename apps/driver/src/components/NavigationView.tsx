@@ -155,30 +155,48 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
     fetchRoute();
   }, [currentLocation, currentOrder, apiRequest]);
 
-  const handleMarkDelivered = useCallback(async () => {
+  const handleMarkDelivered = useCallback(() => {
     if (!currentOrder) return;
-    setSubmitting(true);
 
-    try {
-      await apiRequest(`/api/v1/drivers/orders/${currentOrder.id}/complete`, {
-        method: 'POST'
-      });
+    // 建立文件選擇器
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment'; // 優先使用後置鏡頭
 
-      if (currentIndex < orders.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setMessage('已完成，前往下一站');
-      } else {
-        setMessage('全部配送完成！');
-        setTimeout(() => {
-          onOrderComplete();
-          onBack();
-        }, 1500);
+    fileInput.onchange = async (e) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+
+      setSubmitting(true);
+      try {
+        const formData = new FormData();
+        formData.append('proof', file);
+
+        await apiRequest(`/api/v1/drivers/orders/${currentOrder.id}/complete`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (currentIndex < orders.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setMessage('已完成，前往下一站');
+        } else {
+          setMessage('全部配送完成！');
+          setTimeout(() => {
+            onOrderComplete();
+            onBack();
+          }, 1500);
+        }
+      } catch (error: any) {
+        setMessage(`完成失敗: ${error.message}`);
+      } finally {
+        setSubmitting(false);
       }
-    } catch (error: any) {
-      setMessage(`完成失敗: ${error.message}`);
-    } finally {
-      setSubmitting(false);
-    }
+    };
+
+    fileInput.click();
   }, [currentOrder, currentIndex, orders.length, apiRequest, onOrderComplete, onBack]);
 
   const handleReportProblem = useCallback(async () => {
