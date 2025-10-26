@@ -392,12 +392,12 @@ export default function App() {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await apiRequest<{ token: string }>('/api/v1/drivers/login', {
+      const response = await apiRequest<{ accessToken: string; tokenType: string }>('/api/v1/drivers/login', {
         method: 'POST',
         body: { phone: email, password },
         skipAuth: true
       });
-      saveToken(response.token);
+      saveToken(response.accessToken);
       setMessage('登入成功！');
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
