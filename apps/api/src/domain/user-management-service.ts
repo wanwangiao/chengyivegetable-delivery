@@ -74,6 +74,20 @@ export class UserManagementService {
     return this.toSafeUser(user);
   }
 
+  async delete(userId: string): Promise<void> {
+    const user = await this.repository.findById(userId);
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    // 如果是司機，同時刪除司機檔案
+    if (user.role === 'DRIVER') {
+      await this.driverRepository.deleteProfile(userId);
+    }
+
+    await this.repository.delete(userId);
+  }
+
   private toSafeUser(user: { id: string; email: string; name: string; role: string; isActive: boolean; createdAt: Date }) {
     return {
       id: user.id,

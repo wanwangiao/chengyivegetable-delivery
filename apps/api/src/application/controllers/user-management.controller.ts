@@ -29,4 +29,16 @@ export class UserManagementController {
       res.status(400).json({ error: error.message ?? 'BAD_REQUEST' });
     }
   };
+
+  delete = async (req: Request, res: Response) => {
+    try {
+      await this.userService.delete(req.params.id);
+      res.status(204).send();
+    } catch (error: any) {
+      if (error.message === 'USER_NOT_FOUND') {
+        return res.status(404).json({ error: 'USER_NOT_FOUND' });
+      }
+      res.status(400).json({ error: error.message ?? 'BAD_REQUEST' });
+    }
+  };
 }

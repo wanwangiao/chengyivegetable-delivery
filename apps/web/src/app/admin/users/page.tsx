@@ -142,6 +142,29 @@ export default function AdminUsersPage() {
     await patchUser(user.id, { password: newPassword });
   };
 
+  const deleteUser = async (user: User) => {
+    const confirmed = window.confirm(
+      `確定要刪除帳號 ${user.email}（${user.name}）嗎？\n\n此操作無法復原！`
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/users/${user.id}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error('刪除帳號失敗');
+      }
+
+      await refreshUsers();
+      window.alert('帳號已成功刪除');
+    } catch (err: any) {
+      setError(err.message ?? '刪除帳號失敗');
+    }
+  };
+
   return (
     <div>
       <form className="user-form-card" onSubmit={handleCreateUser}>
@@ -254,6 +277,9 @@ export default function AdminUsersPage() {
                     </button>
                     <button className="btn btn-outline-primary" onClick={() => resetPassword(user)} disabled={loading}>
                       重設密碼
+                    </button>
+                    <button className="btn btn-outline-danger" onClick={() => deleteUser(user)} disabled={loading}>
+                      刪除
                     </button>
                   </div>
                 </td>

@@ -36,6 +36,7 @@ export interface DriverRepository {
   listAvailableOrders(): Promise<Array<{ id: string; address: string; contactName: string; totalAmount: number; status: OrderStatus }>>;
   listWithStats(): Promise<Array<{ driver: Driver; activeOrders: number; lastOrderAt: Date | null }>>;
   ensureProfile(driverId: string, name: string, phone?: string): Promise<Driver>;
+  deleteProfile(driverId: string): Promise<void>;
 }
 
 const mapDriver = (driver: any): Driver => ({
@@ -164,5 +165,13 @@ export const prismaDriverRepository: DriverRepository = {
       }
     });
     return mapDriver(driver);
+  },
+
+  async deleteProfile(driverId) {
+    await prisma.driver.delete({
+      where: { id: driverId }
+    }).catch(() => {
+      // 如果司機檔案不存在，忽略錯誤
+    });
   }
 };

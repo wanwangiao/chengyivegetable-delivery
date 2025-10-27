@@ -27,6 +27,7 @@ export interface UserRepository {
   list(): Promise<UserSummary[]>;
   create(input: { email: string; password: string; name: string; role: UserRole; isActive?: boolean }): Promise<User>;
   update(id: string, data: Prisma.UserUpdateInput): Promise<User>;
+  delete(id: string): Promise<void>;
 }
 
 const mapUser = (user: any): User => ({
@@ -80,5 +81,11 @@ export const prismaUserRepository: UserRepository = {
       data
     });
     return mapUser(user);
+  },
+
+  async delete(id) {
+    await prisma.user.delete({
+      where: { id }
+    });
   }
 };
