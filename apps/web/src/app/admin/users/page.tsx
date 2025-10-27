@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
         </div>
         <div className="row g-3">
           <div className="col-md-4">
-            <label className="form-label">Email</label>
+            <label className="form-label">帳號</label>
             <input
               className="form-control"
               type="email"
@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
         <table className="table table-hover mb-0 user-table">
           <thead className="table-light">
             <tr>
-              <th scope="col">Email</th>
+              <th scope="col">帳號</th>
               <th scope="col">姓名</th>
               <th scope="col">角色</th>
               <th scope="col">狀態</th>
