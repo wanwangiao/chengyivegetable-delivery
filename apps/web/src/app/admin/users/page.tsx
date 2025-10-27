@@ -23,7 +23,6 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState('');
   const [newUser, setNewUser] = useState({
     email: '',
     name: '',
@@ -32,25 +31,18 @@ export default function AdminUsersPage() {
   });
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem('chengyi_admin_token');
-    if (saved) {
-      setToken(saved);
-    }
-  }, []);
-
   const headers = useMemo(() => {
+    const token = window.localStorage.getItem('chengyi_admin_token');
     if (!token) return {};
     return {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     } as Record<string, string>;
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     const load = async () => {
-      if (!token) return;
       try {
         setLoading(true);
         setError(null);
@@ -59,7 +51,7 @@ export default function AdminUsersPage() {
           signal: controller.signal
         });
         if (!response.ok) {
-          throw new Error(response.status === 401 ? '未授權，請確認 token' : '讀取帳號資料失敗');
+          throw new Error(response.status === 401 ? '未授權，請重新登入' : '讀取帳號資料失敗');
         }
         const json = await response.json();
         setUsers(json.data ?? []);
@@ -73,14 +65,9 @@ export default function AdminUsersPage() {
     };
     load().catch(() => undefined);
     return () => controller.abort();
-  }, [token, headers]);
-
-  const saveToken = () => {
-    window.localStorage.setItem('chengyi_admin_token', token);
-  };
+  }, [headers]);
 
   const refreshUsers = async () => {
-    if (!token) return;
     setLoading(true);
     setError(null);
     try {
@@ -99,10 +86,6 @@ export default function AdminUsersPage() {
 
   const handleCreateUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) {
-      setError('請先設定管理員 Token');
-      return;
-    }
     setCreating(true);
     setError(null);
     try {
@@ -125,7 +108,6 @@ export default function AdminUsersPage() {
   };
 
   const patchUser = async (id: string, payload: Partial<User> & { password?: string }) => {
-    if (!token) return;
     await fetch(`${API_BASE}/admin/users/${id}`, {
       method: 'PATCH',
       headers,
@@ -162,22 +144,6 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="token-box">
-        <h5 className="mb-3">管理員授權 Token</h5>
-        <p className="text-muted">於登入 API 後取得的 JWT，將用於呼叫後端保護路由。</p>
-        <div className="d-flex gap-2">
-          <input
-            className="form-control"
-            placeholder="Bearer Token"
-            value={token}
-            onChange={event => setToken(event.target.value)}
-          />
-          <button type="button" className="btn btn-success" onClick={saveToken}>
-            儲存
-          </button>
-        </div>
-      </div>
-
       <form className="user-form-card" onSubmit={handleCreateUser}>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
