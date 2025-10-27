@@ -57,16 +57,16 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">帳號</label>
             <input
               id="email"
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="請輸入管理員 Email"
+              placeholder="請輸入帳號"
               required
               disabled={loading}
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
 
