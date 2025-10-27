@@ -959,14 +959,6 @@ export default function App() {
                     <button onClick={() => void handleClaimOrder(order.id)} disabled={loading} className="btn-primary">
                       領取訂單
                     </button>
-                    {order.latitude && order.longitude && (
-                      <button
-                        onClick={() => openInMaps(order.latitude!, order.longitude!, order.shippingAddress)}
-                        className="btn-secondary"
-                      >
-                        導航
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
