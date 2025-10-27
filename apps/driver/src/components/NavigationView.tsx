@@ -69,6 +69,28 @@ const formatDuration = (seconds?: number): string => {
   return `${hours} 小時 ${mins} 分`;
 };
 
+// Haversine 公式計算兩點間距離（公尺）
+const calculateHaversineDistance = (
+  point1: { latitude: number; longitude: number },
+  point2: { latitude: number; longitude: number }
+): number => {
+  const R = 6371000; // 地球半徑（公尺）
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+  const lat1 = toRadians(point1.latitude);
+  const lat2 = toRadians(point2.latitude);
+  const deltaLat = toRadians(point2.latitude - point1.latitude);
+  const deltaLng = toRadians(point2.longitude - point1.longitude);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
+
 function MapController({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
@@ -81,6 +103,7 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [fullRoute, setFullRoute] = useState<Array<{ latitude: number; longitude: number }>>([]);
   const [panelExpanded, setPanelExpanded] = useState(false);
   const [showProblemDialog, setShowProblemDialog] = useState(false);
   const [problemReason, setProblemReason] = useState('');
@@ -90,6 +113,12 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
 
   const currentOrder = orders[currentIndex];
   const remainingCount = orders.length - currentIndex;
+
+  // 公司地址（取貨點）
+  const PICKUP_LOCATION = {
+    latitude: 24.9346,
+    longitude: 121.3689
+  };
 
   const apiRequest = useCallback(async (path: string, options: RequestInit = {}) => {
     const headers = {
@@ -128,32 +157,83 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
     };
   }, []);
 
-  // 計算路線
+  // 計算整個批次的完整路線（只在初始載入時執行一次）
   useEffect(() => {
-    if (!currentLocation || !currentOrder?.latitude || !currentOrder?.longitude) return;
+    const calculateSimpleRoute = () => {
+      // 過濾出有座標的訂單
+      const validOrders = orders.filter(order => order.latitude && order.longitude);
+      if (validOrders.length === 0) return;
 
-    const fetchRoute = async () => {
-      try {
-        const data = await apiRequest('/api/v1/drivers/routes/optimize', {
-          method: 'POST',
-          body: JSON.stringify({
-            origin: { lat: currentLocation.latitude, lng: currentLocation.longitude },
-            destination: { lat: currentOrder.latitude, lng: currentOrder.longitude }
-          })
-        });
+      // 使用簡單的貪婪演算法規劃路線：從取貨點開始，每次選擇最近的下一個點
+      const remaining = [...validOrders];
+      const route: Array<{ latitude: number; longitude: number }> = [PICKUP_LOCATION];
+      let currentPoint = PICKUP_LOCATION;
 
+      while (remaining.length > 0) {
+        let nearestIndex = 0;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        // 找出最近的訂單
+        for (let i = 0; i < remaining.length; i++) {
+          const order = remaining[i];
+          const distance = calculateHaversineDistance(
+            currentPoint,
+            { latitude: order.latitude!, longitude: order.longitude! }
+          );
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = i;
+          }
+        }
+
+        // 移除並添加最近的點
+        const nextOrder = remaining.splice(nearestIndex, 1)[0];
+        const nextPoint = { latitude: nextOrder.latitude!, longitude: nextOrder.longitude! };
+        route.push(nextPoint);
+        currentPoint = nextPoint;
+      }
+
+      setFullRoute(route);
+
+      // 計算到當前訂單的距離
+      if (currentOrder?.latitude && currentOrder?.longitude) {
+        const origin = currentLocation || PICKUP_LOCATION;
+        const distance = calculateHaversineDistance(
+          origin,
+          { latitude: currentOrder.latitude, longitude: currentOrder.longitude }
+        );
         setRouteInfo({
-          distanceMeters: data.distance ?? 0,
-          durationSeconds: data.duration ?? 0,
-          polyline: data.polyline ? decodePolyline(data.polyline) : []
+          distanceMeters: distance,
+          durationSeconds: distance / 7, // 假設平均速度 25 km/h (約 7 m/s)
+          polyline: []
         });
-      } catch (error) {
-        console.error('路線計算失敗:', error);
       }
     };
 
-    fetchRoute();
-  }, [currentLocation, currentOrder, apiRequest]);
+    calculateSimpleRoute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在初始載入時執行
+
+  // 當切換訂單時更新路線資訊
+  useEffect(() => {
+    if (!currentOrder || fullRoute.length === 0) return;
+
+    const currentOrderIndex = orders.findIndex(o => o.id === currentOrder.id);
+    if (currentOrderIndex === -1) return;
+
+    // 計算從當前位置（或上一個訂單）到當前訂單的距離
+    const prevPoint = currentLocation || (currentOrderIndex > 0 && fullRoute[currentOrderIndex]) || PICKUP_LOCATION;
+    const currentPoint = { latitude: currentOrder.latitude!, longitude: currentOrder.longitude! };
+
+    if (prevPoint && currentPoint.latitude && currentPoint.longitude) {
+      const distance = calculateHaversineDistance(prevPoint, currentPoint);
+      setRouteInfo({
+        distanceMeters: distance,
+        durationSeconds: distance / 7, // 假設平均速度 25 km/h
+        polyline: []
+      });
+    }
+  }, [currentOrder, currentLocation, fullRoute, orders]);
 
   const handleMarkDelivered = useCallback(() => {
     if (!currentOrder) return;
@@ -291,14 +371,31 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
             ) : null
           )}
 
-          {/* 路線 */}
-          {routeInfo?.polyline && routeInfo.polyline.length > 1 && (
+          {/* 完整配送路線 */}
+          {fullRoute.length > 1 && (
             <Polyline
-              positions={routeInfo.polyline.map(p => [p.latitude, p.longitude])}
-              color="#546E7A"
-              weight={4}
+              positions={fullRoute.map(p => [p.latitude, p.longitude])}
+              color="#4CAF50"
+              weight={5}
+              opacity={0.7}
             />
           )}
+
+          {/* 取貨點標記 */}
+          <Marker
+            position={[PICKUP_LOCATION.latitude, PICKUP_LOCATION.longitude]}
+            icon={new L.Icon({
+              iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36">
+                  <path fill="#FF5722" stroke="#BF360C" stroke-width="2" d="M12 0C7.58 0 4 3.58 4 8c0 4.42 8 20 8 20s8-15.58 8-20c0-4.42-3.58-8-8-8z"/>
+                  <circle fill="white" cx="12" cy="9" r="3"/>
+                </svg>
+              `),
+              iconSize: [30, 45],
+              iconAnchor: [15, 45],
+              popupAnchor: [0, -45]
+            })}
+          />
         </MapContainer>
 
         {/* 返回按鈕 */}
