@@ -4,8 +4,8 @@ import { prisma } from '../src/infrastructure/prisma/client';
 async function main() {
   console.log('🌱 Seeding base data...');
 
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@chengyi.tw';
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Admin123456';
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'shnfred555283';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'shnf830629';
   const driverEmail = process.env.SEED_DRIVER_EMAIL ?? 'driver@chengyi.tw';
   const driverPassword = process.env.SEED_DRIVER_PASSWORD ?? 'Driver123456';
 
