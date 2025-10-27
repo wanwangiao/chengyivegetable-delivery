@@ -309,13 +309,9 @@ export default function NavigationView({ orders, token, onBack, onOrderComplete 
 
   const handleOpenNavigation = useCallback(() => {
     if (!currentOrder) return;
-    if (currentOrder.latitude && currentOrder.longitude) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${currentOrder.latitude},${currentOrder.longitude}`;
-      window.open(url, '_blank');
-    } else {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentOrder.shippingAddress)}`;
-      window.open(url, '_blank');
-    }
+    // 在地圖上聚焦目標訂單，不跳轉外部應用
+    // 直接在 PWA 內顯示導航，保留下方操作欄和狀態列
+    setMessage('目前位置聚焦在配送目標 - ' + currentOrder.contactName);
   }, [currentOrder]);
 
   if (!currentOrder) {
