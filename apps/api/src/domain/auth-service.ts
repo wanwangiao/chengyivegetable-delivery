@@ -5,14 +5,14 @@ import type { UserRepository } from '../infrastructure/prisma/user.repository';
 import { env } from '../config/env';
 
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1),
   password: z.string().min(8),
   name: z.string().min(1),
   role: z.enum(['ADMIN', 'DRIVER', 'CUSTOMER'])
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1),
   password: z.string().min(8)
 });
 
