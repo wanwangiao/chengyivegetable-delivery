@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import styles from './BusinessStatusBanner.module.css';
 import { BusinessCalendarModal } from './BusinessCalendarModal';
 
-type OrderStatus =
-  | 'current-day'      // 7:30 AM - 10:00 AM: 當天訂單
-  | 'next-day'         // 2:00 PM - 12:00 AM: 預訂隔天
-  | 'preparation'      // 10:00 AM - 2:00 PM: 準備中
-  | 'closed';          // 週一、週四或特殊休假日
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+
+type OrderStatus = 'current-day' | 'next-day' | 'preparation' | 'closed';
 
 interface StatusConfig {
   type: OrderStatus;
@@ -18,7 +16,19 @@ interface StatusConfig {
   actionText?: string;
 }
 
+interface SystemConfig {
+  currentOrderStartTime: string;
+  currentOrderEndTime: string;
+  preOrderStartTime: string;
+  preOrderEndTime: string;
+}
+
 const REGULAR_CLOSED_DAYS = [1, 4]; // Monday (1), Thursday (4)
+
+function timeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
 
 function getTimeInMinutes(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
@@ -29,11 +39,10 @@ function isRestDay(date: Date): boolean {
   return REGULAR_CLOSED_DAYS.includes(dayOfWeek);
 }
 
-function determineOrderStatus(now: Date): StatusConfig {
-  const dayOfWeek = now.getDay();
+function determineOrderStatus(now: Date, config: SystemConfig): StatusConfig {
   const timeInMinutes = getTimeInMinutes(now);
 
-  // Check if it's a rest day (Monday or Thursday)
+  // 店休日檢查
   if (isRestDay(now)) {
     return {
       type: 'closed',
@@ -44,30 +53,37 @@ function determineOrderStatus(now: Date): StatusConfig {
     };
   }
 
-  // Current day orders: 7:30 AM - 10:00 AM (450 - 600 minutes)
-  if (timeInMinutes >= 450 && timeInMinutes < 600) {
+  const currentStart = timeToMinutes(config.currentOrderStartTime);
+  const currentEnd = timeToMinutes(config.currentOrderEndTime);
+  const preOrderStart = timeToMinutes(config.preOrderStartTime);
+  const preOrderEnd = timeToMinutes(config.preOrderEndTime);
+
+  // 當日訂單時段
+  if (timeInMinutes >= currentStart && timeInMinutes < currentEnd) {
+    const endTime = config.currentOrderEndTime;
     return {
       type: 'current-day',
       title: '當日訂單開放中',
-      message: '🚀 10:00 前下單，今日新鮮配送到府',
+      message: `🚀 ${endTime} 前下單，今日新鮮配送到府`,
       icon: '✨',
       actionText: '查看行事曆'
     };
   }
 
-  // Preparation period: 10:00 AM - 2:00 PM (600 - 840 minutes)
-  if (timeInMinutes >= 600 && timeInMinutes < 840) {
+  // 備貨時段（當日訂單結束 到 預訂開始之間）
+  if (timeInMinutes >= currentEnd && timeInMinutes < preOrderStart) {
+    const preOrderStartFormatted = config.preOrderStartTime;
     return {
       type: 'preparation',
       title: '備貨中 - 當日訂單已截止',
-      message: '下午 2 點開放隔天預訂，敬請期待',
+      message: `下午 ${preOrderStartFormatted} 開放隔天預訂，敬請期待`,
       icon: '📦',
       actionText: '查看行事曆'
     };
   }
 
-  // Next day pre-orders: 2:00 PM - 11:59 PM (840 - 1439 minutes)
-  if (timeInMinutes >= 840 && timeInMinutes <= 1439) {
+  // 預訂時段
+  if (timeInMinutes >= preOrderStart && timeInMinutes <= preOrderEnd) {
     return {
       type: 'next-day',
       title: '明日配送 - 預訂開放中',
@@ -77,22 +93,23 @@ function determineOrderStatus(now: Date): StatusConfig {
     };
   }
 
-  // After midnight to 7:30 AM (0 - 449 minutes)
-  if (timeInMinutes >= 0 && timeInMinutes < 450) {
+  // 凌晨到當日訂單開始前
+  if (timeInMinutes >= 0 && timeInMinutes < currentStart) {
+    const startTime = config.currentOrderStartTime;
     return {
       type: 'preparation',
       title: '準備中',
-      message: '早上 7:30 開放當日訂單',
+      message: `早上 ${startTime} 開放當日訂單`,
       icon: '🌅',
       actionText: '查看行事曆'
     };
   }
 
-  // Default fallback (should not reach here)
+  // 預訂時段結束後到午夜
   return {
     type: 'preparation',
     title: '暫停接單',
-    message: '營業時間：週二至週日 07:30-10:00（當日）、14:00-24:00（隔日）',
+    message: `營業時間：週二至週日 ${config.currentOrderStartTime}-${config.currentOrderEndTime}（當日）、${config.preOrderStartTime}-${config.preOrderEndTime}（隔日）`,
     icon: '⏰',
     actionText: '查看行事曆'
   };
@@ -100,26 +117,50 @@ function determineOrderStatus(now: Date): StatusConfig {
 
 export function BusinessStatusBanner() {
   const [status, setStatus] = useState<StatusConfig | null>(null);
+  const [config, setConfig] = useState<SystemConfig | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
-    // Initial status check
+    const loadConfig = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/admin/settings`);
+        if (!response.ok) throw new Error('Failed to load config');
+        const json = (await response.json()) as { data: SystemConfig };
+        setConfig(json.data);
+      } catch (error) {
+        console.error('載入營業時間設定失敗:', error);
+        // 使用預設值
+        setConfig({
+          currentOrderStartTime: '07:30',
+          currentOrderEndTime: '11:00',
+          preOrderStartTime: '14:00',
+          preOrderEndTime: '23:59'
+        });
+      }
+    };
+
+    loadConfig();
+  }, []);
+
+  useEffect(() => {
+    if (!config) return;
+
     const updateStatus = () => {
       const now = new Date();
-      const newStatus = determineOrderStatus(now);
+      const newStatus = determineOrderStatus(now, config);
       setStatus(newStatus);
     };
 
     updateStatus();
 
-    // Update status every minute
+    // 每分鐘更新一次狀態
     const interval = setInterval(updateStatus, 60000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [config]);
 
   if (!status) {
-    return null; // Don't render until status is determined
+    return null;
   }
 
   return (
@@ -145,7 +186,6 @@ export function BusinessStatusBanner() {
         </div>
       </div>
 
-      {/* Calendar Modal */}
       <BusinessCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </>
   );

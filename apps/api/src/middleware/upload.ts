@@ -34,4 +34,5 @@ const csvUploader = multer({
 
 export const productImageUpload: RequestHandler = imageUploader.single('image');
 export const deliveryProofUpload: RequestHandler = imageUploader.single('proof');
+export const logoUpload: RequestHandler = imageUploader.single('logo');
 export const csvUpload: RequestHandler = csvUploader.single('file');

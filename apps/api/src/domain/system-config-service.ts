@@ -5,6 +5,8 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const updateSchema = z.object({
   storeName: z.string().min(1).optional(),
+  storeSlogan: z.string().optional(),
+  storeLogo: z.string().url().nullable().optional(),
   storePhone: z.string().nullable().optional(),
   currentOrderStartTime: z.string().regex(timeRegex, 'Invalid time format (HH:mm)').optional(),
   currentOrderEndTime: z.string().regex(timeRegex, 'Invalid time format (HH:mm)').optional(),

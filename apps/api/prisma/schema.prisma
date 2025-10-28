@@ -177,18 +177,20 @@ enum UserRole {
 }
 
 model SystemConfig {
-  id                    String   @id @default("system-config")
-  storeName             String   @default("誠憶鮮蔬")
-  storePhone            String?
-  currentOrderStartTime String   @default("07:30")
-  currentOrderEndTime   String   @default("11:00")
-  preOrderStartTime     String   @default("14:00")
-  preOrderEndTime       String   @default("23:59")
-  priceChangeThreshold  Float    @default(10.0)
-  priceConfirmTimeout   Int      @default(30)
-  lineNotificationEnabled Boolean @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                      String   @id @default("system-config")
+  storeName               String   @default("誠憶鮮蔬")
+  storeSlogan             String   @default("新鮮蔬果・每日配送")
+  storeLogo               String?  // Cloudinary URL
+  storePhone              String?
+  currentOrderStartTime   String   @default("07:30")
+  currentOrderEndTime     String   @default("11:00")
+  preOrderStartTime       String   @default("14:00")
+  preOrderEndTime         String   @default("23:59")
+  priceChangeThreshold    Float    @default(10.0)
+  priceConfirmTimeout     Int      @default(30)
+  lineNotificationEnabled Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model PriceChangeAlert {

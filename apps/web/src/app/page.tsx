@@ -7,6 +7,7 @@ import { CartDrawer } from '../components/CartDrawer';
 import { CheckoutDrawer, type CheckoutFormData } from '../components/CheckoutDrawer';
 import { ProductCard } from '../components/ProductCard';
 import { ProductDetailModal } from '../components/ProductDetailModal';
+import { BrandHeader } from '../components/BrandHeader';
 import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
 import { StaggerList } from '../components/animations/StaggerList';
 import { ListSkeleton } from '../components/animations/Skeleton';
@@ -178,6 +179,8 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
+      <BrandHeader />
+
       <header className={styles.pageHeader}>
         <BusinessStatusBanner />
       </header>
