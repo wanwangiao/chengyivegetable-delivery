@@ -17,6 +17,7 @@ import {
   Avatar
 } from '@mui/material';
 import { Refresh, Save, CloudUpload, Image as ImageIcon } from '@mui/icons-material';
+import { ImageCropModal } from '../../../components/ImageCropModal';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
 
@@ -69,6 +70,8 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
 
   useEffect(() => {
     const savedToken = window.localStorage.getItem('chengyi_admin_token');
@@ -143,14 +146,29 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !headers) return;
+    if (!file) return;
+
+    // 讀取圖片為 Data URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    // 清空 input，允許重複選擇同一個檔案
+    event.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!headers) return;
 
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append('logo', file);
+      formData.append('logo', croppedBlob, 'logo.png');
 
       const response = await fetch(`${API_BASE}/admin/settings/upload-logo`, {
         method: 'POST',
@@ -160,7 +178,6 @@ export default function AdminSettingsPage() {
 
       if (!response.ok) throw new Error('LOGO 上傳失敗');
 
-      const result = (await response.json()) as { data: { logoUrl: string } };
       setMessage({ type: 'success', text: '✅ LOGO 上傳成功' });
 
       // 重新載入設定
@@ -268,7 +285,7 @@ export default function AdminSettingsPage() {
                           type="file"
                           accept="image/*"
                           hidden
-                          onChange={handleLogoUpload}
+                          onChange={handleLogoSelect}
                         />
                       </Button>
                       <Typography variant="caption" color="text.secondary">
@@ -459,6 +476,14 @@ export default function AdminSettingsPage() {
           </Stack>
         </Grid>
       </Grid>
+
+      {/* LOGO 裁切 Modal */}
+      <ImageCropModal
+        open={cropModalOpen}
+        imageSrc={selectedImageSrc}
+        onClose={() => setCropModalOpen(false)}
+        onCropComplete={handleCropComplete}
+      />
     </Box>
   );
 }
