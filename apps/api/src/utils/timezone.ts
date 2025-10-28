@@ -1,4 +1,4 @@
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 /**
  * 台灣時區常數
@@ -11,14 +11,14 @@ export const TAIWAN_TIMEZONE = 'Asia/Taipei';
  */
 export function getTaiwanTime(date?: Date): Date {
   const sourceDate = date ?? new Date();
-  return utcToZonedTime(sourceDate, TAIWAN_TIMEZONE);
+  return toZonedTime(sourceDate, TAIWAN_TIMEZONE);
 }
 
 /**
  * 將台灣時間轉換為 UTC 時間
  */
 export function taiwanTimeToUtc(taiwanDate: Date): Date {
-  return zonedTimeToUtc(taiwanDate, TAIWAN_TIMEZONE);
+  return fromZonedTime(taiwanDate, TAIWAN_TIMEZONE);
 }
 
 /**
