@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { Refresh, Save, CloudUpload, Image as ImageIcon } from '@mui/icons-material';
 import { ImageCropModal } from '../../../components/ImageCropModal';
+import { HolidayCalendar } from '../../../components/HolidayCalendar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
 
@@ -450,6 +451,11 @@ export default function AdminSettingsPage() {
               </Grid>
             </CardContent>
           </Card>
+        </Grid>
+
+        {/* 休假日設定 */}
+        <Grid item xs={12}>
+          {token && <HolidayCalendar token={token} />}
         </Grid>
 
         {/* 操作按鈕 */}
