@@ -7,8 +7,21 @@ const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   password: z.string().min(8),
-  role: z.enum(['ADMIN', 'DRIVER', 'CUSTOMER'])
-});
+  role: z.enum(['ADMIN', 'DRIVER', 'CUSTOMER']),
+  phone: z.string().optional()
+}).refine(
+  (data) => {
+    // If role is DRIVER, phone is required
+    if (data.role === 'DRIVER') {
+      return data.phone && data.phone.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Phone is required for DRIVER role',
+    path: ['phone']
+  }
+);
 
 const updateUserSchema = z
   .object({
@@ -48,7 +61,7 @@ export class UserManagementService {
     });
 
     if (parsed.role === 'DRIVER') {
-      await this.driverRepository.ensureProfile(user.id, parsed.name);
+      await this.driverRepository.ensureProfile(user.id, parsed.name, parsed.phone);
     }
 
     return this.toSafeUser(user);

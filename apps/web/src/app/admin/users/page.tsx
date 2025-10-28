@@ -27,7 +27,8 @@ export default function AdminUsersPage() {
     email: '',
     name: '',
     password: '',
-    role: 'ADMIN' as User['role']
+    role: 'ADMIN' as User['role'],
+    phone: ''
   });
   const [creating, setCreating] = useState(false);
 
@@ -98,7 +99,7 @@ export default function AdminUsersPage() {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error === 'EMAIL_EXISTS' ? 'Email 已存在' : '建立帳號失敗');
       }
-      setNewUser({ email: '', name: '', password: '', role: 'ADMIN' });
+      setNewUser({ email: '', name: '', password: '', role: 'ADMIN', phone: '' });
       await refreshUsers();
     } catch (err: any) {
       setError(err.message ?? '建立帳號失敗');
@@ -178,7 +179,7 @@ export default function AdminUsersPage() {
           </button>
         </div>
         <div className="row g-3">
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label">帳號</label>
             <input
               className="form-control"
@@ -197,7 +198,7 @@ export default function AdminUsersPage() {
               required
             />
           </div>
-          <div className="col-md-3">
+          <div className="col-md-2">
             <label className="form-label">密碼</label>
             <input
               className="form-control"
@@ -222,6 +223,19 @@ export default function AdminUsersPage() {
               ))}
             </select>
           </div>
+          {newUser.role === 'DRIVER' && (
+            <div className="col-md-2">
+              <label className="form-label">手機號碼</label>
+              <input
+                className="form-control"
+                type="tel"
+                value={newUser.phone}
+                onChange={event => setNewUser(prev => ({ ...prev, phone: event.target.value }))}
+                placeholder="0912345678"
+                required
+              />
+            </div>
+          )}
         </div>
       </form>
 
