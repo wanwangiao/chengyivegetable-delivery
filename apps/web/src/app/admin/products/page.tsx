@@ -198,9 +198,9 @@ export default function AdminProductsPage() {
       setLoading(true);
       const response = await fetch(`${API_BASE}/admin/products`, { headers });
       if (!response.ok) throw new Error('讀取商品資料失敗，請確認權限或 API 狀態');
-      const json = await response.json() as { data: Product[]; stats: ProductStats };
-      setProducts(json.data ?? []);
-      setStats(json.stats ?? null);
+      const json = await response.json() as { data: { products: Product[]; stats: ProductStats } };
+      setProducts(json.data.products ?? []);
+      setStats(json.data.stats ?? null);
       setMessage(null);
     } catch (error: any) {
       setMessage(error?.message ?? '系統發生未知錯誤');
