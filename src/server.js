@@ -40,7 +40,16 @@ if (target === 'api') {
   console.log('Starting Web deployment runtime');
   buildSharedPackages();
   run('pnpm --filter web build');
-  run('pnpm --filter web exec next start');
+
+  // 確保 Next.js 使用 Railway 提供的 PORT
+  const port = process.env.PORT || '3000';
+  console.log(`Starting Next.js server on port ${port}...`);
+  run('pnpm --filter web start', {
+    env: {
+      NODE_ENV: 'production',
+      PORT: port
+    }
+  });
 } else if (target === 'driver') {
   console.log('Starting Driver web runtime');
   buildSharedPackages();
