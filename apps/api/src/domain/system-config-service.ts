@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { SystemConfigRepository, SystemConfigUpdateInput } from '../infrastructure/prisma/system-config.repository';
+import { getTaiwanTimeInMinutes, getTaiwanTime } from '../utils/timezone';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -34,8 +35,8 @@ export class SystemConfigService {
    */
   isTimeInRange(startTime: string, endTime: string, currentTime?: Date): boolean {
     const now = currentTime ?? new Date();
-    const [currentHour, currentMinute] = [now.getHours(), now.getMinutes()];
-    const currentMinutes = currentHour * 60 + currentMinute;
+    // 使用台灣時區
+    const currentMinutes = getTaiwanTimeInMinutes(now);
 
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const [endHour, endMinute] = endTime.split(':').map(Number);
@@ -77,7 +78,9 @@ export class SystemConfigService {
     const now = currentTime ?? new Date();
     const isPreOrder = await this.isPreOrderTime(now);
 
-    const deliveryDate = new Date(now);
+    // 使用台灣時間計算配送日期
+    const taiwanTime = getTaiwanTime(now);
+    const deliveryDate = new Date(taiwanTime);
     deliveryDate.setHours(0, 0, 0, 0);
 
     if (isPreOrder) {

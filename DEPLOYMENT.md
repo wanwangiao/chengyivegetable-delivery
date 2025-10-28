@@ -61,7 +61,10 @@ CLOUDINARY_API_SECRET=***
 JWT_SECRET=***
 RAILWAY_BUILD_TARGET=api
 PORT=3000
+TZ=Asia/Taipei
 ```
+
+**重要**：`TZ=Asia/Taipei` 設定台灣時區，確保營業時段判斷正確。詳見 [TIMEZONE_SETUP.md](./TIMEZONE_SETUP.md)
 
 ## 部署流程
 

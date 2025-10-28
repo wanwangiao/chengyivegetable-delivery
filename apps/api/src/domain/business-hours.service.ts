@@ -1,5 +1,6 @@
 import { BusinessHours, SpecialDate, DateType } from '@prisma/client';
 import { BusinessHoursRepository, CreateSpecialDateDto, UpdateBusinessHoursDto } from '../infrastructure/prisma/business-hours.repository';
+import { getTaiwanTime, getTaiwanDayOfWeek, getTaiwanTimeInMinutes } from '../utils/timezone';
 
 export type OrderWindow = 'CURRENT_DAY' | 'NEXT_DAY' | 'CLOSED';
 
@@ -56,11 +57,14 @@ export class BusinessHoursService {
    */
   async checkBusinessStatus(now: Date = new Date()): Promise<BusinessStatus> {
     const businessHours = await this.repository.getOrCreate();
-    const dayOfWeek = now.getDay();
-    const timeInMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // 檢查是否為特殊日期
-    const specialDate = await this.repository.getSpecialDateByDate(now);
+    // 使用台灣時區
+    const taiwanTime = getTaiwanTime(now);
+    const dayOfWeek = getTaiwanDayOfWeek(now);
+    const timeInMinutes = getTaiwanTimeInMinutes(now);
+
+    // 檢查是否為特殊日期（使用台灣時間）
+    const specialDate = await this.repository.getSpecialDateByDate(taiwanTime);
 
     // 如果是特殊休假日
     if (specialDate && specialDate.type === DateType.CLOSED) {
@@ -68,7 +72,7 @@ export class BusinessHoursService {
         isOpen: false,
         orderWindow: 'CLOSED',
         message: `${specialDate.reason || '特殊休假日'}`,
-        nextOpenTime: this.getNextOpenTime(now, businessHours)
+        nextOpenTime: this.getNextOpenTime(taiwanTime, businessHours)
       };
     }
 
@@ -83,7 +87,7 @@ export class BusinessHoursService {
         isOpen: false,
         orderWindow: 'CLOSED',
         message: businessHours.closedDayMessage || '今日店休',
-        nextOpenTime: this.getNextOpenTime(now, businessHours)
+        nextOpenTime: this.getNextOpenTime(taiwanTime, businessHours)
       };
     }
 
