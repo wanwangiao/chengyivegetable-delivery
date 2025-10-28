@@ -11,6 +11,12 @@ export interface UpdateBusinessHoursDto {
   orderCutoffTime?: string;
   preorderStartTime?: string;
   currentOrderStartTime?: string;
+  // 自訂狀態訊息
+  currentDayMessage?: string;
+  nextDayMessage?: string;
+  preparationMessage?: string;
+  beforeOpenMessage?: string;
+  closedDayMessage?: string;
 }
 
 export class BusinessHoursRepository {

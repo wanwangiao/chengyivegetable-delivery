@@ -215,6 +215,14 @@ model BusinessHours {
   orderCutoffTime       String        @default("10:00")
   preorderStartTime     String        @default("14:00")
   currentOrderStartTime String        @default("07:30")
+
+  // 自訂狀態訊息
+  currentDayMessage     String        @default("當日訂單開放中，10:00 前下單今日配送")
+  nextDayMessage        String        @default("明日配送預訂開放中")
+  preparationMessage    String        @default("準備中，下午 2:00 開放明日預訂")
+  beforeOpenMessage     String        @default("準備中，早上 7:30 開放當日訂單")
+  closedDayMessage      String        @default("今日店休")
+
   specialDates          SpecialDate[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt

@@ -82,7 +82,7 @@ export class BusinessHoursService {
       return {
         isOpen: false,
         orderWindow: 'CLOSED',
-        message: '今日店休',
+        message: businessHours.closedDayMessage || '今日店休',
         nextOpenTime: this.getNextOpenTime(now, businessHours)
       };
     }
@@ -104,7 +104,7 @@ export class BusinessHoursService {
       return {
         isOpen: true,
         orderWindow: 'CURRENT_DAY',
-        message: '當日訂單開放中，10:00 前下單今日配送'
+        message: businessHours.currentDayMessage || '當日訂單開放中，10:00 前下單今日配送'
       };
     }
 
@@ -113,7 +113,7 @@ export class BusinessHoursService {
       return {
         isOpen: false,
         orderWindow: 'CLOSED',
-        message: '準備中，下午 2:00 開放明日預訂'
+        message: businessHours.preparationMessage || '準備中，下午 2:00 開放明日預訂'
       };
     }
 
@@ -122,7 +122,7 @@ export class BusinessHoursService {
       return {
         isOpen: true,
         orderWindow: 'NEXT_DAY',
-        message: '明日配送預訂開放中'
+        message: businessHours.nextDayMessage || '明日配送預訂開放中'
       };
     }
 
@@ -130,7 +130,7 @@ export class BusinessHoursService {
     return {
       isOpen: false,
       orderWindow: 'CLOSED',
-      message: `準備中，早上 ${businessHours.currentOrderStartTime} 開放當日訂單`
+      message: businessHours.beforeOpenMessage || `準備中，早上 ${businessHours.currentOrderStartTime} 開放當日訂單`
     };
   }
 

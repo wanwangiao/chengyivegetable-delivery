@@ -19,6 +19,7 @@ import {
 import { Refresh, Save, CloudUpload, Image as ImageIcon } from '@mui/icons-material';
 import { ImageCropModal } from '../../../components/ImageCropModal';
 import { HolidayCalendar } from '../../../components/HolidayCalendar';
+import { BusinessHoursSettings } from '../../../components/BusinessHoursSettings';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
 
@@ -310,88 +311,9 @@ export default function AdminSettingsPage() {
           </Card>
         </Grid>
 
-        {/* 營業時間設定 */}
+        {/* 營業時段設定（新版：時間 + 訊息） */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                ⏰ 營業時間設定
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                    當日訂單時段
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                    客戶可下單當日配送的時間範圍
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        fullWidth
-                        label="開始時間"
-                        type="time"
-                        value={config.currentOrderStartTime}
-                        onChange={(e) =>
-                          setConfig({ ...config, currentOrderStartTime: e.target.value })
-                        }
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        fullWidth
-                        label="結束時間"
-                        type="time"
-                        value={config.currentOrderEndTime}
-                        onChange={(e) =>
-                          setConfig({ ...config, currentOrderEndTime: e.target.value })
-                        }
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                  </Grid>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                    預訂時段
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                    客戶可預訂隔天配送的時間範圍
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        fullWidth
-                        label="開始時間"
-                        type="time"
-                        value={config.preOrderStartTime}
-                        onChange={(e) =>
-                          setConfig({ ...config, preOrderStartTime: e.target.value })
-                        }
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <TextField
-                        fullWidth
-                        label="結束時間"
-                        type="time"
-                        value={config.preOrderEndTime}
-                        onChange={(e) =>
-                          setConfig({ ...config, preOrderEndTime: e.target.value })
-                        }
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                  </Grid>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+          {token && <BusinessHoursSettings token={token} onUpdate={loadConfig} />}
         </Grid>
 
         {/* 價格與通知設定 */}
