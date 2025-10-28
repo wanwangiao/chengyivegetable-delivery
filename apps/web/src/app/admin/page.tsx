@@ -21,6 +21,11 @@ const DASHBOARD_SECTIONS: { title: string; description: string; href: Route }[] 
     title: '帳號管理',
     description: '管理後台使用者與配送員權限，維持操作安全。',
     href: '/admin/users'
+  },
+  {
+    title: '系統設定',
+    description: '設定品牌識別、營業時間、價格通知與 LINE 訊息功能。',
+    href: '/admin/settings'
   }
 ];
 
