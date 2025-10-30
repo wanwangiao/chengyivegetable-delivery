@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import styles from './ProductDetailModal.module.css';
 import { formatCurrency } from '../utils/currency';
 
+interface ProductOption {
+  id?: string;
+  name: string;
+  price: number | null;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -13,6 +19,7 @@ interface Product {
   stock: number;
   imageUrl?: string;
   description?: string;
+  options?: ProductOption[];
 }
 
 interface ProductDetailModalProps {
@@ -24,11 +31,13 @@ interface ProductDetailModalProps {
 
 export function ProductDetailModal({ product, open, onClose, onAddToCart }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
       setQuantity(1);
+      setSelectedOptions({});
     } else {
       document.body.style.overflow = '';
     }
@@ -43,6 +52,9 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
   const isVariablePrice = product.price === null || product.price === undefined;
   const unitPrice = isVariablePrice ? 0 : product.price ?? 0;
   const totalPrice = unitPrice * quantity;
+
+  // Group options by their type (e.g., "要撥/不撥" vs "要切/不切")
+  const hasOptions = product.options && product.options.length > 0;
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
@@ -89,79 +101,103 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
             </button>
           </div>
 
-          <div className={styles.imageSection}>
-            {product.imageUrl ? (
-              <img src={product.imageUrl} alt={product.name} className={styles.productImage} />
-            ) : (
-              <div className={styles.imagePlaceholder}>
-                <span className={styles.placeholderIcon}>🥬</span>
-              </div>
-            )}
-          </div>
-
-          <div className={styles.infoSection}>
-            <div className={styles.category}>{product.category}</div>
-            <h2 id="product-modal-title" className={styles.title}>
-              {product.name}
-            </h2>
-
-            {product.description && (
-              <p className={styles.description}>{product.description}</p>
-            )}
-
-            <div className={styles.priceRow}>
-              <div className={styles.priceLabel}>價格</div>
-              <div className={styles.priceValue}>
-                {isVariablePrice ? (
-                  '依秤重計價'
-                ) : (
-                  <>
-                    NT$ {formatCurrency(product.price, { fallback: '0' })} / {product.unit}
-                  </>
-                )}
-              </div>
+          <div className={styles.splitLayout}>
+            {/* Left Column: Product Image */}
+            <div className={styles.leftColumn}>
+              {product.imageUrl ? (
+                <img src={product.imageUrl} alt={product.name} className={styles.productImage} />
+              ) : (
+                <div className={styles.imagePlaceholder}>
+                  <span className={styles.placeholderIcon}>🥬</span>
+                </div>
+              )}
             </div>
 
-            <div className={styles.stockRow}>
-              <div className={styles.stockLabel}>庫存</div>
-              <div className={styles.stockValue}>
-                剩餘 {Math.max(Math.round(product.stock), 0)} {product.unit}
+            {/* Right Column: Product Info */}
+            <div className={styles.rightColumn}>
+              <div className={styles.category}>{product.category}</div>
+              <h2 id="product-modal-title" className={styles.title}>
+                {product.name}
+              </h2>
+
+              {product.description && (
+                <p className={styles.description}>{product.description}</p>
+              )}
+
+              <div className={styles.priceRow}>
+                <div className={styles.priceLabel}>價格</div>
+                <div className={styles.priceValue}>
+                  {isVariablePrice ? (
+                    '依秤重計價'
+                  ) : (
+                    <>
+                      NT$ {formatCurrency(product.price, { fallback: '0' })} / {product.unit}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Options */}
+              {hasOptions && (
+                <div className={styles.optionsSection}>
+                  <div className={styles.optionsLabel}>選項</div>
+                  {product.options!.map((option) => (
+                    <label key={option.name} className={styles.optionItem}>
+                      <input
+                        type="radio"
+                        name={`option-${product.id}`}
+                        value={option.name}
+                        checked={selectedOptions[product.id] === option.name}
+                        onChange={(e) =>
+                          setSelectedOptions({ ...selectedOptions, [product.id]: e.target.value })
+                        }
+                        className={styles.optionRadio}
+                      />
+                      <span className={styles.optionName}>{option.name}</span>
+                      {option.price !== null && option.price !== 0 && (
+                        <span className={styles.optionPrice}>+NT$ {formatCurrency(option.price, { fallback: '0' })}</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Quantity Controls */}
+              <div className={styles.quantitySection}>
+                <div className={styles.quantityLabel}>數量</div>
+                <div className={styles.quantityControls}>
+                  <button
+                    className={styles.quantityButton}
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                    aria-label="減少數量"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 10h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  <div className={styles.quantityDisplay}>{quantity}</div>
+                  <button
+                    className={styles.quantityButton}
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product.stock}
+                    aria-label="增加數量"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M10 5v10M5 10h10"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className={styles.quantitySection}>
-            <div className={styles.quantityLabel}>數量</div>
-            <div className={styles.quantityControls}>
-              <button
-                className={styles.quantityButton}
-                onClick={decreaseQuantity}
-                disabled={quantity <= 1}
-                aria-label="減少數量"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M5 10h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-              <div className={styles.quantityDisplay}>{quantity}</div>
-              <button
-                className={styles.quantityButton}
-                onClick={increaseQuantity}
-                disabled={quantity >= product.stock}
-                aria-label="增加數量"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M10 5v10M5 10h10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
+          {/* Footer */}
           <div className={styles.footer}>
             <div className={styles.totalSection}>
               <div className={styles.totalLabel}>小計</div>
