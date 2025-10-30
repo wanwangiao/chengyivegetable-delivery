@@ -3,7 +3,10 @@ import { prisma } from './client';
 
 const productInclude = {
   options: {
-    orderBy: { createdAt: 'asc' }
+    orderBy: [
+      { sortOrder: 'asc' },
+      { createdAt: 'asc' }
+    ]
   }
 } as const;
 
@@ -17,7 +20,10 @@ const toNullableNumber = (value: Prisma.Decimal | null | undefined) => {
 const mapOption = (option: ProductOptionRecord): ProductOption => ({
   id: option.id,
   name: option.name,
-  price: toNullableNumber(option.price)
+  price: toNullableNumber(option.price),
+  groupName: option.groupName ?? undefined,
+  isRequired: option.isRequired,
+  sortOrder: option.sortOrder
 });
 
 const mapProduct = (product: ProductRecord): Product => ({
@@ -62,7 +68,10 @@ const buildCreateData = (input: ProductCreateInput): Prisma.ProductCreateInput =
     ? {
         create: input.options.map(option => ({
           name: option.name,
-          price: option.price ?? null
+          price: option.price ?? null,
+          groupName: option.groupName ?? null,
+          isRequired: option.isRequired ?? false,
+          sortOrder: option.sortOrder ?? 0
         }))
       }
     : undefined
@@ -115,13 +124,19 @@ const syncOptions = async (tx: Prisma.TransactionClient, productId: string, opti
         where: { id: option.id },
         update: {
           name: option.name,
-          price: option.price ?? null
+          price: option.price ?? null,
+          groupName: option.groupName ?? null,
+          isRequired: option.isRequired ?? false,
+          sortOrder: option.sortOrder ?? 0
         },
         create: {
           id: option.id,
           productId,
           name: option.name,
-          price: option.price ?? null
+          price: option.price ?? null,
+          groupName: option.groupName ?? null,
+          isRequired: option.isRequired ?? false,
+          sortOrder: option.sortOrder ?? 0
         }
       });
     } else {
@@ -129,7 +144,10 @@ const syncOptions = async (tx: Prisma.TransactionClient, productId: string, opti
         data: {
           productId,
           name: option.name,
-          price: option.price ?? null
+          price: option.price ?? null,
+          groupName: option.groupName ?? null,
+          isRequired: option.isRequired ?? false,
+          sortOrder: option.sortOrder ?? 0
         }
       });
     }
@@ -140,6 +158,9 @@ export interface ProductOption {
   id: string;
   name: string;
   price: number | null;
+  groupName?: string;
+  isRequired: boolean;
+  sortOrder: number;
 }
 
 export interface Product {
@@ -167,6 +188,9 @@ export interface ProductOptionInput {
   id?: string;
   name: string;
   price?: number | null;
+  groupName?: string;
+  isRequired?: boolean;
+  sortOrder?: number;
 }
 
 export interface ProductCreateInput {
