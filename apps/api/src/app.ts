@@ -59,7 +59,9 @@ export const createApp = (): Application => {
   app.set('trust proxy', 1);
   app.use(helmet());
   app.use(cors({
-    origin: env.NODE_ENV === 'production' ? [/chengyi\.tw$/] : true,
+    origin: env.NODE_ENV === 'production'
+      ? [/chengyi\.tw$/, /\.railway\.app$/]
+      : true,
     credentials: true
   }));
   app.use(compression());
