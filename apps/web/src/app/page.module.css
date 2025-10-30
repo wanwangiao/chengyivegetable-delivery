@@ -13,12 +13,16 @@
 }
 
 /* ========================================
-   頁首橫幅
+   品牌容器 (LOGO + 店名 + 營業狀態)
    ======================================== */
 
-.pageHeader {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
-  box-shadow: 0 2px 8px rgba(45, 90, 61, 0.08);
+.brandContainer {
+  margin: 16px;
+  background: #ffffff;
+  border: 2px solid rgba(0, 177, 79, 0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* ========================================

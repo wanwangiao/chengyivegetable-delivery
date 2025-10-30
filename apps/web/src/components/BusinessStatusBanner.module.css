@@ -6,11 +6,11 @@
   position: relative;
   width: 100%;
   padding: var(--space-4, 16px) var(--space-5, 20px);
-  margin-bottom: var(--space-4, 16px);
-  border-radius: var(--radius-lg, 16px);
+  margin: 0; /* 移除 margin，由外層容器控制間距 */
+  border-radius: 0 0 18px 18px; /* 只有底部圓角，與外層容器配合 */
   overflow: hidden;
   transition: all var(--duration-normal, 300ms) var(--ease-out, ease-out);
-  box-shadow: var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.06));
+  box-shadow: none; /* 移除陰影，由外層容器統一處理 */
 }
 
 .banner::before {
@@ -206,18 +206,9 @@
   }
 }
 
-/* Pulse animation for current-day status */
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 0 rgba(0, 177, 79, 0.4);
-  }
-  50% {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 0 8px rgba(0, 177, 79, 0);
-  }
-}
-
+/* Pulse animation for current-day status (移除，改為外層容器處理) */
 .banner.current-day {
-  animation: pulse 2s ease-in-out infinite;
+  /* 移除動畫效果 */
 }
 
 @media (prefers-reduced-motion: reduce) {

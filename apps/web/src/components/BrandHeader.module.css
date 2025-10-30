@@ -1,12 +1,8 @@
 /* 品牌 Header 組件樣式 */
 
 .header {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
-  border-bottom: 2px solid rgba(124, 179, 66, 0.15);
-  box-shadow: 0 2px 12px rgba(45, 90, 61, 0.08);
-  position: sticky;
-  top: 0;
-  z-index: 200;
+  /* 移除背景、邊框、陰影，由外層容器統一處理 */
+  border-bottom: 1px solid rgba(124, 179, 66, 0.15);
 }
 
 .container {

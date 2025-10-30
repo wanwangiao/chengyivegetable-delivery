@@ -179,11 +179,11 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
-      <BrandHeader />
-
-      <header className={styles.pageHeader}>
+      {/* LOGO + 店名 + 營業狀態 組合框 */}
+      <div className={styles.brandContainer}>
+        <BrandHeader />
         <BusinessStatusBanner />
-      </header>
+      </div>
 
       <section className={styles.categoryNav}>
         <div className={styles.categoryTabs}>
