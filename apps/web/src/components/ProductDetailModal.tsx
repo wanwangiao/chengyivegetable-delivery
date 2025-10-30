@@ -8,6 +8,9 @@ interface ProductOption {
   id?: string;
   name: string;
   price: number | null;
+  groupName?: string;
+  isRequired?: boolean;
+  sortOrder?: number;
 }
 
 interface Product {
@@ -53,8 +56,23 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
   const unitPrice = isVariablePrice ? 0 : product.price ?? 0;
   const totalPrice = unitPrice * quantity;
 
-  // Group options by their type (e.g., "要撥/不撥" vs "要切/不切")
-  const hasOptions = product.options && product.options.length > 0;
+  // Group options by groupName
+  const optionGroups = product.options && product.options.length > 0
+    ? product.options.reduce((groups, option) => {
+        const groupKey = option.groupName || '選項';
+        if (!groups[groupKey]) {
+          groups[groupKey] = {
+            name: groupKey,
+            isRequired: option.isRequired ?? false,
+            options: []
+          };
+        }
+        groups[groupKey].options.push(option);
+        return groups;
+      }, {} as Record<string, { name: string; isRequired: boolean; options: ProductOption[] }>)
+    : null;
+
+  const hasOptions = optionGroups !== null;
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
@@ -138,18 +156,21 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
               </div>
 
               {/* Product Options */}
-              {hasOptions && (
-                <div className={styles.optionsSection}>
-                  <div className={styles.optionsLabel}>選項</div>
-                  {product.options!.map((option) => (
+              {hasOptions && optionGroups && Object.entries(optionGroups).map(([groupKey, group]) => (
+                <div key={groupKey} className={styles.optionsSection}>
+                  <div className={styles.optionsLabel}>
+                    {group.name}
+                    {group.isRequired && <span className={styles.requiredBadge}>必選</span>}
+                  </div>
+                  {group.options.map((option) => (
                     <label key={option.name} className={styles.optionItem}>
                       <input
                         type="radio"
-                        name={`option-${product.id}`}
+                        name={`option-group-${groupKey}`}
                         value={option.name}
-                        checked={selectedOptions[product.id] === option.name}
+                        checked={selectedOptions[groupKey] === option.name}
                         onChange={(e) =>
-                          setSelectedOptions({ ...selectedOptions, [product.id]: e.target.value })
+                          setSelectedOptions({ ...selectedOptions, [groupKey]: e.target.value })
                         }
                         className={styles.optionRadio}
                       />
@@ -160,7 +181,7 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
                     </label>
                   ))}
                 </div>
-              )}
+              ))}
 
               {/* Quantity Controls */}
               <div className={styles.quantitySection}>

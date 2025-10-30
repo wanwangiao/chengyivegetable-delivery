@@ -199,6 +199,19 @@
   font-weight: var(--font-semibold, 600);
   color: var(--text-primary, #1a1a1a);
   margin-bottom: var(--space-1, 4px);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.requiredBadge {
+  display: inline-block;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-medium, 500);
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 6px);
 }
 
 .optionItem {
