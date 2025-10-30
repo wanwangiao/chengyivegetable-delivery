@@ -173,45 +173,55 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
                     {group.isRequired && <span className={styles.requiredBadge}>必選</span>}
                     {!group.isRequired && <span className={styles.optionalBadge}>可選</span>}
                   </div>
-                  {group.options.map((option) => (
-                    <label key={option.name} className={styles.optionItem}>
-                      {group.selectionType === 'single' ? (
-                        <input
-                          type="radio"
-                          name={`option-group-${groupKey}`}
-                          value={option.name}
-                          checked={selectedOptions[groupKey] === option.name}
-                          onChange={(e) =>
-                            setSelectedOptions({ ...selectedOptions, [groupKey]: e.target.value })
-                          }
-                          className={styles.optionRadio}
-                        />
-                      ) : (
-                        <input
-                          type="checkbox"
-                          value={option.name}
-                          checked={
-                            Array.isArray(selectedOptions[groupKey]) &&
-                            (selectedOptions[groupKey] as string[]).includes(option.name)
-                          }
-                          onChange={(e) => {
-                            const currentSelections = Array.isArray(selectedOptions[groupKey])
-                              ? (selectedOptions[groupKey] as string[])
-                              : [];
-                            const newSelections = e.target.checked
-                              ? [...currentSelections, option.name]
-                              : currentSelections.filter(s => s !== option.name);
-                            setSelectedOptions({ ...selectedOptions, [groupKey]: newSelections });
-                          }}
-                          className={styles.optionCheckbox}
-                        />
-                      )}
-                      <span className={styles.optionName}>{option.name}</span>
-                      {option.price !== null && option.price !== 0 && (
-                        <span className={styles.optionPrice}>+NT$ {formatCurrency(option.price, { fallback: '0' })}</span>
-                      )}
-                    </label>
-                  ))}
+                  {group.options.map((option) => {
+                    const isSelected = group.selectionType === 'single'
+                      ? selectedOptions[groupKey] === option.name
+                      : Array.isArray(selectedOptions[groupKey]) &&
+                        (selectedOptions[groupKey] as string[]).includes(option.name);
+
+                    return (
+                      <label
+                        key={option.name}
+                        className={`${styles.optionItem} ${isSelected ? styles.optionItemSelected : ''}`}
+                      >
+                        {group.selectionType === 'single' ? (
+                          <input
+                            type="radio"
+                            name={`option-group-${groupKey}`}
+                            value={option.name}
+                            checked={selectedOptions[groupKey] === option.name}
+                            onChange={(e) =>
+                              setSelectedOptions({ ...selectedOptions, [groupKey]: e.target.value })
+                            }
+                            className={styles.optionRadio}
+                          />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            value={option.name}
+                            checked={
+                              Array.isArray(selectedOptions[groupKey]) &&
+                              (selectedOptions[groupKey] as string[]).includes(option.name)
+                            }
+                            onChange={(e) => {
+                              const currentSelections = Array.isArray(selectedOptions[groupKey])
+                                ? (selectedOptions[groupKey] as string[])
+                                : [];
+                              const newSelections = e.target.checked
+                                ? [...currentSelections, option.name]
+                                : currentSelections.filter(s => s !== option.name);
+                              setSelectedOptions({ ...selectedOptions, [groupKey]: newSelections });
+                            }}
+                            className={styles.optionCheckbox}
+                          />
+                        )}
+                        <span className={styles.optionName}>{option.name}</span>
+                        {option.price !== null && option.price !== 0 && (
+                          <span className={styles.optionPrice}>+NT$ {formatCurrency(option.price, { fallback: '0' })}</span>
+                        )}
+                      </label>
+                    );
+                  })}
                 </div>
               ))}
 

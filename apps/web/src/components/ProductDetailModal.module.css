@@ -158,7 +158,8 @@
 
 .description {
   font-size: var(--text-sm, 0.875rem);
-  color: var(--text-secondary, #5a5a5a);
+  color: var(--text-primary, #1a1a1a);
+  font-weight: var(--font-medium, 500);
   line-height: var(--leading-normal, 1.5);
   margin: 0;
 }
@@ -175,8 +176,8 @@
 
 .priceLabel {
   font-size: var(--text-sm, 0.875rem);
-  color: var(--text-secondary, #5a5a5a);
-  font-weight: var(--font-medium, 500);
+  color: var(--text-primary, #1a1a1a);
+  font-weight: var(--font-semibold, 600);
 }
 
 .priceValue {
@@ -228,14 +229,21 @@
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
   border-radius: var(--radius-md, 12px);
   cursor: pointer;
-  transition: background var(--duration-fast, 200ms) var(--ease-out, ease-out);
+  background: #ffffff;
+  border: 2px solid var(--border-light, #e0e0e0);
+  transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
 }
 
 .optionItem:hover {
-  background: var(--surface-secondary, #fafafa);
+  border-color: var(--brand-primary, #00b14f);
+}
+
+.optionItemSelected {
+  background: rgba(0, 177, 79, 0.08);
+  border-color: var(--brand-primary, #00b14f);
 }
 
 .optionRadio,
@@ -274,7 +282,8 @@
 .quantityControls {
   display: flex;
   align-items: center;
-  gap: var(--space-4, 16px);
+  gap: var(--space-3, 12px);
+  justify-content: flex-start;
 }
 
 .quantityButton {
@@ -308,12 +317,11 @@
 }
 
 .quantityDisplay {
-  flex: 1;
   text-align: center;
   font-size: var(--text-xl, 1.25rem);
   font-weight: var(--font-bold, 700);
   color: var(--text-primary, #1a1a1a);
-  min-width: 50px;
+  min-width: 60px;
 }
 
 /* Footer */
@@ -332,8 +340,8 @@
 
 .totalLabel {
   font-size: var(--text-base, 1rem);
-  color: var(--text-secondary, #5a5a5a);
-  font-weight: var(--font-medium, 500);
+  color: var(--text-primary, #1a1a1a);
+  font-weight: var(--font-semibold, 600);
 }
 
 .totalPrice {
