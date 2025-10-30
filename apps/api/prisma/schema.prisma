@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -23,19 +22,11 @@ model Order {
   paymentMethod String
   notes         String?
   driverId      String?
-  driverSequence Int?
-  deliveryDate  DateTime      @default(now())
-  isPreOrder    Boolean       @default(false)
-  priceAlertSent Boolean      @default(false)
-  priceConfirmed Boolean?
-  priceAlertSentAt DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
   driver        Driver?       @relation(fields: [driverId], references: [id])
-  deliveryProofs DeliveryProof[]
-  priceAlerts   PriceChangeAlert[]
 }
 
 model OrderItem {
@@ -69,12 +60,10 @@ model Product {
   unit         String
   unitHint     String?
   price        Decimal? @default(0)
-  nextDayPrice Decimal?
   stock        Float   @default(0)
   isAvailable  Boolean @default(true)
   isPricedItem Boolean @default(false)
   weightPricePerUnit Decimal?
-  nextDayWeightPricePerUnit Decimal?
   sortOrder    Int     @default(0)
   imageUrl     String?
   imageKey     String?
@@ -85,12 +74,16 @@ model Product {
 }
 
 model ProductOption {
-  id        String   @id @default(uuid())
-  productId String
-  name      String
-  price     Decimal?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  productId     String
+  name          String
+  price         Decimal?
+  groupName     String?  // 選項組名稱 (e.g., "處理方式", "切割方式")
+  isRequired    Boolean @default(false)  // 該組是否為必選
+  selectionType String  @default("single")  // "single" 單選 or "multiple" 多選
+  sortOrder     Int     @default(0)  // 選項排序
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -129,23 +122,8 @@ model Driver {
   currentLng         Float?
   lastLocationUpdate DateTime?
   orders             Order[]
-  deliveryProofs     DeliveryProof[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-}
-
-model DeliveryProof {
-  id        String   @id @default(uuid())
-  orderId   String
-  driverId  String
-  imageKey  String
-  createdAt DateTime @default(now())
-
-  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([driverId])
 }
 
 model LineUser {
@@ -174,75 +152,4 @@ enum UserRole {
   ADMIN
   DRIVER
   CUSTOMER
-}
-
-model SystemConfig {
-  id                      String   @id @default("system-config")
-  storeName               String   @default("誠憶鮮蔬")
-  storeSlogan             String   @default("新鮮蔬果・每日配送")
-  storeLogo               String?  // Cloudinary URL
-  storePhone              String?
-  currentOrderStartTime   String   @default("07:30")
-  currentOrderEndTime     String   @default("11:00")
-  preOrderStartTime       String   @default("14:00")
-  preOrderEndTime         String   @default("23:59")
-  priceChangeThreshold    Float    @default(10.0)
-  priceConfirmTimeout     Int      @default(30)
-  lineNotificationEnabled Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-}
-
-model PriceChangeAlert {
-  id               String    @id @default(uuid())
-  orderId          String
-  sentAt           DateTime  @default(now())
-  confirmedAt      DateTime?
-  autoAcceptedAt   DateTime?
-  customerResponse String?
-  priceChanges     Json
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-}
-
-model BusinessHours {
-  id                    String        @id @default(uuid())
-  regularClosedDays     Int[]         // [1, 4] for Monday (1), Thursday (4)
-  orderCutoffTime       String        @default("10:00")
-  preorderStartTime     String        @default("14:00")
-  currentOrderStartTime String        @default("07:30")
-
-  // 自訂狀態訊息
-  currentDayMessage     String        @default("當日訂單開放中，10:00 前下單今日配送")
-  nextDayMessage        String        @default("明日配送預訂開放中")
-  preparationMessage    String        @default("準備中，下午 2:00 開放明日預訂")
-  beforeOpenMessage     String        @default("準備中，早上 7:30 開放當日訂單")
-  closedDayMessage      String        @default("今日店休")
-
-  specialDates          SpecialDate[]
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-}
-
-model SpecialDate {
-  id              String        @id @default(uuid())
-  date            DateTime      // 特殊日期
-  type            DateType      // CLOSED 或 OPEN
-  reason          String?       // 原因說明，如「春節休假」「臨時營業」
-  businessHoursId String
-  businessHours   BusinessHours @relation(fields: [businessHoursId], references: [id], onDelete: Cascade)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([date])
-  @@index([businessHoursId])
-}
-
-enum DateType {
-  CLOSED  // 休息日
-  OPEN    // 營業日（覆蓋正常休息日）
 }
