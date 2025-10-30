@@ -11,6 +11,7 @@ export type CartItem = {
   quantity: number;
   unit: string;
   lineTotal: number;
+  selectedOptions?: Record<string, string | string[]>;
 };
 
 const CART_STORAGE_KEY = 'cart';
@@ -18,6 +19,32 @@ const DELIVERY_FEE = 60;
 const FREE_SHIPPING_THRESHOLD = 200;
 
 type StoredCartItem = Partial<CartItem> | null | undefined;
+
+// 比較兩個選項物件是否相同
+const areOptionsEqual = (
+  options1?: Record<string, string | string[]>,
+  options2?: Record<string, string | string[]>
+): boolean => {
+  if (!options1 && !options2) return true;
+  if (!options1 || !options2) return false;
+
+  const keys1 = Object.keys(options1).sort();
+  const keys2 = Object.keys(options2).sort();
+
+  if (keys1.length !== keys2.length) return false;
+  if (keys1.join(',') !== keys2.join(',')) return false;
+
+  return keys1.every(key => {
+    const val1 = options1[key];
+    const val2 = options2[key];
+
+    if (Array.isArray(val1) && Array.isArray(val2)) {
+      return val1.length === val2.length && val1.every((v, i) => v === val2[i]);
+    }
+
+    return val1 === val2;
+  });
+};
 
 const sanitizeCartItem = (item: StoredCartItem): CartItem | null => {
   if (!item) return null;
@@ -42,7 +69,8 @@ const sanitizeCartItem = (item: StoredCartItem): CartItem | null => {
     unit: String(unit),
     quantity,
     unitPrice,
-    lineTotal
+    lineTotal,
+    selectedOptions: item.selectedOptions
   };
 };
 
@@ -88,16 +116,24 @@ export function useCart() {
   }, []);
 
   // 新增商品
-  const addItem = useCallback((product: {
-    id: string;
-    name: string;
-    price: number | null | undefined;
-    unit: string;
-  }) => {
+  const addItem = useCallback((
+    product: {
+      id: string;
+      name: string;
+      price: number | null | undefined;
+      unit: string;
+    },
+    selectedOptions?: Record<string, string | string[]>
+  ) => {
     const unitPrice = ensureNumber(product.price, 0);
 
     setItems(prev => {
-      const existingIndex = prev.findIndex(item => item.productId === product.id);
+      // 尋找相同商品且相同選項的項目
+      const existingIndex = prev.findIndex(
+        item =>
+          item.productId === product.id &&
+          areOptionsEqual(item.selectedOptions, selectedOptions)
+      );
 
       if (existingIndex >= 0) {
         const updated = [...prev];
@@ -123,7 +159,8 @@ export function useCart() {
           unitPrice,
           quantity: 1,
           unit: product.unit,
-          lineTotal: unitPrice
+          lineTotal: unitPrice,
+          selectedOptions
         }
       ];
     });

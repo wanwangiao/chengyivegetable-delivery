@@ -30,7 +30,7 @@ interface ProductDetailModalProps {
   product: Product | null;
   open: boolean;
   onClose: () => void;
-  onAddToCart: (product: Product, quantity: number) => void;
+  onAddToCart: (product: Product, quantity: number, selectedOptions?: Record<string, string | string[]>) => void;
 }
 
 export function ProductDetailModal({ product, open, onClose, onAddToCart }: ProductDetailModalProps) {
@@ -77,7 +77,15 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
   const hasOptions = optionGroups !== null;
 
   const handleAddToCart = () => {
-    onAddToCart(product, quantity);
+    // 過濾掉空的選項（多選時可能是空陣列）
+    const filteredOptions = Object.entries(selectedOptions).reduce((acc, [key, value]) => {
+      if (Array.isArray(value) && value.length === 0) return acc;
+      if (!value) return acc;
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string | string[]>);
+
+    onAddToCart(product, quantity, Object.keys(filteredOptions).length > 0 ? filteredOptions : undefined);
     onClose();
   };
 

@@ -166,6 +166,14 @@ export function CartDrawer({
                 >
                   {item.name}
                 </Typography>
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                  <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mb: 0.5 }}>
+                    {Object.entries(item.selectedOptions).map(([groupName, value]) => {
+                      const displayValue = Array.isArray(value) ? value.join(', ') : value;
+                      return `${groupName}: ${displayValue}`;
+                    }).join(' | ')}
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   NT${currency(item.unitPrice, '0')} / {item.unit}
                 </Typography>

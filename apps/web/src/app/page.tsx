@@ -105,7 +105,7 @@ export default function HomePage() {
     setTimeout(() => setSelectedProduct(null), 200);
   };
 
-  const handleAddToCart = (product: Product, quantity: number = 1) => {
+  const handleAddToCart = (product: Product, quantity: number = 1, selectedOptions?: Record<string, string | string[]>) => {
     if (product.price === null || product.price === undefined) {
       window.alert('此商品為秤重商品，請直接與客服聯繫。');
       return;
@@ -117,7 +117,7 @@ export default function HomePage() {
         name: product.name,
         price: product.price,
         unit: product.unit
-      });
+      }, selectedOptions);
     }
   };
 
