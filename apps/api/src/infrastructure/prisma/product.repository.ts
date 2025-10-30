@@ -4,11 +4,11 @@ import { prisma } from './client';
 const productInclude = {
   options: {
     orderBy: [
-      { sortOrder: 'asc' },
-      { createdAt: 'asc' }
+      { sortOrder: 'asc' as const },
+      { createdAt: 'asc' as const }
     ]
   }
-} as const;
+} satisfies Prisma.ProductInclude;
 
 type ProductRecord = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 type ProductOptionRecord = Prisma.ProductOptionGetPayload<{}>;

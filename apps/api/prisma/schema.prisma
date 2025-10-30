@@ -8,25 +8,33 @@ datasource db {
 }
 
 model Order {
-  id            String        @id @default(uuid())
-  contactName   String
-  contactPhone  String
-  address       String
-  latitude      Float?
-  longitude     Float?
-  geocodedAt    DateTime?
-  status        String        @default("pending")
-  subtotal      Decimal       @default(0)
-  deliveryFee   Decimal       @default(0)
-  totalAmount   Decimal       @default(0)
-  paymentMethod String
-  notes         String?
-  driverId      String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  items         OrderItem[]
-  statusHistory OrderStatusHistory[]
-  driver        Driver?       @relation(fields: [driverId], references: [id])
+  id                 String              @id @default(uuid())
+  contactName        String
+  contactPhone       String
+  address            String
+  latitude           Float?
+  longitude          Float?
+  geocodedAt         DateTime?
+  status             String              @default("pending")
+  subtotal           Decimal             @default(0)
+  deliveryFee        Decimal             @default(0)
+  totalAmount        Decimal             @default(0)
+  paymentMethod      String
+  notes              String?
+  driverId           String?
+  driverSequence     Int?
+  deliveryDate       DateTime?
+  isPreOrder         Boolean             @default(false)
+  priceAlertSent     Boolean             @default(false)
+  priceConfirmed     Boolean?
+  priceAlertSentAt   DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  items              OrderItem[]
+  statusHistory      OrderStatusHistory[]
+  deliveryProofs     DeliveryProof[]
+  priceChangeAlerts  PriceChangeAlert[]
+  driver             Driver?             @relation(fields: [driverId], references: [id])
 }
 
 model OrderItem {
@@ -53,24 +61,26 @@ model OrderStatusHistory {
 }
 
 model Product {
-  id           String   @id @default(uuid())
-  name         String
-  description  String?
-  category     String
-  unit         String
-  unitHint     String?
-  price        Decimal? @default(0)
-  stock        Float   @default(0)
-  isAvailable  Boolean @default(true)
-  isPricedItem Boolean @default(false)
-  weightPricePerUnit Decimal?
-  sortOrder    Int     @default(0)
-  imageUrl     String?
-  imageKey     String?
-  imageUploadedAt DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  options      ProductOption[]
+  id                        String   @id @default(uuid())
+  name                      String
+  description               String?
+  category                  String
+  unit                      String
+  unitHint                  String?
+  price                     Decimal? @default(0)
+  nextDayPrice              Decimal?
+  stock                     Float   @default(0)
+  isAvailable               Boolean @default(true)
+  isPricedItem              Boolean @default(false)
+  weightPricePerUnit        Decimal?
+  nextDayWeightPricePerUnit Decimal?
+  sortOrder                 Int     @default(0)
+  imageUrl                  String?
+  imageKey                  String?
+  imageUploadedAt           DateTime?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  options                   ProductOption[]
 }
 
 model ProductOption {
@@ -152,4 +162,90 @@ enum UserRole {
   ADMIN
   DRIVER
   CUSTOMER
+}
+
+model BusinessHours {
+  id                    String        @id @default(uuid())
+  regularClosedDays     Int[]         @default([])
+  orderCutoffTime       String        @default("10:00")
+  preorderStartTime     String        @default("14:00")
+  currentOrderStartTime String        @default("07:30")
+  currentDayMessage     String?
+  nextDayMessage        String?
+  preparationMessage    String?
+  beforeOpenMessage     String?
+  closedDayMessage      String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  specialDates          SpecialDate[]
+}
+
+model SpecialDate {
+  id              String        @id @default(uuid())
+  date            DateTime
+  type            DateType
+  reason          String?
+  businessHoursId String
+  businessHours   BusinessHours @relation(fields: [businessHoursId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([businessHoursId])
+  @@index([date])
+}
+
+enum DateType {
+  OPEN
+  CLOSED
+}
+
+model DeliveryProof {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverId   String?
+  photoUrl   String
+  photoKey   String?
+  note       String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
+  uploadedAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model SystemConfig {
+  id                       String   @id @default("system-config")
+  storeLogo                String?
+  storeName                String   @default("程翊生鮮蔬果")
+  storePhone               String?
+  currentOrderStartTime    String   @default("07:30")
+  currentOrderEndTime      String   @default("10:00")
+  preOrderStartTime        String   @default("14:00")
+  preOrderEndTime          String   @default("23:59")
+  priceChangeThreshold     Float    @default(20)
+  priceConfirmTimeout      Int      @default(86400)
+  lineNotificationEnabled  Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model PriceChangeAlert {
+  id               String   @id @default(uuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  oldPrice         Decimal
+  newPrice         Decimal
+  changes          Json
+  priceChanges     Json?
+  sentAt           DateTime @default(now())
+  confirmedAt      DateTime?
+  autoConfirmedAt  DateTime?
+  autoAcceptedAt   DateTime?
+  customerResponse String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([orderId])
 }

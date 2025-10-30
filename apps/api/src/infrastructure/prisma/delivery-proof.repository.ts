@@ -9,7 +9,7 @@ export interface DeliveryProofRecord {
 }
 
 export interface DeliveryProofRepository {
-  create(input: { orderId: string; driverId: string; imageKey: string }): Promise<DeliveryProofRecord>;
+  create(input: { orderId: string; driverId: string; imageKey: string; photoUrl?: string }): Promise<DeliveryProofRecord>;
   listByOrder(orderId: string): Promise<DeliveryProofRecord[]>;
 }
 
@@ -17,7 +17,7 @@ const mapRecord = (record: any): DeliveryProofRecord => ({
   id: record.id,
   orderId: record.orderId,
   driverId: record.driverId,
-  imageKey: record.imageKey,
+  imageKey: record.photoKey || record.imageKey || '',
   createdAt: record.createdAt
 });
 
@@ -27,7 +27,8 @@ export const prismaDeliveryProofRepository: DeliveryProofRepository = {
       data: {
         orderId: input.orderId,
         driverId: input.driverId,
-        imageKey: input.imageKey
+        photoKey: input.imageKey,
+        photoUrl: input.photoUrl || input.imageKey || ''
       }
     });
 

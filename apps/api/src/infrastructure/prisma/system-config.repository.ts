@@ -3,6 +3,7 @@ import { prisma } from './client';
 export interface SystemConfigData {
   id: string;
   storeName: string;
+  storeLogo: string | null;
   storePhone: string | null;
   currentOrderStartTime: string;
   currentOrderEndTime: string;
@@ -17,6 +18,7 @@ export interface SystemConfigData {
 
 export interface SystemConfigUpdateInput {
   storeName?: string;
+  storeLogo?: string | null;
   storePhone?: string | null;
   currentOrderStartTime?: string;
   currentOrderEndTime?: string;
@@ -36,6 +38,7 @@ export interface SystemConfigRepository {
 const DEFAULT_CONFIG: Omit<SystemConfigData, 'createdAt' | 'updatedAt'> = {
   id: 'system-config',
   storeName: '誠憶鮮蔬',
+  storeLogo: null,
   storePhone: null,
   currentOrderStartTime: '07:30',
   currentOrderEndTime: '11:00',

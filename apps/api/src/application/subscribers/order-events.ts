@@ -189,6 +189,9 @@ ${contactName} 您好！
       await prisma.priceChangeAlert.create({
         data: {
           orderId,
+          oldPrice: oldTotal,
+          newPrice: newTotal,
+          changes: priceChanges as any,
           priceChanges: priceChanges as any,
           sentAt: new Date()
         }
