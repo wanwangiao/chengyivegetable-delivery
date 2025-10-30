@@ -214,6 +214,16 @@
   border-radius: var(--radius-sm, 6px);
 }
 
+.optionalBadge {
+  display: inline-block;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-medium, 500);
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 6px);
+}
+
 .optionItem {
   display: flex;
   align-items: center;
@@ -228,7 +238,8 @@
   background: var(--surface-secondary, #fafafa);
 }
 
-.optionRadio {
+.optionRadio,
+.optionCheckbox {
   width: 18px;
   height: 18px;
   cursor: pointer;

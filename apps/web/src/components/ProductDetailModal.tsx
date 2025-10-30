@@ -10,6 +10,7 @@ interface ProductOption {
   price: number | null;
   groupName?: string;
   isRequired?: boolean;
+  selectionType?: 'single' | 'multiple';
   sortOrder?: number;
 }
 
@@ -34,7 +35,7 @@ interface ProductDetailModalProps {
 
 export function ProductDetailModal({ product, open, onClose, onAddToCart }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string | string[]>>({});
 
   useEffect(() => {
     if (open) {
@@ -64,12 +65,13 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
           groups[groupKey] = {
             name: groupKey,
             isRequired: option.isRequired ?? false,
+            selectionType: option.selectionType ?? 'single',
             options: []
           };
         }
         groups[groupKey].options.push(option);
         return groups;
-      }, {} as Record<string, { name: string; isRequired: boolean; options: ProductOption[] }>)
+      }, {} as Record<string, { name: string; isRequired: boolean; selectionType: 'single' | 'multiple'; options: ProductOption[] }>)
     : null;
 
   const hasOptions = optionGroups !== null;
@@ -161,19 +163,41 @@ export function ProductDetailModal({ product, open, onClose, onAddToCart }: Prod
                   <div className={styles.optionsLabel}>
                     {group.name}
                     {group.isRequired && <span className={styles.requiredBadge}>必選</span>}
+                    {!group.isRequired && <span className={styles.optionalBadge}>可選</span>}
                   </div>
                   {group.options.map((option) => (
                     <label key={option.name} className={styles.optionItem}>
-                      <input
-                        type="radio"
-                        name={`option-group-${groupKey}`}
-                        value={option.name}
-                        checked={selectedOptions[groupKey] === option.name}
-                        onChange={(e) =>
-                          setSelectedOptions({ ...selectedOptions, [groupKey]: e.target.value })
-                        }
-                        className={styles.optionRadio}
-                      />
+                      {group.selectionType === 'single' ? (
+                        <input
+                          type="radio"
+                          name={`option-group-${groupKey}`}
+                          value={option.name}
+                          checked={selectedOptions[groupKey] === option.name}
+                          onChange={(e) =>
+                            setSelectedOptions({ ...selectedOptions, [groupKey]: e.target.value })
+                          }
+                          className={styles.optionRadio}
+                        />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          value={option.name}
+                          checked={
+                            Array.isArray(selectedOptions[groupKey]) &&
+                            (selectedOptions[groupKey] as string[]).includes(option.name)
+                          }
+                          onChange={(e) => {
+                            const currentSelections = Array.isArray(selectedOptions[groupKey])
+                              ? (selectedOptions[groupKey] as string[])
+                              : [];
+                            const newSelections = e.target.checked
+                              ? [...currentSelections, option.name]
+                              : currentSelections.filter(s => s !== option.name);
+                            setSelectedOptions({ ...selectedOptions, [groupKey]: newSelections });
+                          }}
+                          className={styles.optionCheckbox}
+                        />
+                      )}
                       <span className={styles.optionName}>{option.name}</span>
                       {option.price !== null && option.price !== 0 && (
                         <span className={styles.optionPrice}>+NT$ {formatCurrency(option.price, { fallback: '0' })}</span>

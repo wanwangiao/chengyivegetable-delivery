@@ -23,6 +23,7 @@ const mapOption = (option: ProductOptionRecord): ProductOption => ({
   price: toNullableNumber(option.price),
   groupName: option.groupName ?? undefined,
   isRequired: option.isRequired,
+  selectionType: option.selectionType as 'single' | 'multiple',
   sortOrder: option.sortOrder
 });
 
@@ -71,6 +72,7 @@ const buildCreateData = (input: ProductCreateInput): Prisma.ProductCreateInput =
           price: option.price ?? null,
           groupName: option.groupName ?? null,
           isRequired: option.isRequired ?? false,
+          selectionType: option.selectionType ?? 'single',
           sortOrder: option.sortOrder ?? 0
         }))
       }
@@ -127,6 +129,7 @@ const syncOptions = async (tx: Prisma.TransactionClient, productId: string, opti
           price: option.price ?? null,
           groupName: option.groupName ?? null,
           isRequired: option.isRequired ?? false,
+          selectionType: option.selectionType ?? 'single',
           sortOrder: option.sortOrder ?? 0
         },
         create: {
@@ -136,6 +139,7 @@ const syncOptions = async (tx: Prisma.TransactionClient, productId: string, opti
           price: option.price ?? null,
           groupName: option.groupName ?? null,
           isRequired: option.isRequired ?? false,
+          selectionType: option.selectionType ?? 'single',
           sortOrder: option.sortOrder ?? 0
         }
       });
@@ -147,6 +151,7 @@ const syncOptions = async (tx: Prisma.TransactionClient, productId: string, opti
           price: option.price ?? null,
           groupName: option.groupName ?? null,
           isRequired: option.isRequired ?? false,
+          selectionType: option.selectionType ?? 'single',
           sortOrder: option.sortOrder ?? 0
         }
       });
@@ -160,6 +165,7 @@ export interface ProductOption {
   price: number | null;
   groupName?: string;
   isRequired: boolean;
+  selectionType: 'single' | 'multiple';
   sortOrder: number;
 }
 
@@ -190,6 +196,7 @@ export interface ProductOptionInput {
   price?: number | null;
   groupName?: string;
   isRequired?: boolean;
+  selectionType?: 'single' | 'multiple';
   sortOrder?: number;
 }
 
