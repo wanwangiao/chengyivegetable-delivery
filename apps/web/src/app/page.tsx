@@ -240,15 +240,27 @@ export default function HomePage() {
             )}
 
             {!loading && filteredProducts.length > 0 && (
-              <StaggerList staggerDelay={80} duration={500} direction="up">
-                {filteredProducts.map(product => (
+              <>
+                {/* 前 20 個商品使用動畫 */}
+                <StaggerList staggerDelay={50} duration={400} direction="up">
+                  {filteredProducts.slice(0, 20).map(product => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onClick={() => handleProductClick(product)}
+                    />
+                  ))}
+                </StaggerList>
+
+                {/* 剩餘商品直接顯示，無動畫 */}
+                {filteredProducts.slice(20).map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     onClick={() => handleProductClick(product)}
                   />
                 ))}
-              </StaggerList>
+              </>
             )}
           </div>
         </section>
