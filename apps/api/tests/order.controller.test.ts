@@ -24,6 +24,7 @@ const createTestContext = () => {
   const orderService = {
     list: vi.fn().mockResolvedValue([exampleOrder]),
     create: vi.fn().mockResolvedValue(exampleOrder),
+    createWithInventory: vi.fn().mockResolvedValue(exampleOrder),
     findById: vi.fn().mockResolvedValue(exampleOrder),
     searchByPhone: vi.fn().mockResolvedValue([exampleOrder]),
     getHistory: vi.fn().mockResolvedValue([
@@ -92,7 +93,7 @@ describe('OrderController routes', () => {
       });
 
     expect(response.status).toBe(201);
-    expect(orderService.create).toHaveBeenCalledTimes(1);
+    expect(orderService.createWithInventory).toHaveBeenCalledTimes(1);
   });
 
   it('rejects invalid order payload', async () => {
@@ -109,7 +110,7 @@ describe('OrderController routes', () => {
       });
 
     expect(response.status).toBe(400);
-    expect(orderService.create).not.toHaveBeenCalled();
+    expect(orderService.createWithInventory).not.toHaveBeenCalled();
   });
 
   it('returns order history', async () => {
