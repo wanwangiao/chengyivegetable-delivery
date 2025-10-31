@@ -67,6 +67,16 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:3001
         run: pnpm --dir apps/web test:e2e
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/api/dist
+            apps/web/.next
+            apps/driver/dist
+          retention-days: 1
+
       - name: Setup k6 (optional)
         if: ${{ env.K6_ENABLED == 'true' }}
         uses: grafana/setup-k6-action@v1
@@ -115,6 +125,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter api --filter web --filter driver --filter config --filter domain --filter lib
 
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
       - name: Generate Prisma client
         run: pnpm --filter api prisma:generate
 
@@ -138,18 +153,6 @@ jobs:
       - name: Skip database migrations (DATABASE_URL missing)
         if: ${{ env.DATABASE_URL == '' }}
         run: echo "Skipping Prisma migrate deploy because DATABASE_URL is not configured."
-
-      - name: Build shared packages for deployment
-        run: |
-          pnpm --filter config build
-          pnpm --filter domain build
-          pnpm --filter lib build
-
-      - name: Build production artifacts for deployment
-        run: |
-          pnpm --filter api build
-          pnpm --filter web build
-          pnpm --filter driver build
 
       - name: Bundle API deployment artifact
         run: |
