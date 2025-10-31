@@ -4,8 +4,13 @@ test.describe('Home page', () => {
   test('displays store info and category filters', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('.store-name')).toContainText('誠憶鮮蔬');
-    await expect(page.locator('.category-tab').first()).toBeVisible();
-    await expect(page.locator('.cta-card').first()).toBeVisible();
+    // 驗證店名存在（使用文本匹配，不依賴 CSS class）
+    await expect(page.getByRole('heading', { name: '誠憶鮮蔬' })).toBeVisible();
+
+    // 驗證分類標籤存在
+    await expect(page.getByRole('button', { name: '全部商品' })).toBeVisible();
+
+    // 驗證 CTA 卡片存在
+    await expect(page.getByRole('heading', { name: '訂單查詢' })).toBeVisible();
   });
 });
