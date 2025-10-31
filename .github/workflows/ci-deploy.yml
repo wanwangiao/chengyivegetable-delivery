@@ -92,6 +92,7 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE_API: ${{ secrets.RAILWAY_SERVICE_API || '' }}
       RAILWAY_SERVICE_WEB: ${{ secrets.RAILWAY_SERVICE_WEB || '' }}
+      RAILWAY_SERVICE_DRIVER: ${{ secrets.RAILWAY_SERVICE_DRIVER || '' }}
 
     steps:
       - name: Checkout repository
