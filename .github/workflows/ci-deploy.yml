@@ -139,11 +139,14 @@ jobs:
         if: ${{ env.DATABASE_URL == '' }}
         run: echo "Skipping Prisma migrate deploy because DATABASE_URL is not configured."
 
-      - name: Build production artifacts
+      - name: Build shared packages for deployment
         run: |
           pnpm --filter config build
           pnpm --filter domain build
           pnpm --filter lib build
+
+      - name: Build production artifacts for deployment
+        run: |
           pnpm --filter api build
           pnpm --filter web build
           pnpm --filter driver build
