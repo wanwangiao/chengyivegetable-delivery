@@ -19,7 +19,8 @@
 - **認證方式**: Bearer Token (JWT)
 - **服務**: API (Express + TypeScript)
 
-### 司機端（如已部署）
+### 司機配送端
+- **URL**: https://chengyivegetable-driver-production.up.railway.app/
 - **說明**: 司機配送管理介面
 - **服務**: Driver (Vite SPA)
 
