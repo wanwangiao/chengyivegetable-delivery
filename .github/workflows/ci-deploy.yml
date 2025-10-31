@@ -152,6 +152,7 @@ jobs:
         run: |
           rm -rf .railway/api
           pnpm --filter api deploy --prod .railway/api
+          cp -r apps/api/dist .railway/api/dist
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
           pushd .railway/api >/dev/null
