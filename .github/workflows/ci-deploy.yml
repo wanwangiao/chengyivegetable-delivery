@@ -170,6 +170,8 @@ jobs:
         run: |
           rm -rf .railway/web
           pnpm --filter web deploy --prod .railway/web
+          cp -r apps/web/.next .railway/web/.next
+          cp -r apps/web/public .railway/web/public
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
           cp infra/railway/web.railway.json .railway/web/railway.json
           pushd .railway/web >/dev/null
