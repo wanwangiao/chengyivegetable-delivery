@@ -145,6 +145,7 @@ jobs:
           pnpm --filter lib build
           pnpm --filter api build
           pnpm --filter web build
+          pnpm --filter driver build
 
       - name: Bundle API deployment artifact
         run: |
@@ -175,6 +176,27 @@ jobs:
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
           cp infra/railway/web.railway.json .railway/web/railway.json
           pushd .railway/web >/dev/null
+          tar_items=()
+          if [ -d node_modules ]; then
+            tar_items+=("node_modules")
+          fi
+          if [ -d .pnpm ]; then
+            tar_items+=(".pnpm")
+          fi
+          if [ ${#tar_items[@]} -gt 0 ]; then
+            tar -czf node_modules.tgz "${tar_items[@]}"
+            rm -rf "${tar_items[@]}"
+          fi
+          popd >/dev/null
+
+      - name: Bundle Driver deployment artifact
+        run: |
+          rm -rf .railway/driver
+          pnpm --filter driver deploy --prod .railway/driver
+          cp -r apps/driver/dist .railway/driver/dist
+          cp infra/docker/driver.Dockerfile .railway/driver/Dockerfile
+          cp infra/railway/driver.railway.json .railway/driver/railway.json
+          pushd .railway/driver >/dev/null
           tar_items=()
           if [ -d node_modules ]; then
             tar_items+=("node_modules")
@@ -226,3 +248,18 @@ jobs:
             -w /app \
             ghcr.io/railwayapp/cli:latest \
             railway up .railway/web --service "$SERVICE_NAME" --ci --path-as-root
+
+      - name: Deploy Driver service to Railway
+        if: ${{ env.RAILWAY_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="${RAILWAY_SERVICE_DRIVER:-driver}"
+          docker run --rm \
+            -e RAILWAY_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_API_TOKEN="$RAILWAY_TOKEN" \
+            -e RAILWAY_PROJECT_ID="$RAILWAY_PROJECT_ID" \
+            -e RAILWAY_ENVIRONMENT_ID="$RAILWAY_ENVIRONMENT_ID" \
+            -v "$PWD":/app \
+            -w /app \
+            ghcr.io/railwayapp/cli:latest \
+            railway up .railway/driver --service "$SERVICE_NAME" --ci --path-as-root
