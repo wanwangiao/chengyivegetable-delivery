@@ -76,7 +76,9 @@ export default function HomePage() {
 
   const categories = useMemo(() => {
     const dynamic = Array.from(new Set(products.map(product => categoryLabel(product.category))));
-    return ['全部商品', ...dynamic, ...FALLBACK_CATEGORIES.filter(cat => !dynamic.includes(cat))];
+    const all = ['全部商品', ...dynamic, ...FALLBACK_CATEGORIES];
+    // 使用 Set 去除重複的分類，保持「全部商品」在第一位
+    return Array.from(new Set(all));
   }, [products]);
 
   const filteredProducts = useMemo(() => {
