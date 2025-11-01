@@ -1,37 +1,45 @@
+FROM node:20-bullseye-slim AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm@9.9.0
+
+# Copy package files
+COPY package.json ./
+COPY tsconfig*.json ./
+
+# Extract node_modules if exists, otherwise install
+RUN if [ -f node_modules.tgz ]; then \
+      tar -xzf node_modules.tgz && rm node_modules.tgz; \
+    fi
+
+# Install all dependencies (including dev dependencies for building)
+RUN pnpm install
+
+# Copy source code
+COPY src ./src
+COPY prisma ./prisma
+
+# Build the application
+RUN pnpm exec tsc -p tsconfig.build.json
+
+# Production stage
 FROM node:20-bullseye-slim
 
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-COPY . ./
+# Copy built files and dependencies from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
 
-RUN if [ -f node_modules.tgz ]; then \
-      tar -xzf node_modules.tgz && rm node_modules.tgz; \
-    fi
-
-# Debug: List files to verify dist exists (will show in build logs)
-RUN echo "=== BUILD: Listing /app directory ===" && \
-    ls -la && \
-    echo "=== BUILD: Checking dist directory ===" && \
-    (ls -la dist/ && echo "BUILD: dist exists!") || echo "BUILD ERROR: dist directory not found!"
+# Verify dist exists
+RUN ls -la dist/ && echo "✅ dist directory exists"
 
 EXPOSE 3000
 
-# Create startup script that checks for dist before running
-RUN echo '#!/bin/sh\n\
-echo "=== RUNTIME: Checking /app directory ==="\n\
-ls -la /app\n\
-echo "=== RUNTIME: Checking dist directory ==="\n\
-if [ -d /app/dist ]; then\n\
-  echo "RUNTIME: dist exists!"\n\
-  ls -la /app/dist\n\
-  exec node dist/index.js\n\
-else\n\
-  echo "RUNTIME ERROR: dist directory not found!"\n\
-  echo "Files in /app:"\n\
-  find /app -type f -name "*.js" | head -20\n\
-  exit 1\n\
-fi' > /app/start.sh && chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+CMD ["node", "dist/index.js"]
