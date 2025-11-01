@@ -129,6 +129,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
+          path: .
 
       - name: Generate Prisma client
         run: pnpm --filter api prisma:generate
