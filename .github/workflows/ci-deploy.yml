@@ -177,6 +177,12 @@ jobs:
           # Create empty .dockerignore to override default ignore rules
           touch .railway/api/.dockerignore
           pushd .railway/api >/dev/null
+          # Pack dist directory to avoid Railway CLI filtering
+          if [ -d dist ]; then
+            tar -czf dist.tgz dist
+            rm -rf dist
+          fi
+          # Pack node_modules
           tar_items=()
           if [ -d node_modules ]; then
             tar_items+=("node_modules")
@@ -201,6 +207,12 @@ jobs:
           # Create empty .dockerignore to override default ignore rules
           touch .railway/web/.dockerignore
           pushd .railway/web >/dev/null
+          # Pack .next directory to avoid Railway CLI filtering
+          if [ -d .next ]; then
+            tar -czf next.tgz .next
+            rm -rf .next
+          fi
+          # Pack node_modules
           tar_items=()
           if [ -d node_modules ]; then
             tar_items+=("node_modules")
@@ -224,6 +236,12 @@ jobs:
           # Create empty .dockerignore to override default ignore rules
           touch .railway/driver/.dockerignore
           pushd .railway/driver >/dev/null
+          # Pack dist directory to avoid Railway CLI filtering
+          if [ -d dist ]; then
+            tar -czf dist.tgz dist
+            rm -rf dist
+          fi
+          # Pack node_modules
           tar_items=()
           if [ -d node_modules ]; then
             tar_items+=("node_modules")
