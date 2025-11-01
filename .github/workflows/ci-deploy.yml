@@ -49,8 +49,14 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter api prisma:generate
 
+      - name: Build API app
+        run: pnpm --filter api build
+
       - name: Run API tests
         run: pnpm test:api
+
+      - name: Build Driver app
+        run: pnpm --filter driver build
 
       - name: Run Driver tests
         run: pnpm test:driver
