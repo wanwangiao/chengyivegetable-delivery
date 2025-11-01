@@ -129,29 +129,22 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --filter api --filter web --filter driver --filter config --filter domain --filter lib
+        run: pnpm install --frozen-lockfile
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: .
-
-      - name: Debug - List downloaded artifacts
+      - name: Build shared packages
         run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Directory structure ==="
-          ls -la
-          echo "=== Looking for apps directory ==="
-          find . -name "apps" -type d 2>/dev/null || echo "No apps directory found"
-          echo "=== Looking for dist directories ==="
-          find . -name "dist" -type d 2>/dev/null || echo "No dist directories found"
-          echo "=== Looking for .next directories ==="
-          find . -name ".next" -type d 2>/dev/null || echo "No .next directories found"
+          pnpm --filter config build
+          pnpm --filter domain build
+          pnpm --filter lib build
 
       - name: Generate Prisma client
         run: pnpm --filter api prisma:generate
+
+      - name: Build applications
+        run: |
+          pnpm --filter api build
+          pnpm --filter web build
+          pnpm --filter driver build
 
       - name: Run database migrations
         if: ${{ env.DATABASE_URL != '' }}
@@ -176,19 +169,9 @@ jobs:
 
       - name: Bundle API deployment artifact
         run: |
-          set -x
-          echo "=== Checking for apps/api/dist ==="
-          ls -la apps/api/dist 2>/dev/null || echo "apps/api/dist not found"
-          echo "=== Current directory structure ==="
-          find . -name "dist" -o -name ".next" -type d 2>/dev/null || true
           rm -rf .railway/api
           pnpm --filter api deploy --prod .railway/api
-          if [ -d apps/api/dist ]; then
-            cp -r apps/api/dist .railway/api/dist
-          else
-            echo "Error: apps/api/dist not found after download"
-            exit 1
-          fi
+          cp -r apps/api/dist .railway/api/dist
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
           pushd .railway/api >/dev/null
