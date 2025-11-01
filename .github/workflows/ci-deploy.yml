@@ -131,6 +131,19 @@ jobs:
           name: build-artifacts
           path: .
 
+      - name: Debug - List downloaded artifacts
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Directory structure ==="
+          ls -la
+          echo "=== Looking for apps directory ==="
+          find . -name "apps" -type d 2>/dev/null || echo "No apps directory found"
+          echo "=== Looking for dist directories ==="
+          find . -name "dist" -type d 2>/dev/null || echo "No dist directories found"
+          echo "=== Looking for .next directories ==="
+          find . -name ".next" -type d 2>/dev/null || echo "No .next directories found"
+
       - name: Generate Prisma client
         run: pnpm --filter api prisma:generate
 
