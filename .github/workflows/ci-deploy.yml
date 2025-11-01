@@ -176,9 +176,19 @@ jobs:
 
       - name: Bundle API deployment artifact
         run: |
+          set -x
+          echo "=== Checking for apps/api/dist ==="
+          ls -la apps/api/dist 2>/dev/null || echo "apps/api/dist not found"
+          echo "=== Current directory structure ==="
+          find . -name "dist" -o -name ".next" -type d 2>/dev/null || true
           rm -rf .railway/api
           pnpm --filter api deploy --prod .railway/api
-          cp -r apps/api/dist .railway/api/dist
+          if [ -d apps/api/dist ]; then
+            cp -r apps/api/dist .railway/api/dist
+          else
+            echo "Error: apps/api/dist not found after download"
+            exit 1
+          fi
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
           pushd .railway/api >/dev/null
