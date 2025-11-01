@@ -174,12 +174,6 @@ jobs:
           cp -r apps/api/dist .railway/api/dist
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
-          # Create .dockerignore to ensure dist is included
-          cat > .railway/api/.dockerignore <<'EOF'
-          # Include everything by default
-          !dist/
-          !dist/**
-          EOF
           pushd .railway/api >/dev/null
           tar_items=()
           if [ -d node_modules ]; then
@@ -202,14 +196,6 @@ jobs:
           cp -r apps/web/public .railway/web/public
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
           cp infra/railway/web.railway.json .railway/web/railway.json
-          # Create .dockerignore to ensure .next is included
-          cat > .railway/web/.dockerignore <<'EOF'
-          # Include everything by default
-          !.next/
-          !.next/**
-          !public/
-          !public/**
-          EOF
           pushd .railway/web >/dev/null
           tar_items=()
           if [ -d node_modules ]; then
@@ -231,12 +217,6 @@ jobs:
           cp -r apps/driver/dist .railway/driver/dist
           cp infra/docker/driver.Dockerfile .railway/driver/Dockerfile
           cp infra/railway/driver.railway.json .railway/driver/railway.json
-          # Create .dockerignore to ensure dist is included
-          cat > .railway/driver/.dockerignore <<'EOF'
-          # Include everything by default
-          !dist/
-          !dist/**
-          EOF
           pushd .railway/driver >/dev/null
           tar_items=()
           if [ -d node_modules ]; then
