@@ -21,7 +21,7 @@ import { ImageCropModal } from '../../../components/ImageCropModal';
 import { HolidayCalendar } from '../../../components/HolidayCalendar';
 import { BusinessHoursSettings } from '../../../components/BusinessHoursSettings';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../../../config/api';
 
 type SystemConfig = {
   storeName: string;

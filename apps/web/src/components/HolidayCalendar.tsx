@@ -32,7 +32,7 @@ import {
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, getDay } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../config/api';
 
 type DateType = 'CLOSED' | 'OPEN';
 

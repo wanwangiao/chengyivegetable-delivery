@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import styles from './BusinessStatusBanner.module.css';
 import { BusinessCalendarModal } from './BusinessCalendarModal';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../config/api';
 
 type OrderStatus = 'current-day' | 'next-day' | 'preparation' | 'closed';
 

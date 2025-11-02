@@ -18,7 +18,7 @@ type HistoryEntry = {
   changedAt: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../../config/api';
 
 const STATUS_STEPS: Array<{ key: string; label: string; description: string; icon: string }> = [
   { key: 'pending', label: '待確認', description: '訂單已送出，待客服確認', icon: '📝' },

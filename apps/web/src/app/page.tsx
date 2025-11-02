@@ -12,6 +12,7 @@ import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
 import { StaggerList } from '../components/animations/StaggerList';
 import { ListSkeleton } from '../components/animations/Skeleton';
 import { useCart } from '../hooks/useCart';
+import { API_BASE_URL as API_BASE } from '../config/api';
 import '../styles/theme.css';
 import styles from './page.module.css';
 
@@ -26,8 +27,6 @@ type Product = {
   description?: string;
   isPricedItem?: boolean;
 };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
 
 const FALLBACK_CATEGORIES = ['全部商品', '安心精選', '每日推薦'];
 

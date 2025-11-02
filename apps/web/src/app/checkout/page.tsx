@@ -24,7 +24,7 @@ type CustomerData = {
 const CART_KEY = 'cart';
 const PROFILE_KEY = 'lineProfile';
 const CUSTOMER_DATA_KEY = 'customerData';
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../../config/api';
 
 const PAYMENT_METHOD_MAP: Record<string, string> = {
   cash: '現金付款',

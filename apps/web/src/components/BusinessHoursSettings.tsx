@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { Schedule, Message } from '@mui/icons-material';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000/api/v1';
+import { API_BASE_URL as API_BASE } from '../config/api';
 
 interface BusinessHours {
   id: string;
