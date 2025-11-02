@@ -169,8 +169,14 @@ jobs:
 
       - name: Bundle API deployment artifact
         run: |
+          set -euo pipefail
           rm -rf .railway/api
           pnpm --filter api deploy --prod .railway/api
+          # Verify dist directory exists before copying
+          if [ ! -d apps/api/dist ]; then
+            echo "ERROR: apps/api/dist directory not found!"
+            exit 1
+          fi
           cp -r apps/api/dist .railway/api/dist
           cp infra/docker/api.Dockerfile .railway/api/Dockerfile
           cp infra/railway/api.railway.json .railway/api/railway.json
@@ -181,6 +187,10 @@ jobs:
           if [ -d dist ]; then
             tar -czf dist.tgz dist
             rm -rf dist
+            echo "✓ Created dist.tgz"
+          else
+            echo "ERROR: dist directory not found in .railway/api!"
+            exit 1
           fi
           # Pack node_modules
           tar_items=()
@@ -193,13 +203,20 @@ jobs:
           if [ ${#tar_items[@]} -gt 0 ]; then
             tar -czf node_modules.tgz "${tar_items[@]}"
             rm -rf "${tar_items[@]}"
+            echo "✓ Created node_modules.tgz"
           fi
           popd >/dev/null
 
       - name: Bundle Web deployment artifact
         run: |
+          set -euo pipefail
           rm -rf .railway/web
           pnpm --filter web deploy --prod .railway/web
+          # Verify .next directory exists before copying
+          if [ ! -d apps/web/.next ]; then
+            echo "ERROR: apps/web/.next directory not found!"
+            exit 1
+          fi
           cp -r apps/web/.next .railway/web/.next
           cp -r apps/web/public .railway/web/public
           cp infra/docker/web.Dockerfile .railway/web/Dockerfile
@@ -211,6 +228,10 @@ jobs:
           if [ -d .next ]; then
             tar -czf next.tgz .next
             rm -rf .next
+            echo "✓ Created next.tgz"
+          else
+            echo "ERROR: .next directory not found in .railway/web!"
+            exit 1
           fi
           # Pack node_modules
           tar_items=()
@@ -223,13 +244,20 @@ jobs:
           if [ ${#tar_items[@]} -gt 0 ]; then
             tar -czf node_modules.tgz "${tar_items[@]}"
             rm -rf "${tar_items[@]}"
+            echo "✓ Created node_modules.tgz"
           fi
           popd >/dev/null
 
       - name: Bundle Driver deployment artifact
         run: |
+          set -euo pipefail
           rm -rf .railway/driver
           pnpm --filter driver deploy --prod .railway/driver
+          # Verify dist directory exists before copying
+          if [ ! -d apps/driver/dist ]; then
+            echo "ERROR: apps/driver/dist directory not found!"
+            exit 1
+          fi
           cp -r apps/driver/dist .railway/driver/dist
           cp infra/docker/driver.Dockerfile .railway/driver/Dockerfile
           cp infra/railway/driver.railway.json .railway/driver/railway.json
@@ -240,6 +268,10 @@ jobs:
           if [ -d dist ]; then
             tar -czf dist.tgz dist
             rm -rf dist
+            echo "✓ Created dist.tgz"
+          else
+            echo "ERROR: dist directory not found in .railway/driver!"
+            exit 1
           fi
           # Pack node_modules
           tar_items=()
@@ -252,6 +284,7 @@ jobs:
           if [ ${#tar_items[@]} -gt 0 ]; then
             tar -czf node_modules.tgz "${tar_items[@]}"
             rm -rf "${tar_items[@]}"
+            echo "✓ Created node_modules.tgz"
           fi
           popd >/dev/null
 
