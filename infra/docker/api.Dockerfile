@@ -13,7 +13,14 @@ RUN if [ ! -f dist.tgz ]; then \
       ls -la; \
       exit 1; \
     fi && \
+    echo "✓ Found dist.tgz, extracting..." && \
     tar -xzf dist.tgz && rm dist.tgz && \
+    echo "✓ Extracted dist.tgz" && \
+    ls -la && \
+    echo "✓ Checking dist directory:" && \
+    ls -la dist/ && \
+    echo "✓ Checking dist/index.js:" && \
+    ls -la dist/index.js && \
     if [ -f node_modules.tgz ]; then \
       tar -xzf node_modules.tgz && rm node_modules.tgz; \
     fi

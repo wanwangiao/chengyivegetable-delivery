@@ -13,7 +13,12 @@ RUN if [ ! -f next.tgz ]; then \
       ls -la; \
       exit 1; \
     fi && \
+    echo "✓ Found next.tgz, extracting..." && \
     tar -xzf next.tgz && rm next.tgz && \
+    echo "✓ Extracted next.tgz" && \
+    ls -la && \
+    echo "✓ Checking .next directory:" && \
+    ls -la .next/ | head -20 && \
     if [ -f node_modules.tgz ]; then \
       tar -xzf node_modules.tgz && rm node_modules.tgz; \
     fi
