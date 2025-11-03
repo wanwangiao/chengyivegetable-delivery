@@ -7,9 +7,18 @@ WORKDIR /app
 # Copy all files
 COPY . ./
 
-# Extract packed directories
-RUN tar -xzf dist.tgz && rm -f dist.tgz && \
-    tar -xzf node_modules.tgz && rm -f node_modules.tgz
+# Debug and extract packed directories
+RUN echo "=== Files in /app ===" && \
+    ls -lah && \
+    echo "=== Extracting dist.tgz ===" && \
+    tar -xzf dist.tgz && \
+    echo "=== Extracting node_modules.tgz ===" && \
+    tar -xzf node_modules.tgz && \
+    echo "=== Verifying dist/index.js ===" && \
+    ls -lah dist/ && \
+    test -f dist/index.js && \
+    echo "✓ dist/index.js exists" && \
+    rm -f dist.tgz node_modules.tgz
 
 EXPOSE 3000
 

@@ -7,9 +7,18 @@ WORKDIR /app
 # Copy all files
 COPY . ./
 
-# Extract packed directories
-RUN tar -xzf next.tgz && rm -f next.tgz && \
-    tar -xzf node_modules.tgz && rm -f node_modules.tgz
+# Debug and extract packed directories
+RUN echo "=== Files in /app ===" && \
+    ls -lah && \
+    echo "=== Extracting next.tgz ===" && \
+    tar -xzf next.tgz && \
+    echo "=== Extracting node_modules.tgz ===" && \
+    tar -xzf node_modules.tgz && \
+    echo "=== Verifying .next directory ===" && \
+    ls -lah .next/ && \
+    test -d .next && \
+    echo "✓ .next directory exists" && \
+    rm -f next.tgz node_modules.tgz
 
 EXPOSE 3000
 
