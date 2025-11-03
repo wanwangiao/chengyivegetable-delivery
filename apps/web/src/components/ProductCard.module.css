@@ -165,7 +165,7 @@
 
 .unit {
   font-size: var(--text-sm, 0.875rem);
-  color: var(--text-secondary, #2a2a2a);
+  color: var(--text-secondary, #1a1a1a);
   font-weight: var(--font-medium, 500);
 }
 
@@ -177,13 +177,13 @@
 }
 
 .stockIcon {
-  color: var(--text-tertiary, #4a4a4a);
+  color: var(--text-tertiary, #2a2a2a);
   flex-shrink: 0;
 }
 
 .stockText {
   font-size: var(--text-sm, 0.875rem);
-  color: var(--text-secondary, #2a2a2a);
+  color: var(--text-secondary, #1a1a1a);
   font-weight: var(--font-medium, 500);
 }
 
