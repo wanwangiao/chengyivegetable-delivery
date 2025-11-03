@@ -9,9 +9,7 @@ COPY . ./
 
 # Extract packed directories
 RUN tar -xzf next.tgz && rm -f next.tgz && \
-    if [ -f node_modules.tgz ]; then \
-      tar -xzf node_modules.tgz && rm -f node_modules.tgz; \
-    fi
+    tar -xzf node_modules.tgz && rm -f node_modules.tgz
 
 EXPOSE 3000
 
