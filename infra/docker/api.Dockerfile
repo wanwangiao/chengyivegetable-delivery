@@ -7,19 +7,10 @@ WORKDIR /app
 # Copy all files
 COPY . ./
 
-# Extract packed directories (MUST exist or build fails)
-RUN if [ ! -f dist.tgz ]; then \
-      echo "ERROR: dist.tgz not found! Railway CLI may have filtered it."; \
-      ls -la; \
-      exit 1; \
-    fi && \
-    echo "✓ Found dist.tgz, extracting..." && \
-    tar -xzf dist.tgz && rm dist.tgz && \
-    echo "✓ Extracted dist.tgz" && \
-    echo "✓ Checking dist/index.js:" && \
-    ls -la dist/index.js && \
+# Extract packed directories
+RUN tar -xzf dist.tgz && rm -f dist.tgz && \
     if [ -f node_modules.tgz ]; then \
-      tar -xzf node_modules.tgz && rm node_modules.tgz; \
+      tar -xzf node_modules.tgz && rm -f node_modules.tgz; \
     fi
 
 EXPOSE 3000

@@ -7,20 +7,10 @@ WORKDIR /app
 # Copy all files
 COPY . ./
 
-# Extract packed directories (MUST exist or build fails)
-RUN if [ ! -f next.tgz ]; then \
-      echo "ERROR: next.tgz not found! Railway CLI may have filtered it."; \
-      ls -la; \
-      exit 1; \
-    fi && \
-    echo "✓ Found next.tgz, extracting..." && \
-    tar -xzf next.tgz && rm next.tgz && \
-    echo "✓ Extracted next.tgz" && \
-    ls -la && \
-    echo "✓ Checking .next directory:" && \
-    ls -la .next/ | head -20 && \
+# Extract packed directories
+RUN tar -xzf next.tgz && rm -f next.tgz && \
     if [ -f node_modules.tgz ]; then \
-      tar -xzf node_modules.tgz && rm node_modules.tgz; \
+      tar -xzf node_modules.tgz && rm -f node_modules.tgz; \
     fi
 
 EXPOSE 3000
