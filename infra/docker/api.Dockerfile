@@ -16,12 +16,12 @@ RUN if [ ! -f dist.tgz ]; then \
     echo "✓ Found dist.tgz, extracting..." && \
     tar -xzf dist.tgz && rm dist.tgz && \
     echo "✓ Extracted dist.tgz" && \
-    echo "✓ Checking dist/dist/index.js:" && \
-    ls -la dist/dist/index.js && \
+    echo "✓ Checking dist/index.js:" && \
+    ls -la dist/index.js && \
     if [ -f node_modules.tgz ]; then \
       tar -xzf node_modules.tgz && rm node_modules.tgz; \
     fi
 
 EXPOSE 3000
 
-CMD ["node", "dist/dist/index.js"]
+CMD ["node", "dist/index.js"]
