@@ -74,26 +74,47 @@ export default function HomePage() {
 
   const categories = useMemo(() => {
     const dynamic = Array.from(new Set(products.map(product => categoryLabel(product.category))));
-    const all = ['全部商品', ...dynamic, ...FALLBACK_CATEGORIES];
-    // 使用 Set 去除重複的分類，保持「全部商品」在第一位
-    return Array.from(new Set(all));
+    return ['全部商品', ...dynamic];
   }, [products]);
 
-  const filteredProducts = useMemo(() => {
+  // 搜尋過濾商品
+  const searchedProducts = useMemo(() => {
     const keyword = searchKeyword.trim();
+    if (keyword.length === 0) return products;
+
     return products.filter(product => {
       const nameMatches = product.name.includes(keyword);
       const categoryMatches = categoryLabel(product.category).includes(keyword);
-      const matchesKeyword = keyword.length === 0 || nameMatches || categoryMatches;
-      const productCategory = categoryLabel(product.category);
-      const matchesCategory =
-        activeCategory === '全部商品' ||
-        productCategory === activeCategory ||
-        (activeCategory === '安心精選' && (product.price ?? 0) >= 100) ||
-        (activeCategory === '每日推薦' && product.stock <= 20);
-      return matchesKeyword && matchesCategory;
+      return nameMatches || categoryMatches;
     });
-  }, [products, searchKeyword, activeCategory]);
+  }, [products, searchKeyword]);
+
+  // 按分類分組商品
+  const productsByCategory = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    searchedProducts.forEach(product => {
+      const cat = categoryLabel(product.category);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(product);
+    });
+    return groups;
+  }, [searchedProducts]);
+
+  const handleCategoryClick = (category: string) => {
+    setActiveCategory(category);
+
+    // 如果是「全部商品」，滾動到頁面頂部商品區
+    if (category === '全部商品') {
+      document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    // 滾動到指定分類
+    const element = document.getElementById(`category-${category}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
@@ -192,7 +213,7 @@ export default function HomePage() {
               key={category}
               type="button"
               className={`${styles.categoryTab} ${category === activeCategory ? styles.active : ''}`}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => handleCategoryClick(category)}
             >
               {category}
             </button>
@@ -218,12 +239,12 @@ export default function HomePage() {
           </div>
           <div className={styles.searchResultsInfo}>
             <div className={styles.searchResultText}>
-              {loading ? '載入商品中...' : `共有 ${filteredProducts.length} 項商品符合條件`}
+              {loading ? '載入商品中...' : `共有 ${searchedProducts.length} 項商品`}
             </div>
           </div>
         </section>
 
-        <section className={styles.productsSection}>
+        <section id="products-section" className={styles.productsSection}>
           {error && (
             <div className={styles.errorMessage}>
               {error}
@@ -232,23 +253,35 @@ export default function HomePage() {
           <div>
             {loading && <ListSkeleton count={5} />}
 
-            {!loading && filteredProducts.length === 0 && (
+            {!loading && searchedProducts.length === 0 && (
               <div id="no-results-message" style={{ padding: '2rem', textAlign: 'center' }}>
                 <strong>尚未找到符合條件的商品</strong>
                 <p>請嘗試其他關鍵字或調整篩選條件。</p>
               </div>
             )}
 
-            {!loading && filteredProducts.length > 0 && (
+            {!loading && searchedProducts.length > 0 && (
               <>
-                {/* 所有商品直接顯示，無動畫 */}
-                {filteredProducts.map(product => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={() => handleProductClick(product)}
-                  />
-                ))}
+                {/* 按分類顯示所有商品 */}
+                {categories.filter(cat => cat !== '全部商品').map(category => {
+                  const categoryProducts = productsByCategory[category];
+                  if (!categoryProducts || categoryProducts.length === 0) return null;
+
+                  return (
+                    <div key={category} id={`category-${category}`} className={styles.categorySection}>
+                      <h2 className={styles.categoryTitle}>{category}</h2>
+                      <div className={styles.categoryProducts}>
+                        {categoryProducts.map(product => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            onClick={() => handleProductClick(product)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>

@@ -169,6 +169,27 @@
   margin-bottom: 24px;
 }
 
+/* 分類區塊 */
+.categorySection {
+  margin-bottom: 32px;
+}
+
+.categoryTitle {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  color: #2d5a3d;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(124, 179, 66, 0.3);
+  scroll-margin-top: 80px; /* 為固定的分類導航預留空間 */
+}
+
+.categoryProducts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* ========================================
    服務公告
    ======================================== */
