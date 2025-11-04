@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import styles from './BusinessStatusBanner.module.css';
 import { OrderTrackingModal } from './OrderTrackingModal';
+import { BusinessCalendarModal } from './BusinessCalendarModal';
 
 import { API_BASE_URL as API_BASE } from '../config/api';
 
@@ -70,6 +71,7 @@ function mapBusinessStatusToConfig(businessStatus: BusinessStatus): StatusConfig
 export function BusinessStatusBanner() {
   const [status, setStatus] = useState<StatusConfig | null>(null);
   const [orderTrackingOpen, setOrderTrackingOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     const loadBusinessStatus = async () => {
@@ -111,9 +113,14 @@ export function BusinessStatusBanner() {
     <>
       <div className={`${styles.banner} ${styles[status.type]}`} role="status" aria-live="polite">
         <div className={styles.content}>
-          <div className={styles.iconWrapper}>
+          <button
+            className={styles.iconButton}
+            onClick={() => setCalendarOpen(true)}
+            type="button"
+            aria-label="查看行事曆"
+          >
             <span className={styles.icon}>{status.icon}</span>
-          </div>
+          </button>
           <div className={styles.textContent}>
             <h2 className={styles.title}>{status.title}</h2>
             <p className={styles.message}>{status.message}</p>
@@ -131,6 +138,7 @@ export function BusinessStatusBanner() {
       </div>
 
       <OrderTrackingModal open={orderTrackingOpen} onClose={() => setOrderTrackingOpen(false)} />
+      <BusinessCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </>
   );
 }

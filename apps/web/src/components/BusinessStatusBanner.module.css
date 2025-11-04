@@ -63,8 +63,8 @@
   gap: var(--space-4, 16px);
 }
 
-/* Icon */
-.iconWrapper {
+/* Icon Button */
+.iconButton {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -75,6 +75,18 @@
   backdrop-filter: blur(8px);
   border-radius: var(--radius-full, 9999px);
   border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
+}
+
+.iconButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.iconButton:active {
+  transform: scale(0.98);
 }
 
 .icon {
@@ -141,7 +153,7 @@
     padding: var(--space-3, 12px) var(--space-4, 16px);
   }
 
-  .iconWrapper {
+  .iconButton {
     width: 40px;
     height: 40px;
   }
@@ -159,7 +171,8 @@
   }
 
   .actionButton {
-    display: none; /* Hide on mobile to save space */
+    font-size: var(--text-xs, 0.75rem);
+    padding: var(--space-1, 4px) var(--space-3, 12px);
   }
 }
 
@@ -168,7 +181,7 @@
     gap: var(--space-3, 12px);
   }
 
-  .iconWrapper {
+  .iconButton {
     width: 36px;
     height: 36px;
   }
