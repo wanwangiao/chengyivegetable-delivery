@@ -353,7 +353,9 @@
 }
 
 .quantityButton:disabled {
-  opacity: 0.4;
+  background: #e6f7ed;
+  border-color: #00b14f;
+  color: #00b14f;
   cursor: not-allowed;
 }
 
