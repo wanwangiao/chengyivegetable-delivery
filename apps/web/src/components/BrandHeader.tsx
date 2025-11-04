@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './BrandHeader.module.css';
+import { BusinessCalendarModal } from './BusinessCalendarModal';
 
 import { API_BASE_URL as API_BASE } from '../config/api';
 
@@ -15,6 +16,7 @@ type SystemConfig = {
 export function BrandHeader() {
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -51,35 +53,51 @@ export function BrandHeader() {
   }
 
   return (
-    <header className={styles.header}>
-      <div className={styles.container}>
-        <div className={styles.brandWrapper}>
-          {config.storeLogo ? (
-            <div className={styles.logoWrapper}>
-              <img
-                src={config.storeLogo}
-                alt={`${config.storeName} LOGO`}
-                className={styles.logo}
-              />
-            </div>
-          ) : (
-            <div className={styles.logoPlaceholder}>
-              <span className={styles.logoEmoji}>🥬</span>
-            </div>
-          )}
+    <>
+      <header className={styles.header}>
+        <div className={styles.container}>
+          <div className={styles.brandWrapper}>
+            {config.storeLogo ? (
+              <div className={styles.logoWrapper}>
+                <img
+                  src={config.storeLogo}
+                  alt={`${config.storeName} LOGO`}
+                  className={styles.logo}
+                />
+              </div>
+            ) : (
+              <div className={styles.logoPlaceholder}>
+                <span className={styles.logoEmoji}>🥬</span>
+              </div>
+            )}
 
-          <div className={styles.brandText}>
-            <h1 className={styles.storeName}>{config.storeName}</h1>
-            <p className={styles.storeSlogan}>{config.storeSlogan}</p>
+            <div className={styles.brandText}>
+              <h1 className={styles.storeName}>{config.storeName}</h1>
+              <p className={styles.storeSlogan}>{config.storeSlogan}</p>
+            </div>
+          </div>
+
+          <div className={styles.actions}>
+            {/* 行事曆按鈕 */}
+            <button
+              type="button"
+              className={styles.calendarButton}
+              onClick={() => setCalendarOpen(true)}
+              aria-label="查看行事曆"
+            >
+              📅
+            </button>
+
+            {config.storePhone && (
+              <a href={`tel:${config.storePhone}`} className={styles.phoneLink}>
+                📞
+              </a>
+            )}
           </div>
         </div>
+      </header>
 
-        {config.storePhone && (
-          <a href={`tel:${config.storePhone}`} className={styles.phoneLink}>
-            📞 {config.storePhone}
-          </a>
-        )}
-      </div>
-    </header>
+      <BusinessCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+    </>
   );
 }

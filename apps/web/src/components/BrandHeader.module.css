@@ -83,29 +83,61 @@
   white-space: nowrap;
 }
 
-.phoneLink {
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 8px 14px;
+}
+
+.calendarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   background: linear-gradient(135deg, rgba(124, 179, 66, 0.1), rgba(139, 195, 74, 0.05));
   border: 1.5px solid rgba(124, 179, 66, 0.25);
-  border-radius: 20px;
-  color: #2d5a3d;
-  font-size: 0.875rem; /* 14px */
-  font-weight: 600;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendarButton:hover {
+  background: rgba(124, 179, 66, 0.15);
+  border-color: rgba(124, 179, 66, 0.4);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 2px 8px rgba(124, 179, 66, 0.2);
+}
+
+.calendarButton:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.phoneLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(124, 179, 66, 0.1), rgba(139, 195, 74, 0.05));
+  border: 1.5px solid rgba(124, 179, 66, 0.25);
+  font-size: 1.5rem;
   text-decoration: none;
   transition: all 0.2s ease;
-  white-space: nowrap;
 }
 
 .phoneLink:hover {
   background: rgba(124, 179, 66, 0.15);
   border-color: rgba(124, 179, 66, 0.4);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.05);
   box-shadow: 0 2px 8px rgba(124, 179, 66, 0.2);
 }
 
 .phoneLink:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .skeleton {

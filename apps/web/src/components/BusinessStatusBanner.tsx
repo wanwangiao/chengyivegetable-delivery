@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './BusinessStatusBanner.module.css';
-import { BusinessCalendarModal } from './BusinessCalendarModal';
+import { OrderTrackingModal } from './OrderTrackingModal';
 
 import { API_BASE_URL as API_BASE } from '../config/api';
 
@@ -31,7 +31,7 @@ function mapBusinessStatusToConfig(businessStatus: BusinessStatus): StatusConfig
       title: '暫停營業',
       message: businessStatus.message,
       icon: '🌙',
-      actionText: '查看行事曆'
+      actionText: '訂單查詢'
     };
   }
 
@@ -42,7 +42,7 @@ function mapBusinessStatusToConfig(businessStatus: BusinessStatus): StatusConfig
       title: '當日訂單開放中',
       message: businessStatus.message,
       icon: '✨',
-      actionText: '查看行事曆'
+      actionText: '訂單查詢'
     };
   }
 
@@ -53,7 +53,7 @@ function mapBusinessStatusToConfig(businessStatus: BusinessStatus): StatusConfig
       title: '明日配送 - 預訂開放中',
       message: businessStatus.message,
       icon: '📅',
-      actionText: '查看行事曆'
+      actionText: '訂單查詢'
     };
   }
 
@@ -63,13 +63,13 @@ function mapBusinessStatusToConfig(businessStatus: BusinessStatus): StatusConfig
     title: '準備中',
     message: businessStatus.message,
     icon: '📦',
-    actionText: '查看行事曆'
+    actionText: '訂單查詢'
   };
 }
 
 export function BusinessStatusBanner() {
   const [status, setStatus] = useState<StatusConfig | null>(null);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [orderTrackingOpen, setOrderTrackingOpen] = useState(false);
 
   useEffect(() => {
     const loadBusinessStatus = async () => {
@@ -90,7 +90,7 @@ export function BusinessStatusBanner() {
           title: '暫停營業',
           message: '目前無法取得營業狀態，請稍後再試',
           icon: '⏰',
-          actionText: '查看行事曆'
+          actionText: '訂單查詢'
         });
       }
     };
@@ -121,7 +121,7 @@ export function BusinessStatusBanner() {
           {status.actionText && (
             <button
               className={styles.actionButton}
-              onClick={() => setCalendarOpen(true)}
+              onClick={() => setOrderTrackingOpen(true)}
               type="button"
             >
               {status.actionText}
@@ -130,7 +130,7 @@ export function BusinessStatusBanner() {
         </div>
       </div>
 
-      <BusinessCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+      <OrderTrackingModal open={orderTrackingOpen} onClose={() => setOrderTrackingOpen(false)} />
     </>
   );
 }
