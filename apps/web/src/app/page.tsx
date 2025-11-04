@@ -20,12 +20,22 @@ type Product = {
   name: string;
   category: string;
   price: number | null | undefined;
+  nextDayPrice?: number;
   unit: string;
   stock: number;
   imageUrl?: string;
   description?: string;
   isPricedItem?: boolean;
 };
+
+type OrderWindow = 'CURRENT_DAY' | 'NEXT_DAY' | 'CLOSED';
+
+interface BusinessStatus {
+  isOpen: boolean;
+  orderWindow: OrderWindow;
+  message: string;
+  nextOpenTime?: string;
+}
 
 const FALLBACK_CATEGORIES = ['全部商品', '安心精選', '每日推薦'];
 
@@ -44,6 +54,7 @@ export default function HomePage() {
   const [checkoutDrawerOpen, setCheckoutDrawerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productModalOpen, setProductModalOpen] = useState(false);
+  const [businessStatus, setBusinessStatus] = useState<BusinessStatus | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -72,22 +83,61 @@ export default function HomePage() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    const loadBusinessStatus = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/business-hours/status`);
+        if (!response.ok) throw new Error('Failed to load business status');
+        const json = await response.json();
+
+        if (json.success && json.data) {
+          setBusinessStatus(json.data);
+        }
+      } catch (error) {
+        console.error('載入營業狀態失敗:', error);
+      }
+    };
+
+    loadBusinessStatus();
+
+    // 每分鐘更新一次狀態
+    const interval = setInterval(loadBusinessStatus, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 根據營業狀態調整商品價格顯示
+  const productsWithAdjustedPrice = useMemo(() => {
+    if (!businessStatus) return products;
+
+    // NEXT_DAY 時段顯示 nextDayPrice
+    if (businessStatus.orderWindow === 'NEXT_DAY') {
+      return products.map(product => ({
+        ...product,
+        price: product.nextDayPrice ?? product.price
+      }));
+    }
+
+    // CURRENT_DAY 和 CLOSED 時段顯示原本的 price
+    return products;
+  }, [products, businessStatus]);
+
   const categories = useMemo(() => {
-    const dynamic = Array.from(new Set(products.map(product => categoryLabel(product.category))));
+    const dynamic = Array.from(new Set(productsWithAdjustedPrice.map(product => categoryLabel(product.category))));
     return ['全部商品', ...dynamic];
-  }, [products]);
+  }, [productsWithAdjustedPrice]);
 
   // 搜尋過濾商品
   const searchedProducts = useMemo(() => {
     const keyword = searchKeyword.trim();
-    if (keyword.length === 0) return products;
+    if (keyword.length === 0) return productsWithAdjustedPrice;
 
-    return products.filter(product => {
+    return productsWithAdjustedPrice.filter(product => {
       const nameMatches = product.name.includes(keyword);
       const categoryMatches = categoryLabel(product.category).includes(keyword);
       return nameMatches || categoryMatches;
     });
-  }, [products, searchKeyword]);
+  }, [productsWithAdjustedPrice, searchKeyword]);
 
   // 按分類分組商品
   const productsByCategory = useMemo(() => {

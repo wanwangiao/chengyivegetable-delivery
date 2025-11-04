@@ -8,6 +8,7 @@ interface Product {
   name: string;
   category: string;
   price: number | null | undefined;
+  nextDayPrice?: number;
   unit: string;
   stock: number;
   imageUrl?: string;
@@ -19,7 +20,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
-  const isLowStock = product.stock < 5;
   const isOutOfStock = product.stock <= 0;
   const formattedPrice =
     product.price === null || product.price === undefined
@@ -59,11 +59,6 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             <span className={styles.badgeText}>售完</span>
           </div>
         )}
-        {!isOutOfStock && isLowStock && (
-          <div className={`${styles.badge} ${styles.badgeWarning}`}>
-            <span className={styles.badgeText}>數量有限</span>
-          </div>
-        )}
       </div>
 
       <div className={styles.content}>
@@ -77,21 +72,6 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             <span className={styles.price}>{formattedPrice}</span>
             <span className={styles.unit}>/ {product.unit}</span>
           </div>
-        </div>
-
-        <div className={styles.stockInfo}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.stockIcon}>
-            <path
-              d="M14 7V11C14 12.1046 13.1046 13 12 13H4C2.89543 13 2 12.1046 2 11V7M14 7L12 3H4L2 7M14 7H2"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className={styles.stockText}>
-            庫存 {Math.max(Math.round(product.stock), 0)} {product.unit}
-          </span>
         </div>
 
         <div className={styles.tapIndicator}>
