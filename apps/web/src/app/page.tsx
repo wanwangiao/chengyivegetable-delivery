@@ -9,7 +9,6 @@ import { ProductCard } from '../components/ProductCard';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 import { BrandHeader } from '../components/BrandHeader';
 import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
-import { StaggerList } from '../components/animations/StaggerList';
 import { ListSkeleton } from '../components/animations/Skeleton';
 import { useCart } from '../hooks/useCart';
 import { API_BASE_URL as API_BASE } from '../config/api';
@@ -242,19 +241,8 @@ export default function HomePage() {
 
             {!loading && filteredProducts.length > 0 && (
               <>
-                {/* 前 20 個商品使用動畫 */}
-                <StaggerList staggerDelay={50} duration={400} direction="up">
-                  {filteredProducts.slice(0, 20).map(product => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onClick={() => handleProductClick(product)}
-                    />
-                  ))}
-                </StaggerList>
-
-                {/* 剩餘商品直接顯示，無動畫 */}
-                {filteredProducts.slice(20).map(product => (
+                {/* 所有商品直接顯示，無動畫 */}
+                {filteredProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
