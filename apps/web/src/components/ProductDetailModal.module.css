@@ -333,22 +333,23 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full, 9999px);
-  background: var(--surface-secondary, #fafafa);
-  border: 2px solid var(--border-light, #e0e0e0);
-  color: var(--text-primary, #1a1a1a);
+  background: #ffffff;
+  border: 2px solid var(--brand-primary, #00b14f);
+  color: var(--brand-primary, #00b14f);
   cursor: pointer;
   transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
 }
 
 .quantityButton:hover:not(:disabled) {
   background: var(--brand-primary-50, rgba(0, 177, 79, 0.05));
-  border-color: var(--brand-primary, #00b14f);
-  color: var(--brand-primary, #00b14f);
+  border-color: var(--brand-primary-dark, #008c3f);
+  color: var(--brand-primary-dark, #008c3f);
   transform: scale(1.05);
 }
 
 .quantityButton:active:not(:disabled) {
   transform: scale(0.95);
+  background: var(--brand-primary-50, rgba(0, 177, 79, 0.1));
 }
 
 .quantityButton:disabled {
