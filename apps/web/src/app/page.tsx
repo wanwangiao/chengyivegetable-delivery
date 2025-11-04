@@ -268,8 +268,8 @@ export default function HomePage() {
                   if (!categoryProducts || categoryProducts.length === 0) return null;
 
                   return (
-                    <div key={category} id={`category-${category}`} className={styles.categorySection}>
-                      <h2 className={styles.categoryTitle}>{category}</h2>
+                    <div key={category} className={styles.categorySection}>
+                      <h2 id={`category-${category}`} className={styles.categoryTitle}>{category}</h2>
                       <div className={styles.categoryProducts}>
                         {categoryProducts.map(product => (
                           <ProductCard

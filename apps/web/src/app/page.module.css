@@ -180,8 +180,9 @@
   color: #2d5a3d;
   margin-bottom: 16px;
   padding-bottom: 8px;
+  padding-top: 8px;
   border-bottom: 2px solid rgba(124, 179, 66, 0.3);
-  scroll-margin-top: 80px; /* 為固定的分類導航預留空間 */
+  scroll-margin-top: 100px; /* 為固定的分類導航預留空間，確保標題可見 */
 }
 
 .categoryProducts {
