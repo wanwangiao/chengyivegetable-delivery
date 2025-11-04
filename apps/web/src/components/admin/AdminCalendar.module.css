@@ -76,7 +76,7 @@
   border-radius: var(--radius-full, 9999px);
   background: var(--surface-secondary, #fafafa);
   border: 1px solid var(--border-light, #e0e0e0);
-  color: var(--text-primary, #1a1a1a);
+  color: #000000;
   cursor: pointer;
   transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
 }
@@ -188,7 +188,7 @@
 }
 
 .otherMonth .dayNumber {
-  color: var(--text-tertiary, #9e9e9e);
+  color: #c0c0c0;
 }
 
 /* Today */
@@ -465,7 +465,7 @@
   border-radius: var(--radius-full, 9999px);
   background: var(--gray-100, #f5f5f5);
   border: none;
-  color: var(--text-secondary, #5a5a5a);
+  color: #000000;
   font-size: var(--text-2xl, 1.5rem);
   cursor: pointer;
   transition: all var(--duration-fast, 200ms) var(--ease-out, ease-out);
@@ -473,7 +473,7 @@
 
 .modalCloseButton:hover {
   background: var(--gray-200, #e0e0e0);
-  color: var(--text-primary, #1a1a1a);
+  color: #000000;
 }
 
 .modalBody {
