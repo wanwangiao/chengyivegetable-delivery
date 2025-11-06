@@ -542,7 +542,7 @@ export default function AdminProductsPage() {
                   {saving ? '儲存中…' : '儲存'}
                 </Button>
               </Stack>
-            </Box>
+            </Stack>
           </Box>
         )}
       </Drawer>
