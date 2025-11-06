@@ -9,19 +9,28 @@ import {
   CardContent,
   Chip,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   Drawer,
   FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
+  MenuItem,
   Stack,
   Switch,
   TextField,
   Typography
 } from '@mui/material';
 import {
+  Add,
   CloudDownload,
   Close,
+  Delete,
+  Edit as EditIcon,
   ExpandLess,
   ExpandMore,
   Refresh,
@@ -107,6 +116,22 @@ export default function AdminProductsPage() {
   const [editPrice, setEditPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Full edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    unit: '',
+    unitHint: '',
+    price: '',
+    stock: '',
+    isPricedItem: false,
+    weightPricePerUnit: '',
+    options: [] as ProductOption[]
+  });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -270,6 +295,107 @@ export default function AdminProductsPage() {
     }
   };
 
+  const openFullEditDialog = (product: Product) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name,
+      description: product.description ?? '',
+      category: product.category,
+      unit: product.unit,
+      unitHint: product.unitHint ?? '',
+      price: product.isPricedItem ? '' : String(product.price ?? ''),
+      stock: String(product.stock),
+      isPricedItem: product.isPricedItem,
+      weightPricePerUnit: product.isPricedItem ? String(product.weightPricePerUnit ?? '') : '',
+      options: product.options.map(opt => ({ ...opt }))
+    });
+    setEditDialogOpen(true);
+  };
+
+  const closeFullEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleAddOption = () => {
+    setEditForm(prev => ({
+      ...prev,
+      options: [...prev.options, { name: '', price: null }]
+    }));
+  };
+
+  const handleRemoveOption = (index: number) => {
+    setEditForm(prev => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleUpdateOption = (index: number, field: 'name' | 'price', value: string) => {
+    setEditForm(prev => {
+      const newOptions = [...prev.options];
+      if (field === 'name') {
+        newOptions[index] = { ...newOptions[index], name: value };
+      } else {
+        newOptions[index] = { ...newOptions[index], price: parseNumber(value) };
+      }
+      return { ...prev, options: newOptions };
+    });
+  };
+
+  const handleSaveFullEdit = async () => {
+    if (!editingProduct || !headers) {
+      setMessage('請先完成登入驗證');
+      return;
+    }
+
+    const payload: any = {
+      name: editForm.name,
+      description: editForm.description || undefined,
+      category: editForm.category,
+      unit: editForm.unit,
+      unitHint: editForm.unitHint || undefined,
+      stock: parseNumber(editForm.stock) ?? 0,
+      isPricedItem: editForm.isPricedItem,
+      options: editForm.options.filter(opt => opt.name.trim() !== '')
+    };
+
+    if (editForm.isPricedItem) {
+      payload.weightPricePerUnit = parseNumber(editForm.weightPricePerUnit);
+      payload.nextDayWeightPricePerUnit = parseNumber(editForm.weightPricePerUnit);
+      payload.price = null;
+      payload.nextDayPrice = null;
+    } else {
+      payload.price = parseNumber(editForm.price);
+      payload.nextDayPrice = parseNumber(editForm.price);
+      payload.weightPricePerUnit = null;
+      payload.nextDayWeightPricePerUnit = null;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch(`${API_BASE}/admin/products/${editingProduct.id}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message ?? '更新商品資料失敗');
+      }
+      const json = await response.json() as { data: Product };
+
+      setProducts(prev => prev.map(p => (p.id === json.data.id ? json.data : p)));
+      setMessage('商品資料已更新');
+      closeFullEditDialog();
+      await loadProducts();
+    } catch (error: any) {
+      setMessage(error?.message ?? '儲存時發生錯誤');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleExport = async () => {
     if (!headers) {
       setMessage('請先輸入有效的管理員 JWT Token');
@@ -387,7 +513,7 @@ export default function AdminProductsPage() {
         {filteredProducts.map(product => (
           <Card key={product.id} variant="outlined">
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              {/* Line 1: Toggle + Name + Price Edit Button */}
+              {/* Line 1: Toggle + Name + Edit Buttons */}
               <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                 <Switch
                   checked={product.isAvailable}
@@ -403,6 +529,13 @@ export default function AdminProductsPage() {
                 >
                   {product.name}
                 </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => openFullEditDialog(product)}
+                  sx={{ p: 0.5 }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
                 <Button
                   size="small"
                   variant="outlined"
@@ -546,6 +679,174 @@ export default function AdminProductsPage() {
           </Box>
         )}
       </Drawer>
+
+      {/* Full Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={closeFullEditDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxHeight: '90vh'
+          }
+        }}
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">編輯商品</Typography>
+            <IconButton onClick={closeFullEditDialog} size="small">
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <TextField
+              label="商品名稱"
+              value={editForm.name}
+              onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="商品描述"
+              value={editForm.description}
+              onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+              fullWidth
+              multiline
+              rows={2}
+            />
+
+            <TextField
+              label="分類"
+              value={editForm.category}
+              onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+              fullWidth
+              required
+            />
+
+            <Stack direction="row" spacing={1}>
+              <TextField
+                label="單位"
+                value={editForm.unit}
+                onChange={e => setEditForm(prev => ({ ...prev, unit: e.target.value }))}
+                fullWidth
+                required
+                placeholder="例：盒、條、斤"
+              />
+              <TextField
+                label="單位提示"
+                value={editForm.unitHint}
+                onChange={e => setEditForm(prev => ({ ...prev, unitHint: e.target.value }))}
+                fullWidth
+                placeholder="例：約600g"
+              />
+            </Stack>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editForm.isPricedItem}
+                  onChange={e => setEditForm(prev => ({ ...prev, isPricedItem: e.target.checked }))}
+                />
+              }
+              label="秤重商品"
+            />
+
+            {editForm.isPricedItem ? (
+              <TextField
+                label={`價格 (每${editForm.unit || '單位'})`}
+                type="number"
+                value={editForm.weightPricePerUnit}
+                onChange={e => setEditForm(prev => ({ ...prev, weightPricePerUnit: e.target.value }))}
+                fullWidth
+                required
+              />
+            ) : (
+              <TextField
+                label="售價"
+                type="number"
+                value={editForm.price}
+                onChange={e => setEditForm(prev => ({ ...prev, price: e.target.value }))}
+                fullWidth
+                required
+              />
+            )}
+
+            <TextField
+              label="庫存"
+              type="number"
+              value={editForm.stock}
+              onChange={e => setEditForm(prev => ({ ...prev, stock: e.target.value }))}
+              fullWidth
+              required
+            />
+
+            <Divider />
+
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="subtitle2">商品選項</Typography>
+              <Button
+                size="small"
+                startIcon={<Add />}
+                onClick={handleAddOption}
+              >
+                新增選項
+              </Button>
+            </Stack>
+
+            {editForm.options.map((option, index) => (
+              <Card key={index} variant="outlined">
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TextField
+                        label="選項名稱"
+                        value={option.name}
+                        onChange={e => handleUpdateOption(index, 'name', e.target.value)}
+                        size="small"
+                        fullWidth
+                        placeholder="例：要撥、大、中"
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveOption(index)}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                    <TextField
+                      label="加價"
+                      type="number"
+                      value={option.price === null ? '' : option.price}
+                      onChange={e => handleUpdateOption(index, 'price', e.target.value)}
+                      size="small"
+                      fullWidth
+                      placeholder="選填，無加價可留空"
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={closeFullEditDialog}>取消</Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveFullEdit}
+            startIcon={<Save />}
+            disabled={saving}
+          >
+            {saving ? '儲存中…' : '儲存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <input ref={fileInputRef} type="file" accept="text/csv" hidden />
     </Box>
