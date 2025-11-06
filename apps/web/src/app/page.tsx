@@ -326,6 +326,7 @@ export default function HomePage() {
                             key={product.id}
                             product={product}
                             onClick={() => handleProductClick(product)}
+                            orderWindow={businessStatus?.orderWindow}
                           />
                         ))}
                       </div>

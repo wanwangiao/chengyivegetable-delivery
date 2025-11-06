@@ -148,6 +148,17 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-1, 4px);
+  flex-wrap: wrap;
+}
+
+.priceLabel {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--font-semibold, 600);
+  color: var(--brand-primary, #00b14f);
+  background: rgba(0, 177, 79, 0.1);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+  white-space: nowrap;
 }
 
 .currency {

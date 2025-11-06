@@ -17,14 +17,18 @@ interface Product {
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
+  orderWindow?: 'CURRENT_DAY' | 'NEXT_DAY' | 'CLOSED';
 }
 
-export function ProductCard({ product, onClick }: ProductCardProps) {
+export function ProductCard({ product, onClick, orderWindow }: ProductCardProps) {
   const isOutOfStock = product.stock <= 0;
   const formattedPrice =
     product.price === null || product.price === undefined
       ? '待議價'
       : formatCurrency(product.price, { fallback: '0' });
+
+  // 根據營業時段決定價格標籤
+  const priceLabel = orderWindow === 'NEXT_DAY' ? '明日預估價' : null;
 
   return (
     <article
@@ -68,6 +72,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
 
         <div className={styles.priceRow}>
           <div className={styles.priceWrapper}>
+            {priceLabel && <span className={styles.priceLabel}>{priceLabel} </span>}
             <span className={styles.currency}>NT$</span>
             <span className={styles.price}>{formattedPrice}</span>
             <span className={styles.unit}>/ {product.unit}</span>
