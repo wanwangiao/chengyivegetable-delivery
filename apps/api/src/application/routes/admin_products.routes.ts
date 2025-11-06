@@ -17,6 +17,7 @@ export const createAdminProductsRouter = (controller: AdminProductsController): 
   router.get('/', asyncHandler(controller.list));
   router.patch('/:id', asyncHandler(controller.update));
   router.patch('/:id/toggle', asyncHandler(controller.toggle));
+  router.patch('/:productId/options/:optionId', asyncHandler(controller.toggleOption));
   router.post('/:id/image', productImageUpload, asyncHandler(controller.uploadImage));
 
   return router;

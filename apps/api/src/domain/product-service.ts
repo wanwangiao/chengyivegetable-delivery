@@ -149,6 +149,10 @@ export class ProductService {
     return await this.repository.toggleAvailability(id, isAvailable);
   }
 
+  async toggleOption(productId: string, optionId: string, isActive: boolean) {
+    return await this.repository.toggleOption(productId, optionId, isActive);
+  }
+
   async updateImage(id: string, image: { imageUrl: string; imageKey: string }) {
     return await this.repository.updateImage(id, {
       imageUrl: image.imageUrl,

@@ -23,6 +23,13 @@ export class AdminProductsController {
     res.json({ data: product });
   };
 
+  toggleOption = async (req: Request, res: Response) => {
+    const { productId, optionId } = req.params;
+    const { isActive } = req.body ?? {};
+    const product = await this.productService.toggleOption(productId, optionId, Boolean(isActive));
+    res.json({ data: product });
+  };
+
   uploadImage = async (req: Request, res: Response) => {
     const { id } = req.params;
     const file = req.file as Express.Multer.File | undefined;

@@ -91,6 +91,7 @@ model ProductOption {
   groupName     String?  // 選項組名稱 (e.g., "處理方式", "切割方式")
   isRequired    Boolean @default(false)  // 該組是否為必選
   selectionType String  @default("single")  // "single" 單選 or "multiple" 多選
+  isActive      Boolean @default(true)   // 選項是否啟用
   sortOrder     Int     @default(0)  // 選項排序
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

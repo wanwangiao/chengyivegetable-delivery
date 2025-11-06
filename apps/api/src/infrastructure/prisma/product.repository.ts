@@ -24,6 +24,7 @@ const mapOption = (option: ProductOptionRecord): ProductOption => ({
   groupName: option.groupName ?? undefined,
   isRequired: option.isRequired,
   selectionType: option.selectionType as 'single' | 'multiple',
+  isActive: option.isActive,
   sortOrder: option.sortOrder
 });
 
@@ -166,6 +167,7 @@ export interface ProductOption {
   groupName?: string;
   isRequired: boolean;
   selectionType: 'single' | 'multiple';
+  isActive: boolean;
   sortOrder: number;
 }
 
@@ -234,6 +236,7 @@ export interface ProductRepository {
   create(input: ProductCreateInput): Promise<Product>;
   update(id: string, input: ProductUpdateInput): Promise<Product>;
   toggleAvailability(id: string, isAvailable: boolean): Promise<Product>;
+  toggleOption(productId: string, optionId: string, isActive: boolean): Promise<Product>;
   updateImage(id: string, image: { imageUrl: string; imageKey: string; imageUploadedAt?: Date }): Promise<Product>;
   bulkUpsert(inputs: ProductBulkUpsertInput[]): Promise<Product[]>;
   bulkUpdate(updates: Array<{ id: string; [key: string]: any }>): Promise<Product[]>;
@@ -321,6 +324,24 @@ export const prismaProductRepository: ProductRepository = {
     });
 
     return mapProduct(updated);
+  },
+
+  async toggleOption(productId, optionId, isActive) {
+    await prisma.productOption.update({
+      where: { id: optionId },
+      data: { isActive }
+    });
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: productInclude
+    });
+
+    if (!product) {
+      throw new Error('PRODUCT_NOT_FOUND');
+    }
+
+    return mapProduct(product);
   },
 
   async updateImage(id, image) {
