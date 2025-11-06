@@ -45,6 +45,9 @@ type ProductOption = {
   id?: string;
   name: string;
   price: number | null;
+  groupName?: string;
+  isRequired?: boolean;
+  selectionType?: 'single' | 'multiple';
   isActive?: boolean;
 };
 
@@ -320,7 +323,7 @@ export default function AdminProductsPage() {
   const handleAddOption = () => {
     setEditForm(prev => ({
       ...prev,
-      options: [...prev.options, { name: '', price: null }]
+      options: [...prev.options, { name: '', price: null, groupName: '', isRequired: false, selectionType: 'single' }]
     }));
   };
 
@@ -331,13 +334,19 @@ export default function AdminProductsPage() {
     }));
   };
 
-  const handleUpdateOption = (index: number, field: 'name' | 'price', value: string) => {
+  const handleUpdateOption = (index: number, field: 'name' | 'price' | 'groupName' | 'isRequired' | 'selectionType', value: string | boolean) => {
     setEditForm(prev => {
       const newOptions = [...prev.options];
       if (field === 'name') {
-        newOptions[index] = { ...newOptions[index], name: value };
-      } else {
-        newOptions[index] = { ...newOptions[index], price: parseNumber(value) };
+        newOptions[index] = { ...newOptions[index], name: value as string };
+      } else if (field === 'price') {
+        newOptions[index] = { ...newOptions[index], price: parseNumber(value as string) };
+      } else if (field === 'groupName') {
+        newOptions[index] = { ...newOptions[index], groupName: value as string };
+      } else if (field === 'isRequired') {
+        newOptions[index] = { ...newOptions[index], isRequired: value as boolean };
+      } else if (field === 'selectionType') {
+        newOptions[index] = { ...newOptions[index], selectionType: value as 'single' | 'multiple' };
       }
       return { ...prev, options: newOptions };
     });
@@ -801,7 +810,7 @@ export default function AdminProductsPage() {
             {editForm.options.map((option, index) => (
               <Card key={index} variant="outlined">
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Stack spacing={1}>
+                  <Stack spacing={1.5}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <TextField
                         label="選項名稱"
@@ -819,15 +828,50 @@ export default function AdminProductsPage() {
                         <Delete fontSize="small" />
                       </IconButton>
                     </Stack>
-                    <TextField
-                      label="加價"
-                      type="number"
-                      value={option.price === null ? '' : option.price}
-                      onChange={e => handleUpdateOption(index, 'price', e.target.value)}
-                      size="small"
-                      fullWidth
-                      placeholder="選填，無加價可留空"
-                    />
+
+                    <Stack direction="row" spacing={1}>
+                      <TextField
+                        label="分組名稱"
+                        value={option.groupName || ''}
+                        onChange={e => handleUpdateOption(index, 'groupName', e.target.value)}
+                        size="small"
+                        fullWidth
+                        placeholder="選填，例：尺寸、加工方式"
+                      />
+                      <TextField
+                        label="加價"
+                        type="number"
+                        value={option.price === null ? '' : option.price}
+                        onChange={e => handleUpdateOption(index, 'price', e.target.value)}
+                        size="small"
+                        fullWidth
+                        placeholder="選填，無加價留空"
+                      />
+                    </Stack>
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={option.isRequired ?? false}
+                            onChange={e => handleUpdateOption(index, 'isRequired', e.target.checked)}
+                            size="small"
+                          />
+                        }
+                        label="必選"
+                      />
+                      <TextField
+                        select
+                        label="選擇方式"
+                        value={option.selectionType || 'single'}
+                        onChange={e => handleUpdateOption(index, 'selectionType', e.target.value)}
+                        size="small"
+                        sx={{ minWidth: 120 }}
+                      >
+                        <MenuItem value="single">單選</MenuItem>
+                        <MenuItem value="multiple">多選</MenuItem>
+                      </TextField>
+                    </Stack>
                   </Stack>
                 </CardContent>
               </Card>
