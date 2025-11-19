@@ -32,6 +32,8 @@ type CheckoutDrawerProps = {
   deliveryFee: number | null | undefined;
   totalAmount: number | null | undefined;
   onSubmit: (data: CheckoutFormData) => Promise<void>;
+  lineUserId?: string; // ✨ Optional LINE User ID
+  lineDisplayName?: string; // ✨ Optional LINE Display Name
 };
 
 export type CheckoutFormData = {
@@ -67,7 +69,9 @@ export function CheckoutDrawer({
   subtotal,
   deliveryFee,
   totalAmount,
-  onSubmit
+  onSubmit,
+  lineUserId,
+  lineDisplayName
 }: CheckoutDrawerProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     contactName: '',
@@ -111,9 +115,9 @@ export function CheckoutDrawer({
 
   const handleChange =
     (field: keyof CheckoutFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setFormData(prev => ({ ...prev, [field]: event.target.value }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData(prev => ({ ...prev, [field]: event.target.value }));
+      };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -185,6 +189,37 @@ export function CheckoutDrawer({
       </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+        {/* ✨ LINE Connection Status Indicator */}
+        {lineUserId && (
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              bgcolor: '#f0fdf4', // Green-50
+              border: '1px solid #bbf7d0', // Green-200
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5
+            }}
+          >
+            <Box
+              component="img"
+              src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg"
+              alt="LINE"
+              sx={{ width: 24, height: 24 }}
+            />
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: '#166534', fontWeight: 600 }}>
+                已連結 LINE 帳號
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#15803d' }}>
+                {lineDisplayName ? `你好，${lineDisplayName}！` : '將自動綁定此手機號碼'}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
             聯絡資訊

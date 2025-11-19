@@ -44,6 +44,7 @@ const categoryLabel = (category: string | undefined) => (category && category.tr
 export default function HomePage() {
   const router = useRouter();
   const cart = useCart();
+  const { profile: lineProfile, isReady: isLiffReady } = useLiff(); // ✨ Initialize LIFF
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +222,8 @@ export default function HomePage() {
       deliveryFee: cart.deliveryFee,
       totalAmount: cart.totalAmount,
       notes: formData.notes,
+      lineUserId: lineProfile?.userId, // ✨ Pass LINE User ID
+      lineDisplayName: lineProfile?.displayName, // ✨ Pass LINE Display Name
       items: cart.items.map((item, index) => ({
         productId: item.productId ?? item.id ?? `item-${index}`,
         name: item.name,
@@ -387,6 +390,8 @@ export default function HomePage() {
         deliveryFee={cart.deliveryFee}
         totalAmount={cart.totalAmount}
         onSubmit={handleSubmitOrder}
+        lineUserId={lineProfile?.userId} // ✨ Pass LINE User ID prop
+        lineDisplayName={lineProfile?.displayName} // ✨ Pass LINE Display Name prop
       />
 
       <ProductDetailModal
