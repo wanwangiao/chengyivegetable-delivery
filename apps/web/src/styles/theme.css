@@ -9,35 +9,45 @@
      ============================================ */
 
   /* 主色調 - 更深邃、更有質感的森林綠 */
-  --brand-primary: #059669;       /* Emerald 600 */
-  --brand-primary-dark: #047857;  /* Emerald 700 */
-  --brand-primary-light: #10b981; /* Emerald 500 */
-  
+  --brand-primary: #059669;
+  /* Emerald 600 */
+  --brand-primary-dark: #047857;
+  /* Emerald 700 */
+  --brand-primary-light: #10b981;
+  /* Emerald 500 */
+
   /* 品牌輔助色 - 溫暖的陽光與大地 */
-  --brand-secondary: #f59e0b;     /* Amber 500 */
-  --brand-accent: #f43f5e;        /* Rose 500 - 用於強調/促銷 */
+  --brand-secondary: #f59e0b;
+  /* Amber 500 */
+  --brand-accent: #f43f5e;
+  /* Rose 500 - 用於強調/促銷 */
 
   /* 背景色系 - 柔和的米白與淺灰 */
-  --bg-page: #f8fafc;             /* Slate 50 */
+  --bg-page: #f8fafc;
+  /* Slate 50 */
   --bg-surface: #ffffff;
-  --bg-surface-subtle: #f1f5f9;   /* Slate 100 */
+  --bg-surface-subtle: #f1f5f9;
+  /* Slate 100 */
 
   /* ============================================
      毛玻璃特效 (Glassmorphism)
      ============================================ */
-  
+
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   --glass-blur: blur(12px);
 
   /* ============================================
-     文字系統 - 現代且易讀
+     文字系統 - 現代且易讀 (高對比度優化)
      ============================================ */
 
-  --text-primary: #0f172a;    /* Slate 900 - 深藍黑，比純黑更有質感 */
-  --text-secondary: #475569;  /* Slate 600 */
-  --text-tertiary: #94a3b8;   /* Slate 400 */
+  --text-primary: #0f172a;
+  /* Slate 900 */
+  --text-secondary: #334155;
+  /* Slate 700 - 加深，避免過淡 */
+  --text-tertiary: #64748b;
+  /* Slate 500 - 加深，提高可讀性 */
   --text-inverse: #ffffff;
 
   /* ============================================
@@ -48,7 +58,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+
   /* 懸浮效果專用陰影 */
   --shadow-hover: 0 20px 25px -5px rgba(5, 150, 105, 0.15), 0 10px 10px -5px rgba(5, 150, 105, 0.04);
 
@@ -57,9 +67,12 @@
      ============================================ */
 
   --radius-sm: 0.375rem;
-  --radius-md: 0.75rem;   /* 12px */
-  --radius-lg: 1rem;      /* 16px */
-  --radius-xl: 1.5rem;    /* 24px */
+  --radius-md: 0.75rem;
+  /* 12px */
+  --radius-lg: 1rem;
+  /* 16px */
+  --radius-xl: 1.5rem;
+  /* 24px */
   --radius-full: 9999px;
 
   --font-sans: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
@@ -107,4 +120,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-

@@ -184,26 +184,6 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 20px;
-  padding-left: 8px;
-  border-left: 4px solid var(--brand-primary);
-  line-height: 1.2;
-  scroll-margin-top: 120px;
-}
-
-.categoryProducts {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-/* ========================================
-   服務公告
-   ======================================== */
-
-.serviceAnnouncement {
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-  border: 1px solid rgba(5, 150, 105, 0.1);
-  border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 24px;
   position: relative;
