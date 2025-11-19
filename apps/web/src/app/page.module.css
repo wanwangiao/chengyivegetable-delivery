@@ -1,5 +1,5 @@
 /**
- * 前台首頁樣式 - 溫暖明亮的蔬果配色
+ * 前台首頁樣式 - Premium Version
  */
 
 /* ========================================
@@ -8,8 +8,12 @@
 
 .page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fffe 0%, #f1f8f6 100%);
-  padding-bottom: 120px; /* 為購物車預留空間 */
+  /* 柔和的網格漸層背景 */
+  background:
+    radial-gradient(at 0% 0%, rgba(5, 150, 105, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.1) 0px, transparent 50%),
+    var(--bg-page);
+  padding-bottom: 120px;
 }
 
 /* ========================================
@@ -18,25 +22,30 @@
 
 .brandContainer {
   margin: 16px;
-  background: #ffffff;
-  border: 2px solid rgba(0, 177, 79, 0.2);
-  border-radius: 20px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* 邊框發光效果 */
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 /* ========================================
-   分類導航 - 固定在頂部
+   分類導航 - 毛玻璃置頂
    ======================================== */
 
 .categoryNav {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #ffffff;
-  border-bottom: 1px solid rgba(124, 179, 66, 0.15);
-  box-shadow: 0 2px 12px rgba(45, 90, 61, 0.1);
   padding: 12px 0;
+
+  /* 毛玻璃特效 */
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .categoryTabs {
@@ -44,39 +53,36 @@
   gap: 8px;
   overflow-x: auto;
   padding: 0 16px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
 }
 
 .categoryTabs::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
 }
 
 .categoryTab {
   flex-shrink: 0;
-  padding: 10px 20px;
-  border-radius: 20px;
-  border: 1.5px solid rgba(124, 179, 66, 0.3);
-  background: #ffffff;
-  color: #2d5a3d;
-  font-size: 0.9375rem; /* 15px */
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
+  transition: all 0.3s var(--ease-spring);
+  position: relative;
 }
 
 .categoryTab:hover {
-  background: rgba(124, 179, 66, 0.08);
-  border-color: rgba(124, 179, 66, 0.5);
-  transform: translateY(-1px);
+  color: var(--brand-primary);
+  background: rgba(5, 150, 105, 0.05);
 }
 
 .categoryTab.active {
-  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  background: var(--brand-primary);
   color: #ffffff;
-  border-color: #7cb342;
-  box-shadow: 0 4px 12px rgba(124, 179, 66, 0.3);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
   font-weight: 600;
 }
 
@@ -87,7 +93,7 @@
 .mainContent {
   max-width: 640px;
   margin: 0 auto;
-  padding: 20px 16px;
+  padding: 24px 16px;
 }
 
 /* ========================================
@@ -95,7 +101,7 @@
    ======================================== */
 
 .searchArea {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .searchBox {
@@ -105,59 +111,59 @@
 
 .searchInput {
   width: 100%;
-  padding: 14px 50px 14px 18px;
-  border-radius: 16px;
-  border: 1.5px solid rgba(124, 179, 66, 0.25);
-  background: #ffffff;
-  font-size: 1rem; /* 16px */
-  color: #2d4a3a;
-  box-shadow: 0 4px 16px rgba(45, 90, 61, 0.06);
-  transition: all 0.25s ease;
+  padding: 16px 50px 16px 20px;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  background: var(--bg-surface);
+  font-size: 1rem;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
 }
 
 .searchInput::placeholder {
-  color: rgba(45, 74, 58, 0.5);
+  color: var(--text-tertiary);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #7cb342;
-  box-shadow: 0 6px 20px rgba(124, 179, 66, 0.15),
-              0 0 0 3px rgba(124, 179, 66, 0.1);
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(5, 150, 105, 0.2);
+  transform: translateY(-1px);
 }
 
 .searchClear {
   position: absolute;
-  right: 12px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
-  background: rgba(124, 179, 66, 0.15);
-  color: #2d5a3d;
-  font-size: 0.875rem; /* 14px */
+  background: var(--bg-surface-subtle);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
 }
 
 .searchClear:hover {
-  background: rgba(124, 179, 66, 0.25);
-  transform: translateY(-50%) scale(1.05);
+  background: var(--text-tertiary);
+  color: white;
 }
 
 .searchResultsInfo {
   margin-top: 12px;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 
 .searchResultText {
-  font-size: 0.875rem; /* 14px */
-  color: rgba(45, 74, 58, 0.7);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -166,29 +172,28 @@
    ======================================== */
 
 .productsSection {
-  margin-bottom: 24px;
-}
-
-/* 分類區塊 */
-.categorySection {
   margin-bottom: 32px;
 }
 
+.categorySection {
+  margin-bottom: 40px;
+}
+
 .categoryTitle {
-  font-size: 1.25rem; /* 20px */
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #2d5a3d;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  padding-top: 8px;
-  border-bottom: 2px solid rgba(124, 179, 66, 0.3);
-  scroll-margin-top: 100px; /* 為固定的分類導航預留空間，確保標題可見 */
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  padding-left: 8px;
+  border-left: 4px solid var(--brand-primary);
+  line-height: 1.2;
+  scroll-margin-top: 120px;
 }
 
 .categoryProducts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 
 /* ========================================
@@ -196,24 +201,41 @@
    ======================================== */
 
 .serviceAnnouncement {
-  background: linear-gradient(135deg, rgba(124, 179, 66, 0.08), rgba(139, 195, 74, 0.03));
-  border: 1px solid rgba(124, 179, 66, 0.2);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1px solid rgba(5, 150, 105, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.serviceAnnouncement::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(30%, -30%);
 }
 
 .announcementTitle {
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.125rem;
   font-weight: 700;
-  color: #2d5a3d;
+  color: var(--brand-primary-dark);
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .announcementContent {
-  font-size: 0.9375rem; /* 15px */
+  font-size: 0.95rem;
   line-height: 1.8;
-  color: rgba(45, 74, 58, 0.85);
+  color: var(--text-secondary);
 }
 
 /* ========================================
@@ -221,58 +243,56 @@
    ======================================== */
 
 .ctaBlock {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .ctaCard {
-  background: linear-gradient(135deg, #ffffff, rgba(139, 195, 74, 0.05));
-  border: 1.5px solid rgba(124, 179, 66, 0.2);
-  border-radius: 18px;
-  padding: 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  padding: 32px 24px;
   text-align: center;
-  box-shadow: 0 8px 24px rgba(45, 90, 61, 0.08);
-  transition: all 0.3s ease;
-}
-
-.ctaCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(45, 90, 61, 0.12);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
 }
 
 .ctaCard h3 {
-  font-size: 1.25rem; /* 20px */
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #2d5a3d;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .ctaCard p {
-  font-size: 0.9375rem; /* 15px */
-  color: rgba(45, 74, 58, 0.75);
-  margin-bottom: 16px;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
 }
 
 .btnPrimary {
-  display: inline-block;
-  padding: 12px 28px;
-  background: linear-gradient(135deg, #7cb342 0%, #8bc34a 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  background: var(--brand-primary);
   color: #ffffff;
-  font-size: 0.9375rem; /* 15px */
+  font-size: 1rem;
   font-weight: 600;
-  border-radius: 24px;
+  border-radius: var(--radius-full);
   text-decoration: none;
-  box-shadow: 0 4px 16px rgba(124, 179, 66, 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .btnPrimary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(124, 179, 66, 0.4);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+  background: var(--brand-primary-light);
 }
 
 .btnPrimary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 /* ========================================
@@ -282,10 +302,10 @@
 .errorMessage {
   padding: 16px;
   text-align: center;
-  color: #c53030;
-  background: rgba(197, 48, 48, 0.05);
-  border: 1px solid rgba(197, 48, 48, 0.2);
-  border-radius: 12px;
+  color: var(--brand-accent);
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: var(--radius-lg);
   font-weight: 500;
 }
 
@@ -294,29 +314,12 @@
    ======================================== */
 
 @media (min-width: 768px) {
-  .main-content {
+  .mainContent {
     padding: 32px 24px;
   }
 
-  .category-tabs {
-    padding: 0 24px;
-    gap: 12px;
-  }
-
-  .category-tab {
-    padding: 11px 24px;
-    font-size: 1rem; /* 16px */
-  }
-}
-
-@media (min-width: 1024px) {
-  .page {
-    padding-bottom: 80px;
-  }
-
-  .category-nav {
-    /* 桌面版分類導航可以取消固定 */
-    position: relative;
-    top: auto;
+  .categoryProducts {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
   }
 }
