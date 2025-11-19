@@ -11,6 +11,7 @@ import { BrandHeader } from '../components/BrandHeader';
 import { BusinessStatusBanner } from '../components/BusinessStatusBanner';
 import { ListSkeleton } from '../components/animations/Skeleton';
 import { useCart } from '../hooks/useCart';
+import { useLiff } from '../hooks/useLiff';
 import { API_BASE_URL as API_BASE } from '../config/api';
 import '../styles/theme.css';
 import styles from './page.module.css';
